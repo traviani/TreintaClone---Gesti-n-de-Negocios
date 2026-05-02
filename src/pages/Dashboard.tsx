@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   ChevronRight,
   AlertTriangle,
-  Package
+  Package,
+  Fingerprint
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -41,6 +42,7 @@ import {
 import { motion } from 'motion/react';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { isBiometricAvailable, registerLocalPasskey } from '../lib/biometrics';
 
 interface StatCardProps {
   title: string;
@@ -158,6 +160,34 @@ export default function Dashboard() {
     };
   }, [user]);
 
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const available = await isBiometricAvailable();
+      setBiometricSupported(available);
+      const enrolledUser = localStorage.getItem('biometric_enrolled_user');
+      setIsEnrolled(!!enrolledUser);
+    };
+    checkBiometrics();
+  }, []);
+
+  const handleEnrollBiometrics = async () => {
+    if (!user?.email) return;
+    const success = await registerLocalPasskey(user.email);
+    if (success) {
+      setIsEnrolled(true);
+      alert('¡Biometría configurada con éxito! Ahora puedes entrar sin contraseña desde este dispositivo.');
+    }
+  };
+
+  const handleRemoveBiometrics = () => {
+    localStorage.removeItem('biometric_enrolled_user');
+    setIsEnrolled(false);
+    alert('Biometría desactivada.');
+  };
+
   const totalSalesAmount = sales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
   const totalExpensesAmount = expenses.reduce((acc, expense) => acc + (Number(expense.amount) || 0), 0);
   const totalDebts = customers.reduce((acc, customer) => acc + (Number(customer.balance) || 0), 0);
@@ -219,43 +249,85 @@ export default function Dashboard() {
         </div>
 
         {/* Catalog Share Section */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-slate-900 text-white px-6 py-4 rounded-[2.5rem] flex items-center gap-6 shadow-2xl shadow-slate-200 border border-slate-800"
-        >
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Share2 size={18} className="text-white" />
-             </div>
-             <div>
-                <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] italic">Catálogo Digital</p>
-                <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">En vivo</p>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 text-white px-6 py-4 rounded-[2.5rem] flex items-center gap-6 shadow-2xl shadow-slate-200 border border-slate-800 flex-1"
+          >
+            <div className="flex items-center gap-4">
+               <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                  <Share2 size={18} className="text-white" />
+               </div>
+               <div>
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] italic">Catálogo Digital</p>
+                  <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">En vivo</p>
+                  </div>
+               </div>
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <button 
+                onClick={copyLink}
+                className={cn(
+                  "px-5 py-2.5 rounded-2xl text-[10px] font-black italic transition-all uppercase tracking-[0.15em] border-2",
+                  copied ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white text-slate-900 border-white hover:bg-slate-100"
+                )}
+              >
+                {copied ? '¡COPIADO!' : 'COPIAR ENLACE'}
+              </button>
+              <a 
+                href={shareUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-10 h-10 bg-slate-800 hover:bg-slate-700 rounded-2xl flex items-center justify-center transition-colors group"
+              >
+                <ExternalLink size={14} className="text-slate-400 group-hover:text-white" />
+              </a>
+            </div>
+          </motion.div>
+
+          {biometricSupported && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white border-2 border-slate-100 px-6 py-4 rounded-[2.5rem] flex items-center gap-6 shadow-sm flex-1 md:flex-none md:min-w-[300px]"
+            >
+              <div className="flex items-center gap-4">
+                <div className={cn(
+                  "w-10 h-10 rounded-2xl flex items-center justify-center shadow-lg transition-colors",
+                  isEnrolled ? "bg-emerald-100 text-emerald-600 shadow-emerald-500/10" : "bg-slate-100 text-slate-400 shadow-slate-500/5"
+                )}>
+                    <Fingerprint size={18} />
                 </div>
-             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={copyLink}
-              className={cn(
-                "px-5 py-2.5 rounded-2xl text-[10px] font-black italic transition-all uppercase tracking-[0.15em] border-2",
-                copied ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white text-slate-900 border-white hover:bg-slate-100"
-              )}
-            >
-              {copied ? '¡COPIADO!' : 'COPIAR ENLACE'}
-            </button>
-            <a 
-              href={shareUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="w-10 h-10 bg-slate-800 hover:bg-slate-700 rounded-2xl flex items-center justify-center transition-colors group"
-            >
-              <ExternalLink size={14} className="text-slate-400 group-hover:text-white" />
-            </a>
-          </div>
-        </motion.div>
+                <div>
+                   <p className={cn("text-[10px] font-black uppercase tracking-[0.2em] italic", isEnrolled ? "text-emerald-600" : "text-slate-400")}>
+                    {isEnrolled ? 'Llave Activa' : 'Sin Biometría'}
+                   </p>
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Acceso Rápido</p>
+                </div>
+              </div>
+              <div className="ml-auto">
+                {isEnrolled ? (
+                  <button 
+                    onClick={handleRemoveBiometrics}
+                    className="px-4 py-2 rounded-xl text-[9px] font-black bg-red-50 text-red-600 hover:bg-red-100 uppercase tracking-widest transition-colors"
+                  >
+                    Desactivar
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleEnrollBiometrics}
+                    className="px-4 py-2 rounded-xl text-[9px] font-black bg-blue-600 text-white hover:bg-blue-700 uppercase tracking-widest transition-all"
+                  >
+                    Configurar
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </div>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">

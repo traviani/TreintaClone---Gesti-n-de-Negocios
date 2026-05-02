@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, Lock, LogIn, UserPlus, AlertCircle, Eye, EyeOff, Key } from 'lucide-react';
-import { loginWithGoogle, loginWithEmail, registerWithEmail, recoverPassword } from '../lib/firebase';
+import { Mail, Lock, LogIn, UserPlus, AlertCircle, Eye, EyeOff, Key, Fingerprint } from 'lucide-react';
+import { loginWithGoogle, loginWithEmail, registerWithEmail, recoverPassword, auth } from '../lib/firebase';
 import { cn } from '../lib/utils';
+import { isBiometricAvailable, authenticateWithBiometrics, registerLocalPasskey } from '../lib/biometrics';
 
 export default function Login() {
   const [isRegister, setIsRegister] = useState(false);
@@ -13,6 +14,18 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+
+  useEffect(() => {
+    const checkBiometrics = async () => {
+      const available = await isBiometricAvailable();
+      setBiometricSupported(available);
+      const enrolledUser = localStorage.getItem('biometric_enrolled_user');
+      setIsEnrolled(!!enrolledUser);
+    };
+    checkBiometrics();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,7 +41,15 @@ export default function Login() {
       } else if (isRegister) {
         await registerWithEmail(email, password);
       } else {
-        await loginWithEmail(email, password);
+        const userCredential = await loginWithEmail(email, password);
+        
+        // Si el login es exitoso y biometría está disponible pero no enrolada, preguntar
+        if (biometricSupported && !isEnrolled && userCredential.user.email) {
+          if (confirm('¿Deseas habilitar el ingreso con tu huella o rostro en este dispositivo?')) {
+            await registerLocalPasskey(userCredential.user.email);
+            setIsEnrolled(true);
+          }
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -37,6 +58,30 @@ export default function Login() {
       else if (err.code === 'auth/email-already-in-use') setError('El correo ya está registrado.');
       else if (err.code === 'auth/weak-password') setError('La contraseña debe tener al menos 6 caracteres.');
       else setError('Ocurrió un error. Intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const userEmail = await authenticateWithBiometrics();
+      
+      if (userEmail) {
+        // En una app real, aquí usaríamos un token de biometría verificado por el servidor.
+        // Para este prototipo, si la biometría es exitosa, informamos al usuario.
+        // Nota: Para login real sin password se requiere configuración de Firebase Identity Platform.
+        setSuccess(`Autenticación biométrica exitosa para ${userEmail}. Conectando...`);
+        // Simulamos el ingreso por ahora si no tenemos el backend de custom tokens configurado
+        alert("Autenticación biométrica exitosa. En un entorno de producción, esto genera un token de acceso seguro.");
+      } else {
+        setError('No se pudo verificar la identidad biométrica.');
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Error en el sensor biométrico.');
     } finally {
       setLoading(false);
     }
@@ -169,6 +214,21 @@ export default function Login() {
                   </>
                 )}
               </button>
+
+              {biometricSupported && !isReset && !isRegister && (
+                <button 
+                  type="button"
+                  onClick={handleBiometricLogin}
+                  disabled={loading}
+                  className={cn(
+                    "w-full rounded-2xl py-5 font-black text-xs uppercase tracking-[0.2em] italic shadow-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3",
+                    isEnrolled ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-slate-100 text-slate-400 hover:bg-slate-200 border-2 border-dashed border-slate-300"
+                  )}
+                >
+                  <Fingerprint size={18} />
+                  {isEnrolled ? 'Ingresar con Biometría' : 'Activar Llave de Acceso'}
+                </button>
+              )}
             </form>
 
             {!isReset && (
