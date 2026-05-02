@@ -69,7 +69,6 @@ export default function Sales() {
   useEffect(() => {
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 

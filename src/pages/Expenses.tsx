@@ -48,7 +48,6 @@ export default function Expenses() {
   useEffect(() => {
     const q = query(
       collection(db, 'expenses'),
-      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 

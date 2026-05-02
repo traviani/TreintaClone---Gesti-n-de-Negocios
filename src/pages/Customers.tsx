@@ -57,7 +57,6 @@ export default function Customers() {
   useEffect(() => {
     const q = query(
       collection(db, 'customers'),
-      where('ownerId', '==', effectiveUid),
       orderBy('name', 'asc')
     );
 

@@ -72,7 +72,6 @@ export default function AccountsReceivable() {
     // we'll fetch all credit sales and handle the balance logic in memory/display for now.
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid),
       where('saleType', '==', 'credito'),
       orderBy('createdAt', 'desc')
     );

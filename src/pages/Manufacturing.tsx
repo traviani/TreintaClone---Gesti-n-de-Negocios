@@ -133,18 +133,17 @@ export default function Manufacturing() {
   };
 
   useEffect(() => {
-    const unsubProducts = onSnapshot(query(collection(db, 'products'), where('ownerId', '==', effectiveUid)), (snap) => {
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snap) => {
       setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
     });
 
-    const unsubRecipes = onSnapshot(query(collection(db, 'recipes'), where('ownerId', '==', effectiveUid)), (snap) => {
+    const unsubRecipes = onSnapshot(collection(db, 'recipes'), (snap) => {
       setRecipes(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe)));
     });
 
     const unsubLogs = onSnapshot(
       query(
         collection(db, 'production_logs'), 
-        where('ownerId', '==', effectiveUid),
         orderBy('createdAt', 'desc'),
         limit(15)
       ), 
@@ -160,7 +159,6 @@ export default function Manufacturing() {
     // Fetch sales with pending orders
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid),
       where('hasBajoPedido', '==', true)
     );
 

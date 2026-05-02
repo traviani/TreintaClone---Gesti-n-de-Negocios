@@ -89,11 +89,11 @@ export default function Purchases() {
   };
 
   useEffect(() => {
-    const unsubProducts = onSnapshot(query(collection(db, 'products'), where('ownerId', '==', effectiveUid)), (snap) => {
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snap) => {
       setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
     });
 
-    const unsubPurchases = onSnapshot(query(collection(db, 'purchases'), where('ownerId', '==', effectiveUid)), (snap) => {
+    const unsubPurchases = onSnapshot(collection(db, 'purchases'), (snap) => {
       setPurchases(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
     });
 

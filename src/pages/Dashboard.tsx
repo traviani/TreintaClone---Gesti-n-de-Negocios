@@ -99,31 +99,26 @@ export default function Dashboard() {
   useEffect(() => {
     const salesQuery = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc'),
       limit(100)
     );
 
     const expensesQuery = query(
       collection(db, 'expenses'),
-      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 
     const purchasesQuery = query(
       collection(db, 'purchases'),
-      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 
     const customersQuery = query(
-      collection(db, 'customers'),
-      where('ownerId', '==', effectiveUid)
+      collection(db, 'customers')
     );
 
     const productsQuery = query(
-      collection(db, 'products'),
-      where('ownerId', '==', effectiveUid)
+      collection(db, 'products')
     );
 
     const unsubSales = onSnapshot(salesQuery, (snapshot) => {

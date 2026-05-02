@@ -196,8 +196,7 @@ export default function Inventory() {
 
   useEffect(() => {
     const q = query(
-      collection(db, 'products'),
-      where('ownerId', '==', effectiveUid)
+      collection(db, 'products')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
