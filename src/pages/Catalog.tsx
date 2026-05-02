@@ -128,7 +128,7 @@ export default function Catalog() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const getShareLink = (type: 'detal' | 'mayor') => {
-    return `${window.location.origin}/catalog/${ownerId}?type=${type}`;
+    return `${window.location.origin}/#/catalog/${ownerId}?type=${type}`;
   };
 
   const copyToClipboard = (type: 'detal' | 'mayor') => {

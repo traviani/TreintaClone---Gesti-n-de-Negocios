@@ -524,7 +524,7 @@ export default function POS() {
               <div className="flex gap-2">
                 <button 
                   onClick={() => {
-                    const url = `${window.location.origin}/catalog/${user?.uid}?type=detal`;
+                    const url = `${window.location.origin}/#/catalog/${user?.uid}?type=detal`;
                     navigator.clipboard.writeText(url);
                     alert("✅ Enlace DETAL copiado con éxito.");
                   }}
@@ -535,7 +535,7 @@ export default function POS() {
                 </button>
                 <button 
                   onClick={() => {
-                    const url = `${window.location.origin}/catalog/${user?.uid}?type=mayor`;
+                    const url = `${window.location.origin}/#/catalog/${user?.uid}?type=mayor`;
                     navigator.clipboard.writeText(url);
                     alert("✅ Enlace MAYORISTA copiado con éxito.");
                   }}

@@ -13,7 +13,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     // Abrir la página dedicada de impresión en una nueva pestaña
     // Esto garantiza que window.print() funcione sin bloqueos de iframe
     if (sale.id) {
-      window.open(`${window.location.origin}/receipt/${sale.id}`, '_blank');
+      window.open(`${window.location.origin}/#/receipt/${sale.id}`, '_blank');
     } else {
       window.print();
     }

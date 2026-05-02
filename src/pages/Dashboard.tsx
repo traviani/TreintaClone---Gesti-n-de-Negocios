@@ -195,7 +195,7 @@ export default function Dashboard() {
     { name: 'Gastos', value: totalExpensesAmount, color: '#dc2626' },
   ];
 
-  const shareUrl = `${window.location.origin}/catalog/${user?.uid}`;
+  const shareUrl = `${window.location.origin}/#/catalog/${user?.uid}`;
   const [copied, setCopied] = useState(false);
 
   const copyLink = () => {
