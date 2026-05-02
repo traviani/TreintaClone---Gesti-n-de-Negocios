@@ -1,0 +1,15 @@
+Nombre,Unidad,Costo,Stock,Categoria,Imagen,Precio,PrecioMayor
+Pulpa de paleta,kg,7,2300,Carnes,,0,0
+Panceta,kg,8.5,950,Carnes,,0,0
+Agua,kg,0,996600,Líquidos,,0,0
+Hinojo,kg,16,200,Especias,,0,0
+Sal,kg,1,194,Especias,,0,0
+Azucar,kg,2,500,Insumos,,0,0
+Pimienta,kg,45,199,Especias,,0,0
+Peperonccino,kg,45,28,Especias,,0,0
+Pecorino,kg,29.7,0,Lácteos,,0,0
+Perejil,kg,2,100,Vegetales,,0,0
+Tomate,kg,2,0,Vegetales,,0,0
+Tripa,mts,39,71,Empaque,,0,0
+Empaque (Bolsa),Unidad,18,88,Empaque,,0,0
+Etiqueta,Unidad,10,102,Empaque,,0,0

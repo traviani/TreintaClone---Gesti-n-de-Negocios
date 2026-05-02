@@ -1,0 +1,161 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Inventory items (Ingredients or Finished Goods)",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number", "description": "Retail Price (PVP)" },
+        "wholesalePrice": { "type": "number", "description": "Wholesale Price" },
+        "cost": { "type": "number" },
+        "stock": { "type": "number" },
+        "unit": { "type": "string", "enum": ["unid", "kg", "gr", "lt", "ml", "mtr"] },
+        "category": { "type": "string" },
+        "isIngredient": { "type": "boolean" },
+        "isFinishedProduct": { "type": "boolean" },
+        "imageUrl": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "stock", "ownerId"]
+    },
+    "Recipe": {
+      "title": "Recipe",
+      "description": "Bill of Materials for manufacturing",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "description": "ID of the finished product" },
+        "ingredients": { 
+          "type": "array", 
+          "items": {
+            "type": "object",
+            "properties": {
+              "ingredientId": { "type": "string" },
+              "quantity": { "type": "number" }
+            }
+          }
+        },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["productId", "ingredients", "ownerId"]
+    },
+    "Purchase": {
+      "title": "Purchase",
+      "description": "Supply orders from vendors",
+      "type": "object",
+      "properties": {
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "supplierName": { "type": "string" },
+        "supplierIdNumber": { "type": "string" },
+        "supplierAddress": { "type": "string" },
+        "supplierPhone": { "type": "string" },
+        "supplierEmail": { "type": "string" },
+        "documentNumber": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["contado", "credito"] },
+        "amountPaid": { "type": "number" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "total", "ownerId"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Records of customer purchases",
+      "type": "object",
+      "properties": {
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "customerId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "saleType": { "type": "string", "enum": ["contado", "credito"] },
+        "priceType": { "type": "string", "enum": ["detal", "mayor"] },
+        "paymentMethod": { "type": "string" },
+        "status": { "type": "string", "enum": ["completed", "pending", "cancelled"] },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "total", "ownerId", "status"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer contacts and credit management",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "idNumber": { "type": "string", "description": "CI or RIF" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "priceType": { "type": "string", "enum": ["detal", "mayor"] },
+        "balance": { "type": "number" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "ownerId"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Business costs and overhead",
+      "type": "object",
+      "properties": {
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "paymentStatus": { "type": "string", "enum": ["contado", "credito"] },
+        "date": { "type": "string", "format": "date-time" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["description", "amount", "ownerId"]
+    },
+    "ProductionLog": {
+      "title": "Production Log",
+      "description": "History of manufacturing batches",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "amount": { "type": "number" },
+        "totalCost": { "type": "number" },
+        "ingredients": { "type": "array" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "amount", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Master product list"
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Sales history"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer database"
+    },
+    "/expenses/{expenseId}": {
+      "schema": "Expense",
+      "description": "Expense history"
+    },
+    "/recipes/{recipeId}": {
+      "schema": "Recipe",
+      "description": "Manufacturing formulas"
+    },
+    "/purchases/{purchaseId}": {
+      "schema": "Purchase",
+      "description": "Supply history"
+    },
+    "/production_logs/{logId}": {
+      "schema": "ProductionLog",
+      "description": "Manufacturing history"
+    }
+  }
+}
