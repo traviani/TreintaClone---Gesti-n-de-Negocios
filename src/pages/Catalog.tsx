@@ -58,25 +58,21 @@ export default function Catalog() {
       if (!ownerId) return;
       try {
         setError(null);
-        // Use a simple query to avoid composite index requirements
+        // Use a simple query to fetch all products for the public catalog
         const q = query(
           collection(db, 'products'),
-          where('ownerId', '==', ownerId),
           limit(100)
         );
         const snap = await getDocs(q);
         const allDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
-        // Filter in memory for safety and reliability
-        const finishedOnly = allDocs.filter((p: any) => {
-          const isFinished = p.isFinishedProduct;
+        // Filter in memory: show anything that is NOT an ingredient
+        const listableProducts = allDocs.filter((p: any) => {
           const isIngredient = p.isIngredient;
-          
-          return (isFinished === true || isFinished === 'true') && 
-                 (isIngredient !== true && isIngredient !== 'true');
+          return isIngredient !== true && isIngredient !== 'true';
         });
         
-        setProducts(finishedOnly);
+        setProducts(listableProducts);
       } catch (err) {
         console.error("Error fetching catalog", err);
         setError("No pudimos cargar el catálogo. Por favor verifica el enlace.");
