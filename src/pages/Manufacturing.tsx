@@ -75,7 +75,7 @@ interface PendingItem {
 }
 
 export default function Manufacturing() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [productionLogs, setProductionLogs] = useState<ProductionLog[]>([]);
@@ -133,20 +133,18 @@ export default function Manufacturing() {
   };
 
   useEffect(() => {
-    if (!user) return;
-
-    const unsubProducts = onSnapshot(query(collection(db, 'products'), where('ownerId', '==', user.uid)), (snap) => {
+    const unsubProducts = onSnapshot(query(collection(db, 'products'), where('ownerId', '==', effectiveUid)), (snap) => {
       setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
     });
 
-    const unsubRecipes = onSnapshot(query(collection(db, 'recipes'), where('ownerId', '==', user.uid)), (snap) => {
+    const unsubRecipes = onSnapshot(query(collection(db, 'recipes'), where('ownerId', '==', effectiveUid)), (snap) => {
       setRecipes(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe)));
     });
 
     const unsubLogs = onSnapshot(
       query(
         collection(db, 'production_logs'), 
-        where('ownerId', '==', user.uid),
+        where('ownerId', '==', effectiveUid),
         orderBy('createdAt', 'desc'),
         limit(15)
       ), 
@@ -156,15 +154,13 @@ export default function Manufacturing() {
     );
 
     return () => { unsubProducts(); unsubRecipes(); unsubLogs(); };
-  }, [user]);
+  }, [effectiveUid]);
 
   useEffect(() => {
-    if (!user) return;
-
     // Fetch sales with pending orders
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       where('hasBajoPedido', '==', true)
     );
 
@@ -193,7 +189,7 @@ export default function Manufacturing() {
     });
 
     return unsubscribe;
-  }, [user]);
+  }, [effectiveUid]);
 
   const addIngredientToRecipe = () => {
     setRecipeIngredients([...recipeIngredients, { ingredientId: '', quantity: 1 }]);
@@ -204,7 +200,7 @@ export default function Manufacturing() {
   };
 
   const handleSaveRecipe = async () => {
-    if (!selectedProduct || recipeIngredients.length === 0 || !user) return;
+    if (!selectedProduct || recipeIngredients.length === 0) return;
 
     try {
       const recipeRef = doc(db, 'recipes', `recipe_${selectedProduct}`);
@@ -216,7 +212,7 @@ export default function Manufacturing() {
           unit: ing.unit || products.find(p => p.id === ing.ingredientId)?.unit || 'unid',
           quantity: ing.quantity
         })),
-        ownerId: user.uid,
+        ownerId: effectiveUid,
         updatedAt: serverTimestamp(),
         createdAt: serverTimestamp()
       }, { merge: true });
@@ -320,7 +316,7 @@ export default function Manufacturing() {
       // 4. Create Production Log
       const logRef = doc(collection(db, 'production_logs'));
       batch.set(logRef, {
-        ownerId: user.uid,
+        ownerId: effectiveUid,
         productId: recipe.productId,
         productName: product?.name || 'Producto',
         amount: numAmount,

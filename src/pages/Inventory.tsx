@@ -57,7 +57,7 @@ interface Product {
 }
 
 export default function Inventory() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -195,11 +195,9 @@ export default function Inventory() {
   };
 
   useEffect(() => {
-    if (!user) return;
-
     const q = query(
       collection(db, 'products'),
-      where('ownerId', '==', user.uid)
+      where('ownerId', '==', effectiveUid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -207,11 +205,10 @@ export default function Inventory() {
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
 
     return unsubscribe;
-  }, [user]);
+  }, [effectiveUid]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     const data = {
       ...formData,
@@ -221,7 +218,7 @@ export default function Inventory() {
       stock: parseFloat(formData.stock),
       recipe: formData.isFinishedProduct ? recipeItems : [],
       recipeYield: parseFloat(formData.recipeYield || '1'),
-      ownerId: user.uid,
+      ownerId: effectiveUid,
       updatedAt: serverTimestamp(),
     };
 
@@ -255,7 +252,7 @@ export default function Inventory() {
         const recipeRef = doc(db, 'recipes', `recipe_${targetProductId}`);
         batch.set(recipeRef, {
           productId: targetProductId,
-          ownerId: user.uid,
+          ownerId: effectiveUid,
           yield: parseFloat(formData.recipeYield || '1'),
           ingredients: recipeItems.map(item => ({
             ingredientId: item.ingredientId,
@@ -312,7 +309,7 @@ export default function Inventory() {
           isIngredient: false,
           isFinishedProduct: true,
           isBajoPedido: false,
-          ownerId: user?.uid,
+          ownerId: effectiveUid,
           createdAt: serverTimestamp()
         });
       });

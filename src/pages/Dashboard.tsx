@@ -88,7 +88,7 @@ function cn(...inputs: any[]) {
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [sales, setSales] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
   const [purchases, setPurchases] = useState<any[]>([]);
@@ -97,35 +97,33 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
-
     const salesQuery = query(
       collection(db, 'sales'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc'),
       limit(100)
     );
 
     const expensesQuery = query(
       collection(db, 'expenses'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 
     const purchasesQuery = query(
       collection(db, 'purchases'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 
     const customersQuery = query(
       collection(db, 'customers'),
-      where('ownerId', '==', user.uid)
+      where('ownerId', '==', effectiveUid)
     );
 
     const productsQuery = query(
       collection(db, 'products'),
-      where('ownerId', '==', user.uid)
+      where('ownerId', '==', effectiveUid)
     );
 
     const unsubSales = onSnapshot(salesQuery, (snapshot) => {
@@ -156,7 +154,7 @@ export default function Dashboard() {
       unsubCustomers();
       unsubProducts();
     };
-  }, [user]);
+  }, [effectiveUid]);
 
   const totalSalesAmount = sales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
   const totalExpensesAmount = expenses.reduce((acc, expense) => acc + (Number(expense.amount) || 0), 0);
@@ -195,7 +193,7 @@ export default function Dashboard() {
     { name: 'Gastos', value: totalExpensesAmount, color: '#dc2626' },
   ];
 
-  const shareUrl = `${window.location.origin}/#/catalog/${user?.uid}`;
+  const shareUrl = `${window.location.origin}/#/catalog/${effectiveUid}`;
   const [copied, setCopied] = useState(false);
 
   const copyLink = () => {
@@ -215,7 +213,7 @@ export default function Dashboard() {
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-slate-900 italic serif tracking-tight">RESUMEN GENERAL</h1>
-          <p className="text-slate-500 mt-1 font-medium italic">Hola, {user?.displayName?.split(' ')[0]}. Revisa el estado de tu negocio hoy.</p>
+          <p className="text-slate-500 mt-1 font-medium italic">Hola{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}. Revisa el estado de tu negocio hoy.</p>
         </div>
 
         {/* Catalog Share Section */}

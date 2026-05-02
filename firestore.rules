@@ -1,20 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny
+    // PUBLIC ACCESS - As requested by user to remove all verification
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
 
-    // Helper functions
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(data) {
-      return isSignedIn() && data.ownerId == request.auth.uid;
-    }
-
+    // Helper functions for data integrity (optional but good to keep)
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
     }
@@ -25,74 +17,6 @@ service cloud.firestore {
 
     function existing() {
       return resource.data;
-    }
-
-    // --- PRODUCTS ---
-    match /products/{productId} {
-      // allow read for everyone for catalog purposes
-      allow read: if true;
-      allow create: if isSignedIn() 
-        && isValidId(productId)
-        && incoming().ownerId == request.auth.uid;
-      allow update: if isOwner(existing())
-        && incoming().ownerId == existing().ownerId;
-      allow delete: if isOwner(existing());
-    }
-
-    // --- RECIPES ---
-    match /recipes/{recipeId} {
-      allow read: if isOwner(existing());
-      allow write: if isSignedIn() && (request.method == 'create' ? incoming() : existing()).ownerId == request.auth.uid;
-    }
-
-    // --- PURCHASES ---
-    match /purchases/{purchaseId} {
-      allow read: if isOwner(existing());
-      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
-    }
-
-    // --- SALES ---
-    match /sales/{saleId} {
-      allow get: if true; // Public for receipts
-      allow list: if isOwner(existing());
-      allow create: if isSignedIn() 
-        && isValidId(saleId)
-        && incoming().ownerId == request.auth.uid
-        && incoming().items is list && incoming().items.size() > 0
-        && incoming().total is number;
-      allow update: if isOwner(existing())
-        && incoming().ownerId == existing().ownerId
-        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
-      allow delete: if isOwner(existing());
-    }
-
-    // --- CUSTOMERS ---
-    match /customers/{customerId} {
-      allow read: if isOwner(existing());
-      allow create: if isSignedIn() 
-        && isValidId(customerId)
-        && incoming().ownerId == request.auth.uid
-        && incoming().name is string;
-      allow update: if isOwner(existing())
-        && incoming().ownerId == existing().ownerId;
-      allow delete: if isOwner(existing());
-    }
-
-    // --- EXPENSES ---
-    match /expenses/{expenseId} {
-      allow read: if isOwner(existing());
-      allow create: if isSignedIn() 
-        && isValidId(expenseId)
-        && incoming().ownerId == request.auth.uid
-        && incoming().amount is number;
-      allow update: if isOwner(existing())
-        && incoming().ownerId == existing().ownerId;
-      allow delete: if isOwner(existing());
-    }
-    // --- PRODUCTION LOGS ---
-    match /production_logs/{logId} {
-      allow read: if isOwner(existing());
-      allow create: if isSignedIn() && incoming().ownerId == request.auth.uid;
     }
   }
 }

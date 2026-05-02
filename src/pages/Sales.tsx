@@ -56,7 +56,7 @@ interface Sale {
 }
 
 export default function Sales() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -67,11 +67,9 @@ export default function Sales() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 
@@ -81,10 +79,9 @@ export default function Sales() {
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
     return () => unsubscribe();
-  }, [user]);
+  }, [effectiveUid]);
 
   const handleDeleteSale = async (sale: Sale) => {
-    if (!user) return;
     setIsDeleting(true);
 
     try {
@@ -128,7 +125,7 @@ export default function Sales() {
   };
 
   const handleUpdateSaleType = async (sale: Sale, newType: 'contado' | 'credito') => {
-    if (!user || sale.saleType === newType) return;
+    if (sale.saleType === newType) return;
     setIsUpdating(true);
     
     try {

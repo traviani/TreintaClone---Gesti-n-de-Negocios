@@ -57,7 +57,7 @@ interface CartItem extends Product {
 }
 
 export default function POS() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,10 +73,8 @@ export default function POS() {
   const [searchCustomer, setSearchCustomer] = useState('');
 
   useEffect(() => {
-    if (!user) return;
-
-    const pq = query(collection(db, 'products'), where('ownerId', '==', user.uid));
-    const cq = query(collection(db, 'customers'), where('ownerId', '==', user.uid));
+    const pq = query(collection(db, 'products'), where('ownerId', '==', effectiveUid));
+    const cq = query(collection(db, 'customers'), where('ownerId', '==', effectiveUid));
 
     const unsubProducts = onSnapshot(pq, (snapshot) => {
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
@@ -90,7 +88,7 @@ export default function POS() {
       unsubProducts();
       unsubCustomers();
     };
-  }, [user]);
+  }, [effectiveUid]);
 
   // Sync priceType with customer preference
   useEffect(() => {
@@ -142,14 +140,14 @@ export default function POS() {
   }, 0);
 
   const handleCheckout = async () => {
-    if (cart.length === 0 || !user || !selectedCustomer) return;
+    if (cart.length === 0 || !selectedCustomer) return;
     setIsProcessing(true);
 
     try {
       const batch = writeBatch(db);
       
       const saleData = {
-        ownerId: user.uid,
+        ownerId: effectiveUid,
         customerId: selectedCustomer.id,
         customerName: selectedCustomer.name,
         customerIdNumber: selectedCustomer.idNumber,
@@ -524,7 +522,7 @@ export default function POS() {
               <div className="flex gap-2">
                 <button 
                   onClick={() => {
-                    const url = `${window.location.origin}/#/catalog/${user?.uid}?type=detal`;
+                    const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=detal`;
                     navigator.clipboard.writeText(url);
                     alert("✅ Enlace DETAL copiado con éxito.");
                   }}
@@ -535,7 +533,7 @@ export default function POS() {
                 </button>
                 <button 
                   onClick={() => {
-                    const url = `${window.location.origin}/#/catalog/${user?.uid}?type=mayor`;
+                    const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=mayor`;
                     navigator.clipboard.writeText(url);
                     alert("✅ Enlace MAYORISTA copiado con éxito.");
                   }}

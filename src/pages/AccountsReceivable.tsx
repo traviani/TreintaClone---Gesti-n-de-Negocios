@@ -53,7 +53,7 @@ interface Sale {
 }
 
 export default function AccountsReceivable() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [sales, setSales] = useState<Sale[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
@@ -67,14 +67,12 @@ export default function AccountsReceivable() {
   const [paymentNote, setPaymentNote] = useState('');
 
   useEffect(() => {
-    if (!user) return;
-
     // We only want sales that were "credito"
     // In a mature system, we'd filter by balance > 0, but since many old sales might not have the 'balance' field yet,
     // we'll fetch all credit sales and handle the balance logic in memory/display for now.
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       where('saleType', '==', 'credito'),
       orderBy('createdAt', 'desc')
     );
@@ -96,10 +94,10 @@ export default function AccountsReceivable() {
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
     return () => unsubscribe();
-  }, [user]);
+  }, [effectiveUid]);
 
   const handleRegisterPayment = async () => {
-    if (!user || !selectedSale || !paymentAmount) return;
+    if (!selectedSale || !paymentAmount) return;
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
       alert('Monto inválido');

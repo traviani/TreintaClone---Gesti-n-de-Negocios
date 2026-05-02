@@ -35,7 +35,7 @@ interface Expense {
 }
 
 export default function Expenses() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -46,11 +46,9 @@ export default function Expenses() {
   });
 
   useEffect(() => {
-    if (!user) return;
-
     const q = query(
       collection(db, 'expenses'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       orderBy('createdAt', 'desc')
     );
 
@@ -59,11 +57,10 @@ export default function Expenses() {
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
 
     return unsubscribe;
-  }, [user]);
+  }, [effectiveUid]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     try {
       await addDoc(collection(db, 'expenses'), {
@@ -71,7 +68,7 @@ export default function Expenses() {
         amount: parseFloat(formData.amount),
         category: formData.category,
         paymentStatus: formData.paymentStatus,
-        ownerId: user.uid,
+        ownerId: effectiveUid,
         createdAt: serverTimestamp()
       });
       setIsModalOpen(false);

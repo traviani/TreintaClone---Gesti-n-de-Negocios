@@ -40,7 +40,7 @@ interface Customer {
 }
 
 export default function Customers() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -55,11 +55,9 @@ export default function Customers() {
   });
 
   useEffect(() => {
-    if (!user) return;
-
     const q = query(
       collection(db, 'customers'),
-      where('ownerId', '==', user.uid),
+      where('ownerId', '==', effectiveUid),
       orderBy('name', 'asc')
     );
 
@@ -68,17 +66,16 @@ export default function Customers() {
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
 
     return unsubscribe;
-  }, [user]);
+  }, [effectiveUid]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
 
     try {
       const data = {
         ...formData,
         balance: parseFloat(formData.balance || '0'),
-        ownerId: user.uid,
+        ownerId: effectiveUid,
         updatedAt: serverTimestamp()
       };
 

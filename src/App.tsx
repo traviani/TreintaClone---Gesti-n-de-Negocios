@@ -25,23 +25,6 @@ const ReceiptPage = React.lazy(() => import('./pages/ReceiptPage'));
 const AccountsReceivable = React.lazy(() => import('./pages/AccountsReceivable'));
 const DemandAnalysis = React.lazy(() => import('./pages/DemandAnalysis'));
 
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
-
-  if (loading) return (
-    <div className="h-screen w-screen flex items-center justify-center bg-slate-50 font-sans">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-slate-400 font-medium animate-pulse">Cargando...</p>
-      </div>
-    </div>
-  );
-
-  if (!user) return <Login />;
-
-  return <>{children}</>;
-};
-
 export default function App() {
   return (
     <AuthProvider>
@@ -59,18 +42,21 @@ export default function App() {
             <Route path="/receipt/:id" element={<ReceiptPage />} />
             <Route path="/catalog/:ownerId" element={<Catalog />} />
 
-            {/* Protected Routes - With Layout */}
-            <Route path="/" element={<ProtectedRoute><Layout><Dashboard /></Layout></ProtectedRoute>} />
-            <Route path="/inventory" element={<ProtectedRoute><Layout><Inventory /></Layout></ProtectedRoute>} />
-            <Route path="/pos" element={<ProtectedRoute><Layout><POS /></Layout></ProtectedRoute>} />
-            <Route path="/expenses" element={<ProtectedRoute><Layout><Expenses /></Layout></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute><Layout><Customers /></Layout></ProtectedRoute>} />
-            <Route path="/manufacturing" element={<ProtectedRoute><Layout><Manufacturing /></Layout></ProtectedRoute>} />
-            <Route path="/purchases" element={<ProtectedRoute><Layout><Purchases /></Layout></ProtectedRoute>} />
-            <Route path="/sales" element={<ProtectedRoute><Layout><Sales /></Layout></ProtectedRoute>} />
-            <Route path="/receivable" element={<ProtectedRoute><Layout><AccountsReceivable /></Layout></ProtectedRoute>} />
-            <Route path="/demand" element={<ProtectedRoute><Layout><DemandAnalysis /></Layout></ProtectedRoute>} />
+            {/* Direct Routes - No Auth Required */}
+            <Route path="/" element={<Layout><Dashboard /></Layout>} />
+            <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
+            <Route path="/pos" element={<Layout><POS /></Layout>} />
+            <Route path="/expenses" element={<Layout><Expenses /></Layout>} />
+            <Route path="/customers" element={<Layout><Customers /></Layout>} />
+            <Route path="/manufacturing" element={<Layout><Manufacturing /></Layout>} />
+            <Route path="/purchases" element={<Layout><Purchases /></Layout>} />
+            <Route path="/sales" element={<Layout><Sales /></Layout>} />
+            <Route path="/receivable" element={<Layout><AccountsReceivable /></Layout>} />
+            <Route path="/demand" element={<Layout><DemandAnalysis /></Layout>} />
             
+            {/* Registration/Login still available if someone wants to use it */}
+            <Route path="/login" element={<Login />} />
+
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

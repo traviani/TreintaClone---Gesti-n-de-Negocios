@@ -37,22 +37,21 @@ interface AnalysisResult {
 }
 
 export default function DemandAnalysis() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const performAnalysis = async () => {
-    if (!user) return;
     setLoading(true);
     setError(null);
 
     try {
       // 1. Fetch Data for Context
-      const productsSnap = await getDocs(query(collection(db, 'products'), where('ownerId', '==', user.uid)));
+      const productsSnap = await getDocs(query(collection(db, 'products'), where('ownerId', '==', effectiveUid)));
       const salesSnap = await getDocs(query(
         collection(db, 'sales'), 
-        where('ownerId', '==', user.uid),
+        where('ownerId', '==', effectiveUid),
         orderBy('createdAt', 'desc'),
         limit(50)
       ));

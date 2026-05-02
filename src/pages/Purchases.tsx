@@ -51,7 +51,7 @@ interface Purchase {
 }
 
 export default function Purchases() {
-  const { user } = useAuth();
+  const { user, effectiveUid } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -89,25 +89,23 @@ export default function Purchases() {
   };
 
   useEffect(() => {
-    if (!user) return;
-
-    const unsubProducts = onSnapshot(query(collection(db, 'products'), where('ownerId', '==', user.uid)), (snap) => {
+    const unsubProducts = onSnapshot(query(collection(db, 'products'), where('ownerId', '==', effectiveUid)), (snap) => {
       setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
     });
 
-    const unsubPurchases = onSnapshot(query(collection(db, 'purchases'), where('ownerId', '==', user.uid)), (snap) => {
+    const unsubPurchases = onSnapshot(query(collection(db, 'purchases'), where('ownerId', '==', effectiveUid)), (snap) => {
       setPurchases(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
     });
 
     return () => { unsubProducts(); unsubPurchases(); };
-  }, [user]);
+  }, [effectiveUid]);
 
   const addToCart = () => {
     setCart([...cart, { productId: '', quantity: 1, cost: 0, totalPaid: 0 } as any]);
   };
 
   const handlePurchase = async () => {
-    if (cart.length === 0 || !user || !supplierData.supplierName) {
+    if (cart.length === 0 || !supplierData.supplierName) {
         alert('Por favor agrega al menos un producto y el nombre del proveedor.');
         return;
     }
@@ -123,7 +121,7 @@ export default function Purchases() {
       const batch = writeBatch(db);
       const total = cart.reduce((acc, item) => acc + (item.cost * item.quantity), 0);
       const purchaseData = {
-        ownerId: user.uid,
+        ownerId: effectiveUid,
         ...supplierData,
         items: cart,
         total,
