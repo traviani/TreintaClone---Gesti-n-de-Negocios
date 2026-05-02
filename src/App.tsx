@@ -8,8 +8,8 @@ import {
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Layout } from './components/Layout';
 import { motion } from 'motion/react';
-import { loginWithGoogle } from './lib/firebase';
 import { Lock } from 'lucide-react';
+import Login from './pages/Login';
 
 // Lazy load components
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -24,8 +24,6 @@ const Sales = React.lazy(() => import('./pages/Sales'));
 const ReceiptPage = React.lazy(() => import('./pages/ReceiptPage'));
 const AccountsReceivable = React.lazy(() => import('./pages/AccountsReceivable'));
 const DemandAnalysis = React.lazy(() => import('./pages/DemandAnalysis'));
-
-const Login = React.lazy(() => import('./pages/Login'));
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();

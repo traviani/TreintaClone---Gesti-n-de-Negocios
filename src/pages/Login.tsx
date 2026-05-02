@@ -45,10 +45,17 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+      setError(null);
       await loginWithGoogle();
-    } catch (err) {
-      console.error(err);
-      setError('Error al ingresar con Google.');
+    } catch (err: any) {
+      console.error("Google Login Error:", err);
+      if (err.code === 'auth/popup-blocked') {
+        setError('El navegador bloqueó la ventana emergente. Por favor permite pop-ups.');
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        // Ignorar si el usuario cerró la ventana
+      } else {
+        setError('Error al ingresar con Google. Intenta usar tu correo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -57,8 +64,9 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        key={isRegister ? 'register' : isReset ? 'reset' : 'login'}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full"
       >
         <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-blue-100 overflow-hidden border border-slate-100">
