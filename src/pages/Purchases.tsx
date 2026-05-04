@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   Plus, 
@@ -89,8 +90,13 @@ export default function Purchases() {
   };
 
   useEffect(() => {
-    const pq = query(collection(db, 'products'), where('ownerId', '==', effectiveUid));
-    const pquery = query(collection(db, 'purchases'), where('ownerId', '==', effectiveUid));
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
+    const pq = query(collection(db, 'products'), where('ownerId', 'in', allowedOwnerIds));
+    const pquery = query(collection(db, 'purchases'), where('ownerId', 'in', allowedOwnerIds));
 
     const unsubProducts = onSnapshot(pq, (snap) => {
       setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
@@ -276,7 +282,10 @@ export default function Purchases() {
                 <div className="text-right">
                   <p className="text-lg font-black text-slate-900">{formatCurrency(p.total)}</p>
                   <div className="flex items-center gap-1 text-[10px] text-slate-400 uppercase font-bold tracking-widest mt-1">
-                      <Calendar size={12} /> {p.createdAt ? format(p.createdAt.toDate(), 'dd MMM, yyyy', { locale: es }) : '...'}
+                      <Calendar size={12} /> {(() => {
+                        const date = p.createdAt?.toDate?.() || (p.createdAt ? new Date(p.createdAt) : null);
+                        return date && !isNaN(date.getTime()) ? format(date, 'dd MMM, yyyy', { locale: es }) : 'Reciente';
+                      })()}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

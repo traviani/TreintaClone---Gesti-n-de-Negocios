@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   Search, 
@@ -67,10 +68,15 @@ export default function AccountsReceivable() {
   const [paymentNote, setPaymentNote] = useState('');
 
   useEffect(() => {
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
     // Fetch all sales for the user and filter the "credito" ones with balance in memory
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

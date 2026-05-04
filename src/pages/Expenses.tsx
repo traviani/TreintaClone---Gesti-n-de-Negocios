@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   Plus, 
@@ -46,9 +47,14 @@ export default function Expenses() {
   });
 
   useEffect(() => {
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
     const q = query(
       collection(db, 'expenses'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -158,7 +164,13 @@ export default function Expenses() {
                 <div>
                   <h3 className="font-bold text-slate-900">{expense.description}</h3>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 font-medium">
-                    <span className="flex items-center gap-1"><Calendar size={12} /> {expense.createdAt ? format(expense.createdAt.toDate(), 'dd MMM yyyy', { locale: es }) : 'Cargando...'}</span>
+                    <span className="flex items-center gap-1">
+                      <Calendar size={12} /> 
+                      {(() => {
+                        const date = expense.createdAt?.toDate?.() || (expense.createdAt ? new Date(expense.createdAt) : null);
+                        return date && !isNaN(date.getTime()) ? format(date, 'dd MMM yyyy', { locale: es }) : 'Reciente';
+                      })()}
+                    </span>
                     <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-500 uppercase tracking-tighter">{expense.category}</span>
                     <span className={cn(
                         "px-2 py-0.5 rounded font-black italic text-[9px] tracking-widest",

@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn, getGoogleDriveDirectLink } from '../lib/utils';
 import { Receipt } from '../components/Receipt';
 import { 
@@ -73,8 +74,13 @@ export default function POS() {
   const [searchCustomer, setSearchCustomer] = useState('');
 
   useEffect(() => {
-    const pq = query(collection(db, 'products'), where('ownerId', '==', effectiveUid));
-    const cq = query(collection(db, 'customers'), where('ownerId', '==', effectiveUid));
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
+    const pq = query(collection(db, 'products'), where('ownerId', 'in', allowedOwnerIds));
+    const cq = query(collection(db, 'customers'), where('ownerId', 'in', allowedOwnerIds));
 
     const unsubProducts = onSnapshot(pq, (snapshot) => {
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));

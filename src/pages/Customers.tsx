@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   Plus, 
@@ -55,8 +56,14 @@ export default function Customers() {
   });
 
   useEffect(() => {
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
     const q = query(
       collection(db, 'customers'),
+      where('ownerId', 'in', allowedOwnerIds),
       orderBy('name', 'asc')
     );
 

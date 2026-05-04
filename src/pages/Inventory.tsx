@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn, getGoogleDriveDirectLink } from '../lib/utils';
 import { 
   Plus, 
@@ -195,9 +196,14 @@ export default function Inventory() {
   };
 
   useEffect(() => {
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
     const q = query(
       collection(db, 'products'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

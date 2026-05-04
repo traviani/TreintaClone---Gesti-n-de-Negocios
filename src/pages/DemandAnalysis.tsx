@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { GoogleGenAI, Type } from "@google/genai";
 import { 
   TrendingUp, 
@@ -48,13 +49,18 @@ export default function DemandAnalysis() {
 
     try {
       // 1. Fetch Data for Context
+      const allowedOwnerIds = [effectiveUid];
+      if (effectiveUid !== DEFAULT_OWNER_ID) {
+        allowedOwnerIds.push(DEFAULT_OWNER_ID);
+      }
+
       const productsSnap = await getDocs(query(
         collection(db, 'products'),
-        where('ownerId', '==', effectiveUid)
+        where('ownerId', 'in', allowedOwnerIds)
       ));
       const salesSnap = await getDocs(query(
         collection(db, 'sales'), 
-        where('ownerId', '==', effectiveUid),
+        where('ownerId', 'in', allowedOwnerIds),
         orderBy('createdAt', 'desc'),
         limit(50)
       ));

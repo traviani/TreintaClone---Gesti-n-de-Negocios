@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency } from '../lib/utils';
 import { 
   Link
@@ -40,7 +41,7 @@ import {
   Cell
 } from 'recharts';
 import { motion } from 'motion/react';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfMonth, endOfMonth, format, eachDayOfInterval, isSameDay, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface StatCardProps {
@@ -99,29 +100,35 @@ export default function Dashboard() {
   const monthStart = startOfMonth(new Date());
 
   useEffect(() => {
+    // We fetch both the current effective UID and the legacy public ID to ensure data is "todo en conjunto"
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
     const salesQuery = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const expensesQuery = query(
       collection(db, 'expenses'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const purchasesQuery = query(
       collection(db, 'purchases'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const customersQuery = query(
       collection(db, 'customers'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const productsQuery = query(
       collection(db, 'products'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const unsubSales = onSnapshot(salesQuery, (snapshot) => {
@@ -170,12 +177,14 @@ export default function Dashboard() {
   }, [effectiveUid]);
 
   const currentMonthSales = sales.filter(s => {
-    const date = s.createdAt?.toDate?.() || new Date();
+    const date = s.createdAt?.toDate?.() || (s.createdAt ? new Date(s.createdAt) : null);
+    if (!date || isNaN(date.getTime())) return false; // Don't show invalid dates in month summary
     return date >= monthStart;
   });
 
   const currentMonthExpenses = expenses.filter(e => {
-    const date = e.createdAt?.toDate?.() || new Date();
+    const date = e.createdAt?.toDate?.() || (e.createdAt ? new Date(e.createdAt) : null);
+    if (!date || isNaN(date.getTime())) return false;
     return date >= monthStart;
   });
 
@@ -208,16 +217,36 @@ export default function Dashboard() {
   const accountsPayable = 
     currentMonthExpenses.filter(e => e.paymentStatus === 'credito').reduce((acc, e) => acc + (Number(e.amount) || 0), 0) +
     purchases.filter(p => {
-      const date = p.createdAt?.toDate?.() || new Date();
+      const date = p.createdAt?.toDate?.() || (p.createdAt ? new Date(p.createdAt) : null);
+      if (!date || isNaN(date.getTime())) return false;
       return date >= monthStart && p.paymentStatus === 'credito';
     }).reduce((acc, p) => acc + (Number(p.total) || 0), 0);
 
   const profit = totalSalesAmount - totalExpensesAmount;
+  
+  // Create daily chart data for the last 7 days
+  const last7Days = eachDayOfInterval({
+    start: subDays(new Date(), 6),
+    end: new Date()
+  });
 
-  const chartData = [
-    { name: 'Ventas', value: totalSalesAmount, color: '#0f172a' },
-    { name: 'Gastos', value: totalExpensesAmount, color: '#dc2626' },
-  ];
+  const chartData = last7Days.map(day => {
+    const daySales = sales.filter(s => {
+      const date = s.createdAt?.toDate?.() || (s.createdAt ? new Date(s.createdAt) : null);
+      return date && isSameDay(date, day);
+    }).reduce((acc, s) => acc + (Number(s.total) || 0), 0);
+
+    const dayExpenses = expenses.filter(e => {
+      const date = e.createdAt?.toDate?.() || (e.createdAt ? new Date(e.createdAt) : null);
+      return date && isSameDay(date, day);
+    }).reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+
+    return {
+      name: format(day, 'EEE', { locale: es }),
+      ventas: daySales,
+      gastos: dayExpenses
+    };
+  });
 
   const shareUrl = `${window.location.origin}/#/catalog/${effectiveUid}`;
   const [copied, setCopied] = useState(false);
@@ -336,7 +365,7 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 12 }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 10 }} />
                 <YAxis hide />
                 <Tooltip 
                   cursor={{ fill: 'transparent' }}
@@ -344,19 +373,19 @@ export default function Dashboard() {
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl border border-slate-700">
-                          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
-                          <p className="text-lg font-bold">{formatCurrency(payload[0].value as number)}</p>
+                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-blue-400">Ventas: {formatCurrency(payload[0].value as number)}</p>
+                            <p className="text-xs font-bold text-red-400">Gastos: {formatCurrency(payload[1].value as number)}</p>
+                          </div>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <Bar dataKey="value" radius={[12, 12, 12, 12]} barSize={60}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
+                <Bar dataKey="ventas" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={30} />
+                <Bar dataKey="gastos" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={30} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -367,8 +396,8 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold text-slate-900">Últimas Ventas</h2>
             <Link to="/sales" className="text-blue-600 text-sm font-bold hover:underline">Ver todas</Link>
           </div>
-          <div className="flex-1 space-y-4">
-            {sales.slice(0, 5).map((sale) => (
+          <div className="flex-1 space-y-4 overflow-y-auto max-h-[500px] pr-2">
+            {sales.slice(0, 15).map((sale) => (
               <div key={sale.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-slate-50 text-slate-900">

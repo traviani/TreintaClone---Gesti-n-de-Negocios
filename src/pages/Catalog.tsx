@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 
 interface CartItem {
   id: string;
@@ -70,11 +71,18 @@ export default function Catalog() {
       try {
         setLoading(true);
         setError(null);
-        // Filter by ownerId to show only current user's products
+        
+        // We fetch both the requested UID and the legacy public ID to ensure all data is "todo en conjunto"
+        const allowedOwnerIds = [ownerId];
+        if (ownerId !== DEFAULT_OWNER_ID) {
+          allowedOwnerIds.push(DEFAULT_OWNER_ID);
+        }
+
+        // Filter by ownerId to show only current user's products (and public ones if viewing own catalog)
         const q = query(
           collection(db, 'products'),
-          where('ownerId', '==', ownerId),
-          limit(100)
+          where('ownerId', 'in', allowedOwnerIds),
+          limit(200)
         );
         const snap = await getDocs(q);
         const allDocs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));

@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   Plus, 
@@ -133,9 +134,14 @@ export default function Manufacturing() {
   };
 
   useEffect(() => {
-    const pq = query(collection(db, 'products'), where('ownerId', '==', effectiveUid));
-    const rq = query(collection(db, 'recipes'), where('ownerId', '==', effectiveUid));
-    const lq = query(collection(db, 'production_logs'), where('ownerId', '==', effectiveUid));
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
+    const pq = query(collection(db, 'products'), where('ownerId', 'in', allowedOwnerIds));
+    const rq = query(collection(db, 'recipes'), where('ownerId', 'in', allowedOwnerIds));
+    const lq = query(collection(db, 'production_logs'), where('ownerId', 'in', allowedOwnerIds));
 
     const unsubProducts = onSnapshot(pq, (snap) => {
       setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
@@ -158,10 +164,15 @@ export default function Manufacturing() {
   }, [effectiveUid]);
 
   useEffect(() => {
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
     // Fetch sales with pending orders
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid),
+      where('ownerId', 'in', allowedOwnerIds),
       where('hasBajoPedido', '==', true)
     );
 
@@ -795,7 +806,10 @@ export default function Manufacturing() {
                                 <h4 className="font-black text-slate-900 leading-tight text-lg truncate">{log.productName}</h4>
                                 <span className="text-[10px] text-slate-400 font-black flex items-center gap-1 mt-1 uppercase tracking-tighter italic">
                                     <History size={10} />
-                                    {log.createdAt ? format(log.createdAt.toDate(), 'dd MMM • HH:mm', { locale: es }) : 'Registrando...'}
+                                    {(() => {
+                                      const date = log.createdAt?.toDate?.() || (log.createdAt ? new Date(log.createdAt) : null);
+                                      return date && !isNaN(date.getTime()) ? format(date, 'dd MMM • HH:mm', { locale: es }) : 'Reciente';
+                                    })()}
                                 </span>
                             </div>
                             <button 

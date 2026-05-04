@@ -15,6 +15,7 @@ import {
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   Search, 
@@ -67,9 +68,14 @@ export default function Sales() {
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
+    const allowedOwnerIds = [effectiveUid];
+    if (effectiveUid !== DEFAULT_OWNER_ID) {
+      allowedOwnerIds.push(DEFAULT_OWNER_ID);
+    }
+
     const q = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid)
+      where('ownerId', 'in', allowedOwnerIds)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -216,10 +222,16 @@ export default function Sales() {
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-slate-900">
-                        {sale.createdAt?.toDate ? format(sale.createdAt.toDate(), 'dd/MM/yyyy', { locale: es }) : 'Reciente'}
+                        {(() => {
+                          const date = sale.createdAt?.toDate?.() || (sale.createdAt ? new Date(sale.createdAt) : null);
+                          return date && !isNaN(date.getTime()) ? format(date, 'dd/MM/yyyy', { locale: es }) : 'Reciente';
+                        })()}
                       </span>
                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                        V-{sale.id.slice(-6).toUpperCase()} | {sale.createdAt?.toDate ? format(sale.createdAt.toDate(), 'hh:mm a', { locale: es }) : 'Pendiente'}
+                        V-{sale.id.slice(-6).toUpperCase()} | {(() => {
+                          const date = sale.createdAt?.toDate?.() || (sale.createdAt ? new Date(sale.createdAt) : null);
+                          return date && !isNaN(date.getTime()) ? format(date, 'hh:mm a', { locale: es }) : 'Pendiente';
+                        })()}
                       </span>
                     </div>
                   </td>
