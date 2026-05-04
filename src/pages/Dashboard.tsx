@@ -96,24 +96,27 @@ export default function Dashboard() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const monthStart = startOfMonth(new Date());
 
   useEffect(() => {
     const salesQuery = query(
       collection(db, 'sales'),
       where('ownerId', '==', effectiveUid),
-      orderBy('createdAt', 'desc'),
-      limit(100)
+      where('createdAt', '>=', monthStart),
+      orderBy('createdAt', 'desc')
     );
 
     const expensesQuery = query(
       collection(db, 'expenses'),
       where('ownerId', '==', effectiveUid),
+      where('createdAt', '>=', monthStart),
       orderBy('createdAt', 'desc')
     );
 
     const purchasesQuery = query(
       collection(db, 'purchases'),
       where('ownerId', '==', effectiveUid),
+      where('createdAt', '>=', monthStart),
       orderBy('createdAt', 'desc')
     );
 
@@ -213,28 +216,28 @@ export default function Dashboard() {
     <div className="space-y-8">
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 italic serif tracking-tight">RESUMEN GENERAL</h1>
-          <p className="text-slate-500 mt-1 font-medium italic">Hola{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}. Revisa el estado de tu negocio hoy.</p>
+          <h1 className="text-3xl font-black text-slate-900 italic serif tracking-tight">RESUMEN MENSUAL</h1>
+          <p className="text-slate-500 mt-1 font-medium italic">Hola{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}. Revisa el estado de tu negocio este mes.</p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 card-depth flex items-center gap-2">
             <Calendar size={18} className="text-blue-600" />
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{format(new Date(), 'EEEE, d MMMM', { locale: es })}</span>
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{format(new Date(), 'MMMM yyyy', { locale: es })}</span>
           </div>
         </div>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard 
-          title="Ventas Totales" 
+          title="Ventas del Mes" 
           value={totalSalesAmount} 
           icon={TrendingUp} 
           color="blue" 
           trend={{ value: 12, isUp: true }}
         />
         <StatCard 
-          title="Utilidad Neta" 
+          title="Utilidad del Mes" 
           value={profit} 
           icon={Receipt} 
           color="green" 
@@ -297,7 +300,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 card-depth">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-slate-900 italic serif">Desempeño del Negocio</h2>
+            <h2 className="text-xl font-bold text-slate-900 italic serif">Desempeño del Mes</h2>
             <div className="flex gap-2">
                 <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400 tracking-wider">
                     <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div> Ventas
