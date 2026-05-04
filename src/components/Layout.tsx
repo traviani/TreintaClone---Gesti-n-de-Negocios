@@ -69,12 +69,20 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 isMobileMenuOpen ? "translate-x-0" : "hidden md:flex"
               )}
             >
-              <div className="p-6 hidden md:block">
-                <h1 className="text-2xl font-black text-blue-600 italic tracking-tighter">Traviani Sales</h1>
-                <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-[0.2em] font-black text-center mt-4">Inversiones Traviani C.A.</p>
+            <div className="p-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-black text-blue-600 italic tracking-tighter leading-none">Traviani Sales</h1>
+                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-[0.1em] font-black">Inversiones Traviani C.A.</p>
               </div>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="md:hidden p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-              <nav className="flex-1 px-4 py-4 space-y-1">
+            <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto custom-scrollbar">
                 {navItems.map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
@@ -159,12 +167,20 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               isMobileMenuOpen ? "translate-x-0" : "hidden md:flex"
             )}
           >
-            <div className="p-6 hidden md:block">
-              <h1 className="text-2xl font-black text-blue-600 italic tracking-tighter">Traviani Sales</h1>
-              <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-[0.2em] font-black text-center mt-4">Inversiones Traviani C.A.</p>
+            <div className="p-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-xl font-black text-blue-600 italic tracking-tighter leading-none">Traviani Sales</h1>
+                <p className="text-[9px] text-slate-400 mt-1 uppercase tracking-[0.1em] font-black">Inversiones Traviani C.A.</p>
+              </div>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="md:hidden p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-50"
+              >
+                <X size={20} />
+              </button>
             </div>
 
-            <nav className="flex-1 px-4 py-4 space-y-1">
+            <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto custom-scrollbar">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 return (

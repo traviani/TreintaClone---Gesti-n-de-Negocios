@@ -73,8 +73,8 @@ export default function POS() {
   const [searchCustomer, setSearchCustomer] = useState('');
 
   useEffect(() => {
-    const pq = query(collection(db, 'products'));
-    const cq = query(collection(db, 'customers'));
+    const pq = query(collection(db, 'products'), where('ownerId', '==', effectiveUid));
+    const cq = query(collection(db, 'customers'), where('ownerId', '==', effectiveUid));
 
     const unsubProducts = onSnapshot(pq, (snapshot) => {
       setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));

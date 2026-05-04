@@ -40,8 +40,8 @@ interface CartItem {
 
 export default function Catalog() {
   const { ownerId: paramOwnerId } = useParams();
-  const { user } = useAuth();
-  const ownerId = paramOwnerId || user?.uid;
+  const { user, effectiveUid, loading: authLoading } = useAuth();
+  const ownerId = paramOwnerId || effectiveUid;
   
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
@@ -59,15 +59,21 @@ export default function Catalog() {
 
   useEffect(() => {
     async function fetchCatalog() {
+      // Wait for auth to initialize before checking ownerId
+      if (authLoading) return;
+
       if (!ownerId) {
         setLoading(false);
         return;
       }
+
       try {
+        setLoading(true);
         setError(null);
-        // Use a simple query to fetch all products for the public catalog
+        // Filter by ownerId to show only current user's products
         const q = query(
           collection(db, 'products'),
+          where('ownerId', '==', ownerId),
           limit(100)
         );
         const snap = await getDocs(q);
@@ -88,7 +94,7 @@ export default function Catalog() {
       }
     }
     fetchCatalog();
-  }, [ownerId]);
+  }, [ownerId, authLoading, paramOwnerId]);
 
   const addToCart = (product: any) => {
     const price = priceType === 'detal' ? product.price : (product.wholesalePrice || product.price);
@@ -202,11 +208,11 @@ export default function Catalog() {
   return (
     <div className="min-h-screen bg-italy-gradient font-sans text-slate-900 pb-20">
       {/* Header */}
-      <header className="bg-white text-slate-900 p-6 md:p-8 rounded-[2.5rem] sticky top-4 z-50 shadow-xl mx-4 border border-slate-100">
+      <header className="bg-white text-slate-900 p-3 md:p-4 rounded-[1.5rem] md:rounded-[2rem] sticky top-2 md:top-4 z-50 shadow-lg mx-3 md:mx-4 border border-slate-100">
         <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="h-14 md:h-16 bg-slate-50 rounded-2xl shadow-sm flex-shrink-0 flex items-center justify-center overflow-hidden p-1 border border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 md:mb-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="h-8 md:h-12 bg-slate-50 rounded-lg md:rounded-xl shadow-sm flex-shrink-0 flex items-center justify-center overflow-hidden p-1 border border-slate-100">
                 <img 
                   src={getGoogleDriveDirectLink('https://drive.google.com/file/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5/view?usp=sharing')} 
                   alt="Logo" 
@@ -214,30 +220,30 @@ export default function Catalog() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <h1 className="text-2xl md:text-3xl font-black italic serif tracking-tight text-slate-900">Catálogo Digital</h1>
+              <h1 className="text-lg md:text-2xl font-black italic serif tracking-tight text-slate-900">Catálogo Digital</h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {priceType === 'mayor' && (
-                <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black uppercase tracking-widest border border-blue-100">
                   Precios Mayorista
                 </span>
               )}
               <button 
                   onClick={() => setShowShareOptions(true)}
-                  className="bg-white text-blue-600 hover:bg-blue-50 p-3 rounded-2xl transition-all flex items-center gap-2 group border border-blue-100 shadow-sm"
+                  className="bg-white text-blue-600 hover:bg-blue-50 p-1.5 md:p-2.5 rounded-lg md:rounded-xl transition-all flex items-center gap-2 group border border-blue-100 shadow-sm"
               >
-                <Share2 size={18} className="group-hover:scale-110 transition-transform" />
-                <span className="text-xs font-bold uppercase tracking-widest">Compartir</span>
+                <Share2 size={14} md:size={16} className="group-hover:scale-110 transition-transform" />
+                <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest">Compartir</span>
               </button>
             </div>
           </div>
 
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
               type="text" 
               placeholder="¿Qué estás buscando?"
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-blue-300 transition-all font-medium text-slate-900 placeholder:text-slate-400"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-300 transition-all font-medium text-slate-900 text-sm placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
