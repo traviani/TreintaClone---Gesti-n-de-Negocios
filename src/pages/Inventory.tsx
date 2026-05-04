@@ -392,7 +392,7 @@ export default function Inventory() {
             setRecipeItems([]);
             setIsModalOpen(true);
           }}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-100 transition-all active:scale-95"
+          className="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-slate-100 transition-all active:scale-95"
         >
           <Plus size={20} alt="Add" />
           <span>Nuevo Producto</span>
@@ -477,7 +477,7 @@ export default function Inventory() {
                         "w-10 h-10 rounded-xl flex items-center justify-center transition-colors overflow-hidden",
                         product.stock <= (product.lowStockThreshold || 5) 
                           ? "bg-red-50 text-red-500 shadow-sm shadow-red-100" 
-                          : "bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500"
+                          : "bg-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white"
                       )}>
                         {product.imageUrl ? (
                           <img src={getGoogleDriveDirectLink(product.imageUrl)} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -527,7 +527,7 @@ export default function Inventory() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-bold text-blue-600">{formatCurrency(product.price)}</td>
+                  <td className="px-6 py-4 text-sm font-bold text-slate-900">{formatCurrency(product.price)}</td>
                   <td className="px-6 py-4 text-sm text-slate-500">{formatCurrency(product.cost, 3)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -551,7 +551,7 @@ export default function Inventory() {
                           setRecipeItems(product.recipe || []);
                           setIsModalOpen(true);
                         }}
-                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                        className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg"
                       >
                         <Edit2 size={18} />
                       </button>
@@ -611,7 +611,7 @@ export default function Inventory() {
                   <input 
                     required
                     type="text" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-slate-900 outline-none transition-all"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />

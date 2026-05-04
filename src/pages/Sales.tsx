@@ -69,11 +69,16 @@ export default function Sales() {
   useEffect(() => {
     const q = query(
       collection(db, 'sales'),
-      orderBy('createdAt', 'desc')
+      where('ownerId', '==', effectiveUid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+      setSales(data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      }));
       setLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 

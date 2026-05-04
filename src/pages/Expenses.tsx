@@ -48,11 +48,16 @@ export default function Expenses() {
   useEffect(() => {
     const q = query(
       collection(db, 'expenses'),
-      orderBy('createdAt', 'desc')
+      where('ownerId', '==', effectiveUid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
+      setExpenses(data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
 
     return unsubscribe;

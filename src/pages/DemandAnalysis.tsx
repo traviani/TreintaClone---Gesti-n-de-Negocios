@@ -48,9 +48,13 @@ export default function DemandAnalysis() {
 
     try {
       // 1. Fetch Data for Context
-      const productsSnap = await getDocs(collection(db, 'products'));
+      const productsSnap = await getDocs(query(
+        collection(db, 'products'),
+        where('ownerId', '==', effectiveUid)
+      ));
       const salesSnap = await getDocs(query(
         collection(db, 'sales'), 
+        where('ownerId', '==', effectiveUid),
         orderBy('createdAt', 'desc'),
         limit(50)
       ));

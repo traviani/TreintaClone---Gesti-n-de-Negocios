@@ -67,28 +67,30 @@ export default function AccountsReceivable() {
   const [paymentNote, setPaymentNote] = useState('');
 
   useEffect(() => {
-    // We only want sales that were "credito"
-    // In a mature system, we'd filter by balance > 0, but since many old sales might not have the 'balance' field yet,
-    // we'll fetch all credit sales and handle the balance logic in memory/display for now.
+    // Fetch all sales for the user and filter the "credito" ones with balance in memory
     const q = query(
       collection(db, 'sales'),
-      where('saleType', '==', 'credito'),
-      orderBy('createdAt', 'desc')
+      where('ownerId', '==', effectiveUid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const salesData = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return { 
-          id: doc.id, 
-          ...data,
-          // If balance is missing (old data), assume it's total unless fully paid
-          balance: data.balance !== undefined ? data.balance : data.total
-        } as Sale;
-      });
+      const salesData = snapshot.docs
+        .map(doc => {
+          const data = doc.data();
+          return { 
+            id: doc.id, 
+            ...data,
+            balance: data.balance !== undefined ? data.balance : data.total
+          } as Sale;
+        })
+        .filter(s => s.saleType === 'credito' && s.balance! > 0.01)
+        .sort((a, b) => {
+          const timeA = a.createdAt?.toMillis?.() || 0;
+          const timeB = b.createdAt?.toMillis?.() || 0;
+          return timeB - timeA;
+        });
       
-      // Filter out sales that are fully paid
-      setSales(salesData.filter(s => s.balance! > 0.01));
+      setSales(salesData);
       setLoading(false);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 

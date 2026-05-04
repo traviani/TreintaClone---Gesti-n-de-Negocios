@@ -89,13 +89,21 @@ export default function Purchases() {
   };
 
   useEffect(() => {
-    const unsubProducts = onSnapshot(collection(db, 'products'), (snap) => {
-      setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
-    });
+    const pq = query(collection(db, 'products'), where('ownerId', '==', effectiveUid));
+    const pquery = query(collection(db, 'purchases'), where('ownerId', '==', effectiveUid));
 
-    const unsubPurchases = onSnapshot(collection(db, 'purchases'), (snap) => {
-      setPurchases(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
-    });
+    const unsubProducts = onSnapshot(pq, (snap) => {
+      setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any)));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
+
+    const unsubPurchases = onSnapshot(pquery, (snap) => {
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as any));
+      setPurchases(data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      }));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'purchases'));
 
     return () => { unsubProducts(); unsubPurchases(); };
   }, [effectiveUid]);

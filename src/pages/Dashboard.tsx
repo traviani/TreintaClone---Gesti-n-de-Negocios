@@ -53,7 +53,7 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, trend }) => {
   const colors = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-100',
+    blue: 'bg-slate-50 text-slate-900 border-slate-100',
     red: 'bg-red-50 text-red-600 border-red-100',
     green: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     amber: 'bg-amber-50 text-amber-600 border-amber-100',
@@ -101,23 +101,17 @@ export default function Dashboard() {
   useEffect(() => {
     const salesQuery = query(
       collection(db, 'sales'),
-      where('ownerId', '==', effectiveUid),
-      where('createdAt', '>=', monthStart),
-      orderBy('createdAt', 'desc')
+      where('ownerId', '==', effectiveUid)
     );
 
     const expensesQuery = query(
       collection(db, 'expenses'),
-      where('ownerId', '==', effectiveUid),
-      where('createdAt', '>=', monthStart),
-      orderBy('createdAt', 'desc')
+      where('ownerId', '==', effectiveUid)
     );
 
     const purchasesQuery = query(
       collection(db, 'purchases'),
-      where('ownerId', '==', effectiveUid),
-      where('createdAt', '>=', monthStart),
-      orderBy('createdAt', 'desc')
+      where('ownerId', '==', effectiveUid)
     );
 
     const customersQuery = query(
@@ -131,15 +125,30 @@ export default function Dashboard() {
     );
 
     const unsubSales = onSnapshot(salesQuery, (snapshot) => {
-      setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSales(data.sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
     const unsubExpenses = onSnapshot(expensesQuery, (snapshot) => {
-      setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setExpenses(data.sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
 
     const unsubPurchases = onSnapshot(purchasesQuery, (snapshot) => {
-      setPurchases(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setPurchases(data.sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      }));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'purchases'));
 
     const unsubCustomers = onSnapshot(customersQuery, (snapshot) => {
@@ -160,8 +169,18 @@ export default function Dashboard() {
     };
   }, [effectiveUid]);
 
-  const totalSalesAmount = sales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
-  const totalExpensesAmount = expenses.reduce((acc, expense) => acc + (Number(expense.amount) || 0), 0);
+  const currentMonthSales = sales.filter(s => {
+    const date = s.createdAt?.toDate?.() || new Date();
+    return date >= monthStart;
+  });
+
+  const currentMonthExpenses = expenses.filter(e => {
+    const date = e.createdAt?.toDate?.() || new Date();
+    return date >= monthStart;
+  });
+
+  const totalSalesAmount = currentMonthSales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
+  const totalExpensesAmount = currentMonthExpenses.reduce((acc, expense) => acc + (Number(expense.amount) || 0), 0);
   const totalDebts = customers.reduce((acc, customer) => acc + (Number(customer.balance) || 0), 0);
   const lowStockCount = products.filter(p => Number(p.stock || 0) <= (Number(p.lowStockThreshold) || 5)).length;
   
@@ -187,13 +206,16 @@ export default function Dashboard() {
     }, 0);
   
   const accountsPayable = 
-    expenses.filter(e => e.paymentStatus === 'credito').reduce((acc, e) => acc + (Number(e.amount) || 0), 0) +
-    purchases.filter(p => p.paymentStatus === 'credito').reduce((acc, p) => acc + (Number(p.total) || 0), 0);
+    currentMonthExpenses.filter(e => e.paymentStatus === 'credito').reduce((acc, e) => acc + (Number(e.amount) || 0), 0) +
+    purchases.filter(p => {
+      const date = p.createdAt?.toDate?.() || new Date();
+      return date >= monthStart && p.paymentStatus === 'credito';
+    }).reduce((acc, p) => acc + (Number(p.total) || 0), 0);
 
   const profit = totalSalesAmount - totalExpensesAmount;
 
   const chartData = [
-    { name: 'Ventas', value: totalSalesAmount, color: '#2563eb' },
+    { name: 'Ventas', value: totalSalesAmount, color: '#0f172a' },
     { name: 'Gastos', value: totalExpensesAmount, color: '#dc2626' },
   ];
 
@@ -349,7 +371,7 @@ export default function Dashboard() {
             {sales.slice(0, 5).map((sale) => (
               <div key={sale.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600">
+                  <div className="p-2.5 rounded-xl bg-slate-50 text-slate-900">
                     <ShoppingCart size={18} />
                   </div>
                   <div>

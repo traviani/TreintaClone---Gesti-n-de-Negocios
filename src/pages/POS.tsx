@@ -291,14 +291,14 @@ export default function POS() {
               </div>
             ) : (
               <div className="flex items-center gap-4 bg-blue-50/50 p-3 rounded-2xl border border-blue-100">
-                <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-black italic">
+                <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black italic">
                   {selectedCustomer.name.charAt(0)}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-black text-slate-900 uppercase">{selectedCustomer.name}</p>
-                  <p className="text-[10px] text-blue-500 font-bold tracking-widest">{selectedCustomer.idNumber}</p>
+                  <p className="text-[10px] text-slate-500 font-bold tracking-widest">{selectedCustomer.idNumber}</p>
                 </div>
-                <CheckCircle2 className="text-blue-600" size={20} />
+                <CheckCircle2 className="text-slate-900" size={20} />
               </div>
             )}
           </div>
@@ -344,7 +344,7 @@ export default function POS() {
                   onClick={() => setPriceType('detal')}
                   className={cn(
                     "py-2 rounded-xl text-[10px] font-black italic transition-all border-2",
-                    priceType === 'detal' ? "bg-blue-50 border-blue-500 text-blue-700 shadow-sm" : "bg-slate-50 border-transparent text-slate-400"
+                    priceType === 'detal' ? "bg-slate-900 border-black text-white shadow-sm" : "bg-slate-50 border-transparent text-slate-400"
                   )}
                 >
                   DETAL (PVP)
@@ -451,7 +451,7 @@ export default function POS() {
         <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight italic">CARRITO</h2>
-            {selectedCustomer && <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{selectedCustomer.name}</p>}
+            {selectedCustomer && <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{selectedCustomer.name}</p>}
           </div>
           <div className="w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-900 font-black tabular-nums shadow-sm">
             {cart.length}

@@ -133,24 +133,26 @@ export default function Manufacturing() {
   };
 
   useEffect(() => {
-    const unsubProducts = onSnapshot(collection(db, 'products'), (snap) => {
+    const pq = query(collection(db, 'products'), where('ownerId', '==', effectiveUid));
+    const rq = query(collection(db, 'recipes'), where('ownerId', '==', effectiveUid));
+    const lq = query(collection(db, 'production_logs'), where('ownerId', '==', effectiveUid));
+
+    const unsubProducts = onSnapshot(pq, (snap) => {
       setProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
 
-    const unsubRecipes = onSnapshot(collection(db, 'recipes'), (snap) => {
+    const unsubRecipes = onSnapshot(rq, (snap) => {
       setRecipes(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe)));
-    });
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'recipes'));
 
-    const unsubLogs = onSnapshot(
-      query(
-        collection(db, 'production_logs'), 
-        orderBy('createdAt', 'desc'),
-        limit(15)
-      ), 
-      (snap) => {
-        setProductionLogs(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductionLog)));
-      }
-    );
+    const unsubLogs = onSnapshot(lq, (snap) => {
+      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductionLog));
+      setProductionLogs(data.sort((a, b) => {
+        const timeA = a.createdAt?.toMillis?.() || 0;
+        const timeB = b.createdAt?.toMillis?.() || 0;
+        return timeB - timeA;
+      }));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'production_logs'));
 
     return () => { unsubProducts(); unsubRecipes(); unsubLogs(); };
   }, [effectiveUid]);
@@ -159,6 +161,7 @@ export default function Manufacturing() {
     // Fetch sales with pending orders
     const q = query(
       collection(db, 'sales'),
+      where('ownerId', '==', effectiveUid),
       where('hasBajoPedido', '==', true)
     );
 

@@ -187,7 +187,7 @@ export default function Catalog() {
     window.open(`https://wa.me/?text=${message}`, '_blank');
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
+  if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div></div>;
 
   if (error) return (
     <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-italy-gradient">
@@ -208,11 +208,11 @@ export default function Catalog() {
   return (
     <div className="min-h-screen bg-italy-gradient font-sans text-slate-900 pb-20">
       {/* Header */}
-      <header className="bg-white text-slate-900 p-3 md:p-4 rounded-[1.5rem] md:rounded-[2rem] sticky top-2 md:top-4 z-50 shadow-lg mx-3 md:mx-4 border border-slate-100">
+      <header className="bg-white text-slate-900 p-2 md:p-2.5 rounded-2xl md:rounded-[1.5rem] sticky top-1 md:top-2 z-50 shadow-md mx-3 md:mx-4 border border-slate-100">
         <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 md:mb-4">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="h-8 md:h-12 bg-slate-50 rounded-lg md:rounded-xl shadow-sm flex-shrink-0 flex items-center justify-center overflow-hidden p-1 border border-slate-100">
+          <div className="flex flex-row items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 md:h-10 bg-slate-50 rounded-lg md:rounded-xl shadow-sm flex-shrink-0 flex items-center justify-center overflow-hidden p-1 border border-slate-100">
                 <img 
                   src={getGoogleDriveDirectLink('https://drive.google.com/file/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5/view?usp=sharing')} 
                   alt="Logo" 
@@ -220,30 +220,30 @@ export default function Catalog() {
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <h1 className="text-lg md:text-2xl font-black italic serif tracking-tight text-slate-900">Catálogo Digital</h1>
+              <h1 className="text-sm md:text-lg font-black italic serif tracking-tight text-slate-900">Catálogo Digital</h1>
             </div>
             <div className="flex items-center gap-2">
               {priceType === 'mayor' && (
-                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg text-[8px] md:text-[9px] font-black uppercase tracking-widest border border-blue-100">
-                  Precios Mayorista
+                <span className="bg-slate-900 text-white px-2 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase tracking-widest">
+                  Mayorista
                 </span>
               )}
               <button 
                   onClick={() => setShowShareOptions(true)}
-                  className="bg-white text-blue-600 hover:bg-blue-50 p-1.5 md:p-2.5 rounded-lg md:rounded-xl transition-all flex items-center gap-2 group border border-blue-100 shadow-sm"
+                  className="bg-white text-slate-900 hover:bg-slate-50 p-1.5 md:p-2 rounded-lg transition-all flex items-center gap-1.5 group border border-slate-200 shadow-sm"
               >
-                <Share2 size={14} md:size={16} className="group-hover:scale-110 transition-transform" />
-                <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest">Compartir</span>
+                <Share2 size={12} className="group-hover:scale-110 transition-transform" />
+                <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest">Compartir</span>
               </button>
             </div>
           </div>
 
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input 
               type="text" 
-              placeholder="¿Qué estás buscando?"
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-blue-300 transition-all font-medium text-slate-900 text-sm placeholder:text-slate-400"
+              placeholder="Buscar productos..."
+              className="w-full pl-9 pr-3 py-1.5 md:py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-slate-300 transition-all font-medium text-slate-900 text-xs placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -290,7 +290,7 @@ export default function Catalog() {
               
               <div className="p-6 flex flex-col flex-1">
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-tight">{product.name}</h3>
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-slate-600 transition-colors leading-tight">{product.name}</h3>
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic serif bg-slate-50 px-2 py-0.5 rounded mt-2 inline-block">
                     {product.category}
                   </span>
@@ -368,13 +368,13 @@ export default function Catalog() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             onClick={() => setShowCart(true)}
-            className="fixed bottom-24 right-6 bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-[0_15px_30px_rgba(37,99,235,0.4)] flex items-center gap-2.5 z-[100] group overflow-hidden border border-blue-400/20"
+            className="fixed bottom-24 right-6 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-[0_15px_30px_rgba(15,23,42,0.4)] flex items-center gap-2.5 z-[100] group overflow-hidden border border-slate-700"
           >
-            <div className="absolute inset-0 bg-blue-700 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            <div className="absolute inset-0 bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             <div className="relative flex items-center gap-2.5">
               <div className="relative">
                 <ShoppingCart size={18} />
-                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-blue-600">
+                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-slate-900">
                   {cartCount}
                 </span>
               </div>
