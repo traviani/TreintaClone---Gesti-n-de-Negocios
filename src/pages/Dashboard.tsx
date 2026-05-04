@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   ChevronRight,
   AlertTriangle,
-  Package
+  Package,
+  Calendar
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -61,7 +62,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, tr
   return (
     <motion.div 
       whileHover={{ y: -5 }}
-      className={cn("p-4 rounded-3xl border bg-white shadow-sm flex flex-col justify-between", colors[color])}
+      className={cn("p-4 rounded-3xl border bg-white card-depth flex flex-col justify-between", colors[color])}
     >
       <div className="flex items-center justify-between mb-2">
         <div className={cn("p-2 rounded-xl", colors[color].split(' ')[0])}>
@@ -211,44 +212,12 @@ export default function Dashboard() {
           <p className="text-slate-500 mt-1 font-medium italic">Hola{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}. Revisa el estado de tu negocio hoy.</p>
         </div>
 
-        {/* Catalog Share Section */}
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-slate-900 text-white px-6 py-4 rounded-[2.5rem] flex items-center gap-6 shadow-2xl shadow-slate-200 border border-slate-800"
-        >
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                <Share2 size={18} className="text-white" />
-             </div>
-             <div>
-                <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] italic">Catálogo Digital</p>
-                <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">En vivo</p>
-                </div>
-             </div>
+        <div className="flex items-center gap-3">
+          <div className="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 card-depth flex items-center gap-2">
+            <Calendar size={18} className="text-blue-600" />
+            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{format(new Date(), 'EEEE, d MMMM', { locale: es })}</span>
           </div>
-          <div className="flex items-center gap-2 ml-auto">
-            <button 
-              onClick={copyLink}
-              className={cn(
-                "px-5 py-2.5 rounded-2xl text-[10px] font-black italic transition-all uppercase tracking-[0.15em] border-2",
-                copied ? "bg-emerald-500 border-emerald-500 text-white" : "bg-white text-slate-900 border-white hover:bg-slate-100"
-              )}
-            >
-              {copied ? '¡COPIADO!' : 'COPIAR ENLACE'}
-            </button>
-            <a 
-              href={shareUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="w-10 h-10 bg-slate-800 hover:bg-slate-700 rounded-2xl flex items-center justify-center transition-colors group"
-            >
-              <ExternalLink size={14} className="text-slate-400 group-hover:text-white" />
-            </a>
-          </div>
-        </motion.div>
+        </div>
       </header>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
@@ -292,7 +261,7 @@ export default function Dashboard() {
         {lowStockCount > 0 ? (
           <motion.div 
             whileHover={{ y: -5 }}
-            className="p-4 rounded-3xl border border-red-100 bg-red-50 shadow-sm flex flex-col justify-between"
+            className="p-4 rounded-3xl border border-red-100 bg-red-100 card-depth flex flex-col justify-between"
           >
             <div className="flex items-center justify-between mb-2">
               <div className="p-2 rounded-xl bg-red-100 text-red-600">
@@ -321,7 +290,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
+        <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 card-depth">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-xl font-bold text-slate-900 italic serif">Desempeño del Negocio</h2>
             <div className="flex gap-2">
@@ -363,7 +332,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col">
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 card-depth flex flex-col">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-slate-900">Últimas Ventas</h2>
             <Link to="/sales" className="text-blue-600 text-sm font-bold hover:underline">Ver todas</Link>

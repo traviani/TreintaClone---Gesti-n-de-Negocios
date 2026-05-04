@@ -27,6 +27,7 @@ import {
   Hammer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
 
 interface CartItem {
   id: string;
@@ -38,7 +39,10 @@ interface CartItem {
 }
 
 export default function Catalog() {
-  const { ownerId } = useParams();
+  const { ownerId: paramOwnerId } = useParams();
+  const { user } = useAuth();
+  const ownerId = paramOwnerId || user?.uid;
+  
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +59,10 @@ export default function Catalog() {
 
   useEffect(() => {
     async function fetchCatalog() {
-      if (!ownerId) return;
+      if (!ownerId) {
+        setLoading(false);
+        return;
+      }
       try {
         setError(null);
         // Use a simple query to fetch all products for the public catalog
@@ -177,7 +184,7 @@ export default function Catalog() {
   if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
 
   if (error) return (
-    <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+    <div className="h-screen flex flex-col items-center justify-center p-8 text-center bg-italy-gradient">
       <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-6">
         <X size={40} />
       </div>
@@ -193,34 +200,34 @@ export default function Catalog() {
   );
 
   return (
-    <div className="min-h-screen bg-white font-sans text-slate-900 pb-20">
+    <div className="min-h-screen bg-italy-gradient font-sans text-slate-900 pb-20">
       {/* Header */}
-      <header className="bg-slate-900 text-white p-8 rounded-b-[3rem] sticky top-0 z-50 shadow-2xl">
+      <header className="bg-white text-slate-900 p-6 md:p-8 rounded-[2.5rem] sticky top-4 z-50 shadow-xl mx-4 border border-slate-100">
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
             <div className="flex items-center gap-4">
-              <div className="h-16 bg-white rounded-2xl shadow-xl flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <div className="h-14 md:h-16 bg-slate-50 rounded-2xl shadow-sm flex-shrink-0 flex items-center justify-center overflow-hidden p-1 border border-slate-100">
                 <img 
-                  src={getGoogleDriveDirectLink('https://drive.google.com/file/d/1dhMr7D1LWezAa_COPcT22Sbmnriw7MgU/view?usp=sharing')} 
+                  src={getGoogleDriveDirectLink('https://drive.google.com/file/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5/view?usp=sharing')} 
                   alt="Logo" 
                   className="h-full w-auto object-contain"
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <h1 className="text-3xl font-black italic serif tracking-tight">Catálogo Digital</h1>
+              <h1 className="text-2xl md:text-3xl font-black italic serif tracking-tight text-slate-900">Catálogo Digital</h1>
             </div>
             <div className="flex items-center gap-3">
               {priceType === 'mayor' && (
-                <span className="bg-amber-500/10 text-amber-500 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-500/20 backdrop-blur-sm">
+                <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-100">
                   Precios Mayorista
                 </span>
               )}
               <button 
                   onClick={() => setShowShareOptions(true)}
-                  className="bg-white/10 hover:bg-white/20 p-3 rounded-2xl backdrop-blur-md transition-all flex items-center gap-2 group"
+                  className="bg-white text-blue-600 hover:bg-blue-50 p-3 rounded-2xl transition-all flex items-center gap-2 group border border-blue-100 shadow-sm"
               >
-                <Share2 size={20} className="group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-bold uppercase tracking-widest">Compartir</span>
+                <Share2 size={18} className="group-hover:scale-110 transition-transform" />
+                <span className="text-xs font-bold uppercase tracking-widest">Compartir</span>
               </button>
             </div>
           </div>
@@ -230,7 +237,7 @@ export default function Catalog() {
             <input 
               type="text" 
               placeholder="¿Qué estás buscando?"
-              className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:bg-white/10 transition-all font-medium placeholder:text-slate-500"
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:bg-white focus:border-blue-300 transition-all font-medium text-slate-900 placeholder:text-slate-400"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -245,7 +252,7 @@ export default function Catalog() {
             <motion.div 
               layout
               key={product.id}
-              className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group flex flex-col h-full"
+              className="bg-white rounded-3xl border border-slate-100 card-depth hover:shadow-2xl transition-all overflow-hidden group flex flex-col h-full"
             >
               <div className="aspect-square bg-slate-50 relative overflow-hidden">
                 {product.imageUrl ? (
@@ -355,19 +362,20 @@ export default function Catalog() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             onClick={() => setShowCart(true)}
-            className="fixed bottom-24 right-6 bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-3 z-[100] group overflow-hidden"
+            className="fixed bottom-24 right-6 bg-blue-600 text-white px-5 py-3 rounded-2xl shadow-[0_15px_30px_rgba(37,99,235,0.4)] flex items-center gap-2.5 z-[100] group overflow-hidden border border-blue-400/20"
           >
-            <div className="absolute inset-0 bg-blue-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-            <div className="relative flex items-center gap-3">
+            <div className="absolute inset-0 bg-blue-700 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            <div className="relative flex items-center gap-2.5">
               <div className="relative">
-                <ShoppingCart size={20} />
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                <ShoppingCart size={18} />
+                <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-blue-600">
                   {cartCount}
                 </span>
               </div>
-              <p className="font-black text-xs uppercase tracking-widest">Ver mi pedido</p>
-              <div className="w-px h-4 bg-white/20 mx-1" />
-              <p className="font-black text-xs">{formatCurrency(cartTotal)}</p>
+              <div className="flex flex-col items-start leading-none">
+                <p className="font-black text-[9px] uppercase tracking-wider italic opacity-80">Finalizar pedido</p>
+                <p className="font-black text-sm">{formatCurrency(cartTotal)}</p>
+              </div>
             </div>
           </motion.button>
         )}
@@ -490,7 +498,7 @@ export default function Catalog() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-md bg-white rounded-[40px] p-8 shadow-2xl overflow-hidden"
+              className="relative w-full max-w-md bg-white rounded-[40px] p-8 card-depth overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)]"
             >
               <button 
                 onClick={() => setShowShareOptions(false)}

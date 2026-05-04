@@ -12,7 +12,8 @@ import {
   Loader,
   Truck,
   HandCoins,
-  Sparkles
+  Sparkles,
+  Share2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../lib/firebase';
@@ -29,6 +30,7 @@ const navItems = [
   { id: 'expenses', label: 'Gastos', path: '/expenses', icon: Receipt },
   { id: 'receivable', label: 'Cuentas por Cobrar', path: '/receivable', icon: HandCoins },
   { id: 'customers', label: 'Clientes / Fiados', path: '/customers', icon: Users },
+  { id: 'catalog', label: 'Catálogo', path: '/catalog', icon: Share2 },
   { id: 'demand', label: 'Análisis IA', path: '/demand', icon: Sparkles },
 ];
 
@@ -45,7 +47,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+      <div className="min-h-screen bg-italy-gradient flex flex-col md:flex-row">
         {/* Mobile Top Nav */}
         <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50 print:hidden">
           <h1 className="text-xl font-bold text-blue-600 italic tracking-tighter">Traviani Sales</h1>
@@ -62,7 +64,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               animate={{ x: 0 }}
               exit={{ x: -250 }}
               className={cn(
-                "fixed md:sticky top-0 left-0 h-screen w-64 bg-white border-r border-slate-200 flex flex-col z-40 print:hidden",
+                "fixed md:sticky top-0 left-0 h-screen w-64 bg-white border-r border-slate-200 flex flex-col z-40 print:hidden shadow-[4px_0_24px_rgba(0,0,0,0.05)]",
                 "transition-all duration-300 transform",
                 isMobileMenuOpen ? "translate-x-0" : "hidden md:flex"
               )}
@@ -135,7 +137,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-italy-gradient flex flex-col md:flex-row">
       {/* Mobile Top Nav */}
       <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50 print:hidden">
         <h1 className="text-xl font-bold text-blue-600 italic tracking-tighter">Traviani Sales</h1>
@@ -152,7 +154,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             animate={{ x: 0 }}
             exit={{ x: -250 }}
             className={cn(
-              "fixed md:sticky top-0 left-0 h-screen w-64 bg-white border-r border-slate-200 flex flex-col z-40 print:hidden",
+              "fixed md:sticky top-0 left-0 h-screen w-64 bg-white border-r border-slate-200 flex flex-col z-40 print:hidden shadow-[4px_0_24px_rgba(0,0,0,0.05)]",
               "transition-all duration-300 transform",
               isMobileMenuOpen ? "translate-x-0" : "hidden md:flex"
             )}
