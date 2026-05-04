@@ -11,6 +11,7 @@ import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency } from '../lib/utils';
+import { MigrationTool } from '../components/MigrationTool';
 import { 
   Link
 } from 'react-router-dom';
@@ -424,6 +425,10 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+      </div>
+
+      <div className="pt-8 border-t border-slate-100">
+        <MigrationTool />
       </div>
     </div>
   );
