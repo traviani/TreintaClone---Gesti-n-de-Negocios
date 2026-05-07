@@ -156,15 +156,19 @@ export default function POS() {
     setIsProcessing(true);
 
     try {
+      let saleWithId: any = null;
+      
       await runTransaction(db, async (transaction) => {
         // 1. Get and Increment Invoice Counter
-        // Using a global key for the entire company instead of per-user
         const counterRef = doc(db, 'metadata', 'global_sales_counter');
         const counterSnap = await transaction.get(counterRef);
         
         let nextInvoiceNumber = 1;
         if (counterSnap.exists()) {
-          nextInvoiceNumber = (counterSnap.data().lastNumber || 0) + 1;
+          const val = counterSnap.data().lastNumber;
+          // Ensure it's treated as a number regardless of how it's stored
+          const currentNumber = typeof val === 'number' ? val : parseInt(String(val || 0));
+          nextInvoiceNumber = (isNaN(currentNumber) ? 0 : currentNumber) + 1;
         }
         
         transaction.set(counterRef, { lastNumber: nextInvoiceNumber }, { merge: true });
@@ -224,14 +228,16 @@ export default function POS() {
           });
         });
 
-        // Set state for receipt (must do after transaction success ideally, but we can store it)
-        setLastSale({ ...saleData, id: saleRef.id });
+        saleWithId = { ...saleData, id: saleRef.id };
       });
       
-      setCart([]);
-      setDiscount(0);
-      setIsSample(false);
-      setShowSuccess(true);
+      if (saleWithId) {
+        setLastSale(saleWithId);
+        setCart([]);
+        setDiscount(0);
+        setIsSample(false);
+        setShowSuccess(true);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'sales');
     } finally {
@@ -265,8 +271,8 @@ export default function POS() {
 
   if (showSuccess && lastSale) {
     return (
-        <div className="fixed inset-0 bg-app-background z-50 flex flex-col items-center justify-start p-4 overflow-y-auto print:p-0 print:bg-white print:block">
-            <div className="h-full min-h-max py-8 flex flex-col items-center">
+        <div className="fixed inset-0 bg-app-background z-50 flex flex-col items-center justify-start p-4 overflow-y-auto print:p-0 print:m-0 print:bg-white print:block">
+            <div className="h-full min-h-max py-8 flex flex-col items-center print:p-0 print:m-0 print:block print:h-auto">
               <Receipt sale={lastSale} onSecondaryAction={() => {
                   setShowSuccess(false);
                   setLastSale(null);

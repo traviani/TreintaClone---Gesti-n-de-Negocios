@@ -31,8 +31,8 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     : 'RECIENTE';
 
   return (
-    <div id="receipt-print-root" className="flex flex-col items-center print:block print:p-0 print:m-0">
-      <div id="receipt-print" className="bg-white px-2 pt-[1cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full print:m-0">
+    <div id="receipt-print-root" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white">
+      <div id="receipt-print" className="bg-white px-2 pt-[1cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full print:m-0 print:shadow-none">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-4">
@@ -169,33 +169,41 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           {`
           @media print {
             @page { 
-              margin: 0; 
+              margin: 0.5cm; 
               size: portrait; 
             }
-            html, body {
+            
+            body {
+              background: white !important;
               margin: 0 !important;
               padding: 0 !important;
-              height: auto !important;
-              min-height: 0 !important;
-              background: white !important;
-              display: block !important;
             }
+
             #receipt-print-root {
               display: block !important;
-              padding: 0 !important;
-              margin: 0 !important;
-              background: white !important;
-              min-height: 0 !important;
-              overflow: visible !important;
-            }
-            #receipt-print {
-              padding: 0 !important;
-              margin: 0 !important;
               width: 100% !important;
-              box-shadow: none !important;
+              height: auto !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              background: white !important;
             }
+
+            #receipt-print {
+              display: block !important;
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              box-shadow: none !important;
+              border: none !important;
+            }
+
             .print\\:hidden { 
               display: none !important; 
+            }
+
+            img {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
           }
         `}

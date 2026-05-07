@@ -43,7 +43,7 @@ export const ReceiptPage: React.FC = () => {
 
   const handleWhatsApp = () => {
     if (!sale) return;
-    const idDisplay = sale.id?.replace(/\D/g, '').slice(-4) || '6313';
+    const idDisplay = sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
     const message = `*INVERSIONES TRAVIANI C.A.*\n\nHola *${sale.customerName}*, adjunto su nota de entrega *№ ${idDisplay}*.\n\n*Total a pagar:* $ ${formatCurrency(sale.total).replace('$', '')}\n\nUsted puede ver y descargar su recibo aquí:\n${window.location.origin}/#/receipt/${sale.id || ''}`;
     
     const encodedMessage = encodeURIComponent(message);
@@ -74,8 +74,8 @@ export const ReceiptPage: React.FC = () => {
   }
 
   return (
-    <div id="receipt-print-root" className="min-h-screen bg-app-background py-10 print:bg-white print:py-0">
-      <div className="max-w-4xl mx-auto print:max-w-none">
+    <div id="receipt-print-root" className="min-h-screen bg-app-background py-10 print:bg-white print:py-0 print:m-0">
+      <div className="max-w-4xl mx-auto print:max-w-none print:m-0 print:p-0">
         <div className="mb-6 px-4 print:hidden flex justify-between items-center">
           <div className="flex gap-2">
             <button 
