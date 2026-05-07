@@ -253,7 +253,8 @@ export default function Manufacturing() {
   };
 
   const produceBatch = async (recipe: Recipe, amount: any = 1) => {
-    if (!user) return;
+    // If no explicit user, use the effective ID which should be at least the shared ID
+    const targetUid = effectiveUid || DEFAULT_OWNER_ID;
     setIsProducing(recipe.id);
 
     const numAmount = Number(amount);
@@ -328,7 +329,7 @@ export default function Manufacturing() {
       // 4. Create Production Log
       const logRef = doc(collection(db, 'production_logs'));
       batch.set(logRef, {
-        ownerId: effectiveUid,
+        ownerId: targetUid,
         productId: recipe.productId,
         productName: product?.name || 'Producto',
         amount: numAmount,
@@ -341,6 +342,7 @@ export default function Manufacturing() {
       const newStock = (Number(product?.stock || 0) + numAmount).toFixed(2);
       alert(`¡PRODUCCIÓN EXITOSA!\n\nProducto: ${product?.name}\nCantidad producida: ${numAmount} ${product?.unit || 'unid'}\nNuevo Stock Total: ${newStock} ${product?.unit || 'unid'}\n\nLos insumos han sido descontados.`);
     } catch (error) {
+      console.error('Error in batch production:', error);
       handleFirestoreError(error, OperationType.WRITE, 'manufacturing');
     } finally {
       setIsProducing(null);

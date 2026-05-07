@@ -34,26 +34,28 @@ export const MigrationTool: React.FC = () => {
     let totalUpdated = 0;
 
     try {
-      const batch = writeBatch(db);
-      
       for (const colName of collectionsToSync) {
-        // Obtenemos todos los documentos de la colección (limitado a 500 por seguridad por lote)
-        const snap = await getDocs(query(collection(db, colName), limit(500)));
+        const snap = await getDocs(collection(db, colName));
         
-        snap.docs.forEach(document => {
-          const data = document.data();
-          // Solo actualizamos si el ownerId no es ya el DEFAULT_OWNER_ID
-          if (data.ownerId !== DEFAULT_OWNER_ID) {
+        // Process in batches of 500
+        const docs = snap.docs.filter(doc => doc.data().ownerId !== DEFAULT_OWNER_ID);
+        
+        for (let i = 0; i < docs.length; i += 500) {
+          const batch = writeBatch(db);
+          const chunk = docs.slice(i, i + 500);
+          
+          chunk.forEach(document => {
             batch.update(doc(db, colName, document.id), {
               ownerId: DEFAULT_OWNER_ID
             });
             totalUpdated++;
-          }
-        });
+          });
+          
+          await batch.commit();
+        }
       }
 
       if (totalUpdated > 0) {
-        await batch.commit();
         setResult({ 
           success: true, 
           message: `¡Sincronización exitosa! Se actualizaron ${totalUpdated} registros para ser públicos.` 
@@ -68,7 +70,7 @@ export const MigrationTool: React.FC = () => {
       console.error('Error in migration:', error);
       setResult({ 
         success: false, 
-        message: 'Error al sincronizar los datos. Revisa la consola para más detalles.' 
+        message: 'Error al sincronizar los datos. Es posible que existan muchos registros. Intenta de nuevo.' 
       });
     } finally {
       setLoading(false);
