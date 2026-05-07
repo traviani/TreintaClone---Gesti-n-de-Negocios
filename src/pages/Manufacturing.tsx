@@ -456,7 +456,7 @@ export default function Manufacturing() {
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Pendiente en {item.totalSales} Ventas</p>
                           </div>
                           <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-black">
-                            {item.quantity} {product?.unit || 'und'}
+                            {item.quantity} {product?.unit || 'Años'}
                           </div>
                         </div>
 
@@ -506,8 +506,8 @@ export default function Manufacturing() {
                        <span className="text-2xl font-black">{pendingItems.length}</span>
                     </div>
                     <div className="flex justify-between items-end border-b border-white/10 pb-4">
-                       <span className="text-sm font-bold opacity-60">Total Unidades</span>
-                       <span className="text-2xl font-black">{pendingItems.reduce((sum, i) => sum + i.quantity, 0)}</span>
+                       <span className="text-sm font-bold opacity-60">Total Años</span>
+                       <span className="text-2xl font-black">{pendingItems.reduce((sum, i) => sum + i.quantity, 0)} Años</span>
                     </div>
                  </div>
                  <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">
@@ -543,7 +543,7 @@ export default function Manufacturing() {
                                     const product = products.find(p => p.id === recipe.productId);
                                     return (
                                         <option key={recipe.id} value={recipe.id} className="bg-white text-slate-900">
-                                            {product?.name || 'Receta'} ({product?.unit || 'und'})
+                                            {product?.name || 'Receta'} ({product?.unit || 'Años'})
                                         </option>
                                     );
                                 })}
@@ -597,7 +597,7 @@ export default function Manufacturing() {
                                                 <div className="text-right">
                                                     <span className="text-[11px] font-black text-slate-400 uppercase italic block">En Inventario</span>
                                                     <span className="text-xl font-bold text-slate-900">
-                                                        {product?.stock || 0} <span className="text-xs text-slate-400">{product?.unit || 'und'}</span>
+                                                        {product?.stock || 0} <span className="text-xs text-slate-400">{product?.unit || 'Años'}</span>
                                                     </span>
                                                 </div>
                                             </div>
@@ -623,7 +623,7 @@ export default function Manufacturing() {
                                                                 <div className="flex flex-col col-span-1">
                                                                     <span className="text-base font-bold text-slate-900 truncate leading-tight">{ingProduct?.name || 'Insumo'}</span>
                                                                     <span className="text-[9px] text-blue-600 uppercase font-black">
-                                                                        {formatCurrency(getDisplayUnitCost(ingProduct?.cost || 0, ingProduct?.unit || 'unid', ing.unit || 'unid'), 4)} / {ing.unit || ingProduct?.unit || 'und'}
+                                                                        {formatCurrency(getDisplayUnitCost(ingProduct?.cost || 0, ingProduct?.unit || 'unid', ing.unit || 'unid'), 4)} / {ing.unit || ingProduct?.unit || 'Años'}
                                                                     </span>
                                                                 </div>
                                                                 
@@ -828,7 +828,7 @@ export default function Manufacturing() {
                                  <span className="text-[10px] font-black text-slate-400 uppercase italic mb-0.5">Ingreso de Stock</span>
                                  <div className="flex items-center gap-2">
                                      <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                     <span className="text-xl font-black text-slate-900 tracking-tighter">+{log.amount} Und.</span>
+                                     <span className="text-xl font-black text-slate-900 tracking-tighter">+{log.amount} Años.</span>
                                  </div>
                              </div>
                              <div className="text-right flex flex-col">
@@ -875,7 +875,7 @@ export default function Manufacturing() {
                                 onChange={(e) => setSelectedProduct(e.target.value)}
                             >
                                 <option value="">Selecciona qué producto sale...</option>
-                                {finishedProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'und'})</option>)}
+                                {finishedProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'Años'})</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
@@ -889,7 +889,7 @@ export default function Manufacturing() {
                                     onChange={(e) => setRecipeYield(parseFloat(e.target.value) || 1)}
                                 />
                                 <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 uppercase italic">
-                                    {finishedProducts.find(p => p.id === selectedProduct)?.unit || 'und'}
+                                    {finishedProducts.find(p => p.id === selectedProduct)?.unit || 'Años'}
                                 </span>
                             </div>
                         </div>
@@ -911,7 +911,7 @@ export default function Manufacturing() {
                                     }}
                                 >
                                     <option value="">Insumo...</option>
-                                    {ingredientChoices.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'und'})</option>)}
+                                    {ingredientChoices.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'Años'})</option>)}
                                 </select>
                                 <div className="flex items-center gap-2">
                                     <input 
@@ -954,7 +954,7 @@ export default function Manufacturing() {
                                             <option value="ml">ml</option>
                                         </select>
                                     ) : (
-                                        <span className="text-[10px] font-black text-slate-400 uppercase w-10 text-center">{item.unit || 'unid'}</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase w-10 text-center">{item.unit || 'Años'}</span>
                                     )}
                                 </div>
                                 <button onClick={() => removeIngredient(idx)} className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
