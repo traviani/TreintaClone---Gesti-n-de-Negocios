@@ -170,13 +170,14 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           @media print {
             @page { 
               margin: 0.5cm; 
-              size: portrait; 
+              size: 216mm 140mm; 
             }
             
             body {
               background: white !important;
               margin: 0 !important;
               padding: 0 !important;
+              display: block !important;
             }
 
             #receipt-print-root {
@@ -186,6 +187,9 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               margin: 0 !important;
               padding: 0 !important;
               background: white !important;
+              position: absolute !important;
+              top: 0 !important;
+              left: 0 !important;
             }
 
             #receipt-print {
