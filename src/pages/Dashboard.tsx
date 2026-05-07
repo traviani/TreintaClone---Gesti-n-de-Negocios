@@ -411,7 +411,7 @@ export default function Dashboard() {
                   <div>
                     <div className="flex items-center gap-2">
                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate max-w-[120px]">{sale.customerName || 'Cliente General'}</p>
-                       <span className="text-[9px] font-black text-slate-400 italic">№ {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : sale.id.slice(-4).toUpperCase()}</span>
+                       <span className="text-[9px] font-black text-slate-400 italic">№ {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : `ID-${sale.id.slice(-4).toUpperCase()}`}</span>
                     </div>
                     <p className="text-[10px] text-slate-500 font-bold italic">{format(sale.createdAt?.toDate() || new Date(), 'dd MMM, HH:mm', { locale: es })}</p>
                   </div>

@@ -31,8 +31,8 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     : 'RECIENTE';
 
   return (
-    <div className="flex flex-col items-center">
-      <div id="receipt-print" className="bg-white px-2 pt-[1cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full">
+    <div id="receipt-print-root" className="flex flex-col items-center print:block print:p-0 print:m-0">
+      <div id="receipt-print" className="bg-white px-2 pt-[1cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full print:m-0">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-2">
           <div className="flex items-center gap-4">
@@ -50,7 +50,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           </div>
           <div className="text-right leading-none">
             <p className="text-xl font-black text-slate-900 tracking-tight">
-              № {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313')}
+              № {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : `ID-${sale.id?.slice(-4).toUpperCase() || '6313'}`}
             </p>
             <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">FECHA: {dateStr}</p>
           </div>
@@ -169,7 +169,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           {`
           @media print {
             @page { 
-              margin: 1.5cm; 
+              margin: 0; 
               size: portrait; 
             }
             html, body {
@@ -177,13 +177,20 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               margin: 0 !important;
               padding: 0 !important;
               background: white !important;
+              vertical-align: top !important;
             }
             #receipt-print-root {
               display: block !important;
-              padding: 0 !important;
+              padding: 0.5cm !important;
               margin: 0 !important;
               background: white !important;
               min-height: auto !important;
+            }
+            #receipt-print {
+              padding: 0 !important;
+              margin: 0 !important;
+              width: 100% !important;
+              box-shadow: none !important;
             }
             .print\\:hidden { 
               display: none !important; 
