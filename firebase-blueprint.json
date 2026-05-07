@@ -75,6 +75,7 @@
         "priceType": { "type": "string", "enum": ["detal", "mayor"] },
         "paymentMethod": { "type": "string" },
         "status": { "type": "string", "enum": ["completed", "pending", "cancelled"] },
+        "invoiceNumber": { "type": "number", "description": "Unified sequential invoice number" },
         "ownerId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },

@@ -228,7 +228,7 @@ export default function Sales() {
                         })()}
                       </span>
                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                        V-{sale.id.slice(-6).toUpperCase()} | {(() => {
+                        {sale.invoiceNumber ? `NE-${String(sale.invoiceNumber).padStart(4, '0')}` : `V-${sale.id.slice(-6).toUpperCase()}`} | {(() => {
                           const date = sale.createdAt?.toDate?.() || (sale.createdAt ? new Date(sale.createdAt) : null);
                           return date && !isNaN(date.getTime()) ? format(date, 'hh:mm a', { locale: es }) : 'Pendiente';
                         })()}
@@ -311,7 +311,9 @@ export default function Sales() {
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-black text-slate-900 italic tracking-tight uppercase">Detalle de Venta</h2>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {selectedSale.id}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    {selectedSale.invoiceNumber ? `№ ${String(selectedSale.invoiceNumber).padStart(4, '0')}` : `ID: ${selectedSale.id}`}
+                  </p>
                 </div>
                 <button onClick={() => setSelectedSale(null)} className="p-2 hover:bg-slate-100 rounded-xl transition-all">
                   <X size={20} className="text-slate-500" />

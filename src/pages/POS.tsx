@@ -7,7 +7,7 @@ import {
   addDoc,
   serverTimestamp,
   increment,
-  writeBatch,
+  runTransaction,
   doc
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
@@ -156,58 +156,78 @@ export default function POS() {
     setIsProcessing(true);
 
     try {
-      const batch = writeBatch(db);
-      
-      const saleData = {
-        ownerId: effectiveUid,
-        customerId: selectedCustomer.id,
-        customerName: selectedCustomer.name,
-        customerIdNumber: selectedCustomer.idNumber,
-        customerPhone: selectedCustomer.phone || '',
-        customerAddress: selectedCustomer.address || '',
-        items: cart.map(item => ({
-          productId: item.id,
-          name: item.name,
-          price: priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price,
-          quantity: item.quantity,
-          isBajoPedido: item.stock <= 0 || item.isBajoPedido
-        })),
-        hasBajoPedido: cart.some(item => item.stock <= 0 || item.isBajoPedido),
-        subtotal,
-        discount: isSample ? subtotal : discount,
-        isSample,
-        total,
-        balance: saleType === 'credito' ? total : 0,
-        payments: [],
-        saleType,
-        priceType,
-        status: 'completed',
-        createdAt: serverTimestamp()
-      };
+      await runTransaction(db, async (transaction) => {
+        // 1. Get and Increment Invoice Counter
+        // We use a shared counter for the owner
+        const counterRef = doc(db, 'metadata', `sales_counter_${effectiveUid}`);
+        const counterSnap = await transaction.get(counterRef);
+        
+        let nextInvoiceNumber = 1;
+        if (counterSnap.exists()) {
+          nextInvoiceNumber = (counterSnap.data().lastNumber || 0) + 1;
+        }
+        
+        transaction.set(counterRef, { lastNumber: nextInvoiceNumber }, { merge: true });
 
-      const saleRef = doc(collection(db, 'sales'));
-      batch.set(saleRef, saleData);
+        // 2. Prepare Sale Data
+        const subtotal = cart.reduce((acc, item) => {
+          const price = priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price;
+          return acc + (price * item.quantity);
+        }, 0);
+        const total = isSample ? 0 : Math.max(0, subtotal - discount);
 
-      // If Credit, update customer balance
-      if (saleType === 'credito') {
-        const customerRef = doc(db, 'customers', selectedCustomer.id);
-        batch.update(customerRef, {
-          balance: increment(total)
+        const saleRef = doc(collection(db, 'sales'));
+        const saleData = {
+          ownerId: effectiveUid,
+          customerId: selectedCustomer.id,
+          customerName: selectedCustomer.name,
+          customerIdNumber: selectedCustomer.idNumber,
+          customerPhone: selectedCustomer.phone || '',
+          customerAddress: selectedCustomer.address || '',
+          items: cart.map(item => ({
+            productId: item.id,
+            name: item.name,
+            price: priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price,
+            quantity: item.quantity,
+            isBajoPedido: item.stock <= 0 || item.isBajoPedido
+          })),
+          hasBajoPedido: cart.some(item => item.stock <= 0 || item.isBajoPedido),
+          subtotal,
+          discount: isSample ? subtotal : discount,
+          isSample,
+          total,
+          balance: saleType === 'credito' ? total : 0,
+          payments: [],
+          saleType,
+          priceType,
+          status: 'completed',
+          invoiceNumber: nextInvoiceNumber,
+          createdAt: serverTimestamp()
+        };
+
+        transaction.set(saleRef, saleData);
+
+        // 3. Update Customer Balance
+        if (saleType === 'credito') {
+          const customerRef = doc(db, 'customers', selectedCustomer.id);
+          transaction.update(customerRef, {
+            balance: increment(total)
+          });
+        }
+
+        // 4. Update Inventory
+        cart.forEach(item => {
+          const productRef = doc(db, 'products', item.id);
+          transaction.update(productRef, {
+            stock: increment(-item.quantity),
+            updatedAt: serverTimestamp()
+          });
         });
-      }
 
-      // Update Inventory
-      cart.forEach(item => {
-        const productRef = doc(db, 'products', item.id);
-        batch.update(productRef, {
-          stock: increment(-item.quantity),
-          updatedAt: serverTimestamp()
-        });
+        // Set state for receipt (must do after transaction success ideally, but we can store it)
+        setLastSale({ ...saleData, id: saleRef.id });
       });
-
-      await batch.commit();
       
-      setLastSale({ ...saleData, id: saleRef.id });
       setCart([]);
       setDiscount(0);
       setIsSample(false);
