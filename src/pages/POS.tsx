@@ -158,8 +158,8 @@ export default function POS() {
     try {
       await runTransaction(db, async (transaction) => {
         // 1. Get and Increment Invoice Counter
-        // We use a shared counter for the owner
-        const counterRef = doc(db, 'metadata', `sales_counter_${effectiveUid}`);
+        // Using a global key for the entire company instead of per-user
+        const counterRef = doc(db, 'metadata', 'global_sales_counter');
         const counterSnap = await transaction.get(counterRef);
         
         let nextInvoiceNumber = 1;

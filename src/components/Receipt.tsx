@@ -1,6 +1,6 @@
 import React from 'react';
 import { Printer, ShoppingCart, Truck, Hammer, MessageCircle } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, cn } from '../lib/utils';
 
 interface ReceiptProps {
   sale: any;
@@ -18,7 +18,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
   };
 
   const handleWhatsApp = () => {
-    const idDisplay = sale.invoiceNumber ? String(sale.invoiceNumber).padStart(4, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
+    const idDisplay = sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
     const message = `*INVERSIONES TRAVIANI C.A.*\n\nHola *${sale.customerName}*, adjunto su nota de entrega *№ ${idDisplay}*.\n\n*Total a pagar:* $ ${formatCurrency(sale.total).replace('$', '')}\n\nUsted puede ver y descargar su recibo aquí:\n${window.location.origin}/#/receipt/${sale.id || ''}`;
     
     const encodedMessage = encodeURIComponent(message);
@@ -32,11 +32,11 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
 
   return (
     <div className="flex flex-col items-center">
-      <div id="receipt-print" className="bg-white p-8 pt-[1.5cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full">
+      <div id="receipt-print" className="bg-white px-2 pt-[1cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full">
         {/* Header Section */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex flex-col items-start">
-            <div className="w-[135px] h-[43px] flex items-center justify-start mb-2 overflow-hidden">
+        <div className="flex justify-between items-center mb-2">
+          <div className="flex items-center gap-4">
+            <div className="w-[100px] h-[32px] overflow-hidden">
               <img 
                 src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
                 alt="Logo Traviani" 
@@ -46,23 +46,23 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
                 }}
               />
             </div>
-            <div className="mt-1 pl-1">
-              <h1 className="text-xl font-black text-slate-900 italic tracking-tight uppercase leading-none">Inversiones Traviani C.A.</h1>
-              <p className="text-[11px] font-bold text-slate-700 mt-1">RIF: J-50567702-1</p>
-              <p className="text-lg font-black text-blue-600 italic mt-0.5">NOTA DE ENTREGA</p>
-            </div>
+            <h1 className="text-lg font-black text-slate-900 italic tracking-tight uppercase leading-none">Inversiones Traviani C.A.</h1>
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-black text-slate-900 tracking-tight">
-              Nº {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(4, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313')}
+          <div className="text-right leading-none">
+            <p className="text-xl font-black text-slate-900 tracking-tight">
+              № {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313')}
             </p>
-            <p className="text-sm font-bold text-slate-700 mt-1 uppercase">FECHA: {dateStr}</p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">FECHA: {dateStr}</p>
           </div>
         </div>
 
+        <div className="text-center mb-3">
+          <p className="text-xl font-black text-black italic tracking-[0.3em] border-y border-black py-0.5 leading-none">NOTA DE ENTREGA</p>
+        </div>
+
         {/* Customer Information Section - Compact & Accurate */}
-        <div className="border-t-2 border-slate-900 pt-3 mb-2 text-[12px]">
-          <div className="flex justify-between items-start mb-1">
+        <div className="pt-0.5 mb-1 text-[11px] border-t border-slate-200">
+          <div className="flex justify-between items-start mb-0.5">
             <div className="flex gap-2">
               <span className="font-black italic uppercase">CLIENTE:</span>
               <span className="font-bold text-slate-800 uppercase">{sale.customerName}</span>
@@ -72,7 +72,12 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
                 <span className="font-black italic uppercase">RIF/CI:</span>
                 <span className="font-bold text-slate-800 whitespace-nowrap">{sale.customerIdNumber || 'J-501798788'}</span>
               </div>
-              <span className="text-blue-600 font-black italic">CONTADO</span>
+              <span className={cn(
+                "font-black italic uppercase",
+                sale.saleType === 'credito' ? "text-red-600" : "text-primary"
+              )}>
+                {sale.saleType === 'credito' ? 'Crédito' : 'Contado'}
+              </span>
             </div>
           </div>
           
@@ -89,7 +94,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         </div>
 
         {/* Items Table */}
-        <div className="mb-4">
+        <div className="mb-2">
           <table className="w-full text-left">
             <thead>
               <tr className="border-y border-black">
@@ -101,13 +106,13 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
             </thead>
             <tbody className="text-[13px]">
               {sale.items.map((item: any, i: number) => (
-                <tr key={i} className="border-b border-slate-100">
-                  <td className="py-1 font-black text-center">{item.quantity}</td>
-                  <td className="py-1 px-4 font-bold text-slate-800 uppercase leading-tight">{item.name}</td>
-                  <td className="py-1 text-right text-slate-600 italic whitespace-nowrap">
+                <tr key={i} className="border-b border-slate-50">
+                  <td className="py-0.5 font-black text-center">{item.quantity}</td>
+                  <td className="py-0.5 px-4 font-bold text-slate-800 uppercase leading-none">{item.name}</td>
+                  <td className="py-0.5 text-right text-slate-600 italic whitespace-nowrap">
                     $ {formatCurrency(item.price).replace('$', '')}
                   </td>
-                  <td className="py-1 text-right font-black text-slate-900 whitespace-nowrap">
+                  <td className="py-0.5 text-right font-black text-slate-900 whitespace-nowrap">
                     $ {formatCurrency(item.price * item.quantity).replace('$', '')}
                   </td>
                 </tr>
@@ -117,29 +122,29 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         </div>
 
         {/* Total Net Section */}
-        <div className="space-y-1 mb-3 border-t-2 border-slate-900 pt-3">
+        <div className="space-y-0 mb-1 border-t border-black pt-0.5">
           {(sale.discount > 0 || sale.isSample) && (
             <>
-              <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 uppercase italic">
+              <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase italic">
                 <span>SUBTOTAL:</span>
                 <span>$ {formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}</span>
               </div>
-              <div className="flex justify-between items-center text-[11px] font-black text-primary uppercase italic">
+              <div className="flex justify-between items-center text-[10px] font-black text-primary uppercase italic leading-none">
                 <span>{sale.isSample ? 'BONIFICACIÓN (MUESTRA):' : 'DESCUENTO:'}</span>
                 <span>- $ {formatCurrency(sale.discount).replace('$', '')}</span>
               </div>
             </>
           )}
-          <div className="flex justify-between items-center">
-            <h2 className="font-black italic uppercase tracking-tighter text-lg">TOTAL NETO A PAGAR</h2>
-            <span className="text-2xl font-black tabular-nums tracking-tighter">
+          <div className="flex justify-between items-center leading-tight">
+            <h2 className="font-black italic uppercase tracking-tighter text-base">TOTAL NETO A PAGAR</h2>
+            <span className="text-xl font-black tabular-nums tracking-tighter">
                $ {formatCurrency(sale.total).replace('$', '')}
             </span>
           </div>
         </div>
 
         {/* Payment Channels */}
-        <div className="grid grid-cols-3 gap-0 border-y border-slate-100 py-1.5 text-[10px] mb-3">
+        <div className="grid grid-cols-3 gap-0 border-y border-slate-100 py-0.5 text-[8.5px] mb-1">
           <div className="pr-4 border-r border-slate-100">
             <span className="font-black text-slate-400 block mb-0.5">PAGO MÓVIL</span>
             <p className="font-bold text-slate-800 uppercase">MERCANTIL | 0414-2391131 | V-13493831</p>
@@ -149,7 +154,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
             <p className="font-bold text-slate-800 uppercase">0105-0750-21-1750063115 | Marco T.</p>
           </div>
           <div className="pl-4 text-right">
-            <span className="font-black text-blue-600 block mb-0.5">ZELLE / BINANCE</span>
+            <span className="font-black text-primary block mb-0.5">ZELLE / BINANCE</span>
             <p className="font-bold text-slate-800">tramontemarco27@gmail.com</p>
           </div>
         </div>
