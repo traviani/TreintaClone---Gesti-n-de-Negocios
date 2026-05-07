@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Receipt } from '../components/Receipt';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2, ArrowLeft, MessageCircle } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
 
 export const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -40,6 +41,16 @@ export const ReceiptPage: React.FC = () => {
     }
   }, [sale]);
 
+  const handleWhatsApp = () => {
+    if (!sale) return;
+    const idDisplay = sale.id?.replace(/\D/g, '').slice(-4) || '6313';
+    const message = `*INVERSIONES TRAVIANI C.A.*\n\nHola *${sale.customerName}*, adjunto su nota de entrega *№ ${idDisplay}*.\n\n*Total a pagar:* $ ${formatCurrency(sale.total).replace('$', '')}\n\nUsted puede ver y descargar su recibo aquí:\n${window.location.origin}/#/receipt/${sale.id || ''}`;
+    
+    const encodedMessage = encodeURIComponent(message);
+    const phoneNumber = sale.customerPhone?.replace(/\D/g, '') || '';
+    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -63,15 +74,23 @@ export const ReceiptPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-200 py-10 print:bg-white print:py-0">
+    <div id="receipt-print-root" className="min-h-screen bg-app-background py-10 print:bg-white print:py-0">
       <div className="max-w-4xl mx-auto print:max-w-none">
         <div className="mb-6 px-4 print:hidden flex justify-between items-center">
-          <button 
-            onClick={() => navigate('/sales')}
-            className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-xl text-slate-600 font-black uppercase text-[10px] shadow-sm hover:bg-white transition-all"
-          >
-            <ArrowLeft size={14} /> Volver
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => navigate('/sales')}
+              className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-xl text-slate-600 font-black uppercase text-[10px] shadow-sm hover:bg-white transition-all"
+            >
+              <ArrowLeft size={14} /> Volver
+            </button>
+            <button 
+              onClick={handleWhatsApp}
+              className="flex items-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 px-4 py-2 rounded-xl text-[#25D366] font-black uppercase text-[10px] transition-all"
+            >
+              <MessageCircle size={14} /> WhatsApp
+            </button>
+          </div>
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Modo Impresión Directa</p>
         </div>
         <Receipt sale={sale} hideActions={true} />

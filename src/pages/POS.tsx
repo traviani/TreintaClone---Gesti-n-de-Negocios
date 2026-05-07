@@ -67,6 +67,10 @@ export default function POS() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
 
+  // Discount and Sample state
+  const [discount, setDiscount] = useState<number>(0);
+  const [isSample, setIsSample] = useState(false);
+
   // Flow State
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [saleType, setSaleType] = useState<'contado' | 'credito'>('credito');
@@ -140,10 +144,12 @@ export default function POS() {
     }));
   };
 
-  const total = cart.reduce((acc, item) => {
+  const subtotal = cart.reduce((acc, item) => {
     const price = priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price;
     return acc + (price * item.quantity);
   }, 0);
+
+  const total = isSample ? 0 : Math.max(0, subtotal - discount);
 
   const handleCheckout = async () => {
     if (cart.length === 0 || !selectedCustomer) return;
@@ -167,6 +173,9 @@ export default function POS() {
           isBajoPedido: item.stock <= 0 || item.isBajoPedido
         })),
         hasBajoPedido: cart.some(item => item.stock <= 0 || item.isBajoPedido),
+        subtotal,
+        discount: isSample ? subtotal : discount,
+        isSample,
         total,
         balance: saleType === 'credito' ? total : 0,
         payments: [],
@@ -200,6 +209,8 @@ export default function POS() {
       
       setLastSale({ ...saleData, id: saleRef.id });
       setCart([]);
+      setDiscount(0);
+      setIsSample(false);
       setShowSuccess(true);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'sales');
@@ -234,13 +245,15 @@ export default function POS() {
 
   if (showSuccess && lastSale) {
     return (
-        <div className="fixed inset-0 bg-slate-50 z-50 flex items-center justify-center p-4 print:p-0 print:bg-white print:block">
-            <Receipt sale={lastSale} onSecondaryAction={() => {
-                setShowSuccess(false);
-                setLastSale(null);
-                setSelectedCustomer(null);
-                setSaleType('credito');
-            }} />
+        <div className="fixed inset-0 bg-app-background z-50 flex flex-col items-center justify-start p-4 overflow-y-auto print:p-0 print:bg-white print:block">
+            <div className="h-full min-h-max py-8 flex flex-col items-center">
+              <Receipt sale={lastSale} onSecondaryAction={() => {
+                  setShowSuccess(false);
+                  setLastSale(null);
+                  setSelectedCustomer(null);
+                  setSaleType('credito');
+              }} />
+            </div>
         </div>
     );
   }
@@ -262,14 +275,14 @@ export default function POS() {
               )}
             </div>
             
-            {!selectedCustomer ? (
+              {!selectedCustomer ? (
               <div className="flex gap-3">
                 <div className="relative flex-1">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input 
                     type="text"
                     placeholder="Buscar cliente..."
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/50"
                     value={searchCustomer}
                     onChange={(e) => setSearchCustomer(e.target.value)}
                   />
@@ -282,10 +295,10 @@ export default function POS() {
                             setSelectedCustomer(c);
                             setSearchCustomer('');
                           }}
-                          className="w-full text-left p-3 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100 group flex items-center justify-between"
+                          className="w-full text-left p-3 hover:bg-teal-50 rounded-xl transition-all border border-transparent hover:border-teal-100 group flex items-center justify-between"
                         >
                           <div>
-                            <p className="text-sm font-bold text-slate-900 group-hover:text-blue-700">{c.name}</p>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-primary">{c.name}</p>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{c.idNumber}</p>
                           </div>
                           <ChevronRight size={14} className="text-slate-300" />
@@ -296,15 +309,15 @@ export default function POS() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-4 bg-blue-50/50 p-3 rounded-2xl border border-blue-100">
-                <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black italic">
+              <div className="flex items-center gap-4 bg-teal-50/50 p-3 rounded-2xl border border-teal-100">
+                <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black italic">
                   {selectedCustomer.name.charAt(0)}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-black text-slate-900 uppercase">{selectedCustomer.name}</p>
                   <p className="text-[10px] text-slate-500 font-bold tracking-widest">{selectedCustomer.idNumber}</p>
                 </div>
-                <CheckCircle2 className="text-slate-900" size={20} />
+                <CheckCircle2 className="text-primary" size={20} />
               </div>
             )}
           </div>
@@ -350,7 +363,7 @@ export default function POS() {
                   onClick={() => setPriceType('detal')}
                   className={cn(
                     "py-2 rounded-xl text-[10px] font-black italic transition-all border-2",
-                    priceType === 'detal' ? "bg-slate-900 border-black text-white shadow-sm" : "bg-slate-50 border-transparent text-slate-400"
+                    priceType === 'detal' ? "bg-primary border-primary/50 text-white shadow-sm" : "bg-slate-50 border-transparent text-slate-400"
                   )}
                 >
                   DETAL (PVP)
@@ -379,7 +392,7 @@ export default function POS() {
             <input 
               type="text" 
               placeholder="Buscar productos por nombre o categoría..."
-              className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-[2rem] outline-none shadow-xl shadow-slate-100 focus:ring-2 focus:ring-blue-500 transition-all font-bold italic"
+              className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-[2rem] outline-none shadow-xl shadow-slate-100 focus:ring-2 focus:ring-primary/50 transition-all font-bold italic"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -418,7 +431,7 @@ export default function POS() {
                   <div className="p-4 flex flex-col justify-between flex-1">
                     <div>
                       <h3 className="font-bold text-slate-900 leading-tight line-clamp-2 text-sm">{product.name}</h3>
-                      <span className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded italic mt-1 inline-block">
+                      <span className="text-[7px] font-black uppercase tracking-[0.2em] text-primary bg-teal-50 px-1.5 py-0.5 rounded italic mt-1 inline-block">
                           {product.category}
                       </span>
                     </div>
@@ -454,77 +467,118 @@ export default function POS() {
         "w-full lg:w-[400px] flex flex-col bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden relative transition-all",
         !selectedCustomer && "opacity-10 pointer-events-none translate-x-10"
       )}>
-        <div className="p-8 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight italic">CARRITO</h2>
-            {selectedCustomer && <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{selectedCustomer.name}</p>}
+            <h2 className="text-xl font-black text-slate-900 tracking-tight italic leading-none">CARRITO</h2>
+            {selectedCustomer && <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 truncate max-w-[200px]">{selectedCustomer.name}</p>}
           </div>
-          <div className="w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-900 font-black tabular-nums shadow-sm">
+          <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-900 font-black tabular-nums shadow-sm">
             {cart.length}
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
           {cart.map((item) => (
-            <div key={item.id} className="flex gap-4 bg-slate-50/50 hover:bg-slate-50 p-4 rounded-3xl border border-slate-100 transition-colors group">
+            <div key={item.id} className="flex gap-3 bg-slate-50/50 hover:bg-slate-50 p-3 rounded-2xl border border-slate-100 transition-colors group">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 leading-tight mb-1">{item.name}</p>
+                <p className="text-xs font-bold text-slate-900 leading-tight mb-0.5 truncate">{item.name}</p>
                 <p className="text-[10px] font-black text-slate-400 italic">
-                  {formatCurrency(priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price)} x UNID
+                  {formatCurrency(priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price)}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-2xl px-2 py-1 shadow-sm">
-                  <button onClick={() => updateQuantity(item.id, -1)} className="p-1 text-slate-400 hover:text-blue-600"><Minus size={14} /></button>
-                  <span className="w-8 text-center text-sm font-black tabular-nums">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1)} className="p-1 text-slate-400 hover:text-blue-600"><Plus size={14} /></button>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-0.5 shadow-sm">
+                  <button onClick={() => updateQuantity(item.id, -1)} className="p-0.5 text-slate-400 hover:text-blue-600"><Minus size={12} /></button>
+                  <span className="w-6 text-center text-xs font-black tabular-nums">{item.quantity}</span>
+                  <button onClick={() => updateQuantity(item.id, 1)} className="p-0.5 text-slate-400 hover:text-blue-600"><Plus size={12} /></button>
                 </div>
-                <button onClick={() => removeFromCart(item.id)} className="p-2.5 text-slate-300 hover:text-red-500 bg-white hover:bg-red-50 rounded-2xl transition-all border border-slate-100"><Trash2 size={16} /></button>
+                <button onClick={() => removeFromCart(item.id)} className="p-2 text-slate-300 hover:text-red-500 bg-white hover:bg-red-50 rounded-xl transition-all border border-slate-100"><Trash2 size={14} /></button>
               </div>
             </div>
           ))}
 
           {cart.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-center py-20 opacity-40">
-              <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                <ShoppingCart size={40} className="text-slate-200" />
+              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                <ShoppingCart size={32} className="text-slate-200" />
               </div>
-              <p className="text-slate-600 font-black italic uppercase tracking-wider">Esperando Pedido</p>
+              <p className="text-sm font-black italic uppercase tracking-wider text-slate-400 text-center">Esperando Pedido</p>
             </div>
           )}
         </div>
 
-        <div className="p-8 bg-slate-50 border-t border-slate-100 space-y-6">
-          <div className="space-y-4 bg-white p-6 rounded-[2rem] border border-slate-200 shadow-inner">
-            <div className="flex items-center justify-between text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
-                <span>Subtotal</span>
-                <span>{formatCurrency(total)}</span>
+        <div className="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
+          {/* Discounts & Sample Toggle */}
+          <div className="space-y-3 px-1">
+            <div className="flex items-center justify-between">
+              <label 
+                className={cn(
+                  "flex items-center gap-2 cursor-pointer group",
+                  isSample ? "text-primary" : "text-slate-400"
+                )}
+              >
+                <div className={cn(
+                  "w-4 h-4 border-2 rounded flex items-center justify-center transition-all",
+                  isSample ? "bg-primary border-primary shadow-sm" : "border-slate-300 group-hover:border-slate-400"
+                )}>
+                  {isSample && <CheckCircle2 size={12} className="text-white" />}
+                </div>
+                <input 
+                  type="checkbox" 
+                  className="hidden" 
+                  checked={isSample}
+                  onChange={(e) => {
+                    setIsSample(e.target.checked);
+                    if (e.target.checked) setDiscount(0);
+                  }}
+                />
+                <span className="text-[10px] font-black uppercase italic tracking-wider">ENTREGAR COMO MUESTRA</span>
+              </label>
+
+              {!isSample && (
+                <div className="flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-xl shadow-sm">
+                  <span className="text-[10px] font-black text-slate-400 italic">DESC: $</span>
+                  <input 
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    className="w-16 text-right text-xs font-black outline-none tabular-nums"
+                    value={discount || ''}
+                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between text-3xl font-black text-slate-900 tracking-tighter tabular-nums">
+          </div>
+
+          <div className="space-y-2 bg-white p-4 rounded-[1.5rem] border border-slate-200 shadow-inner">
+            <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
+                <span>Subtotal</span>
+                <span>{formatCurrency(subtotal)}</span>
+            </div>
+            
+            {discount > 0 && !isSample && (
+              <div className="flex items-center justify-between text-[10px] font-black text-primary uppercase tracking-widest italic">
+                  <span>Descuento</span>
+                  <span>- {formatCurrency(discount)}</span>
+              </div>
+            )}
+
+            {isSample && (
+              <div className="flex items-center justify-between text-[10px] font-black text-primary uppercase tracking-widest italic">
+                  <span>Muestra (100% Bonificado)</span>
+                  <span>- {formatCurrency(subtotal)}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-2xl font-black text-slate-900 tracking-tighter tabular-nums">
                 <span className="italic">Total</span>
                 <span>{formatCurrency(total)}</span>
             </div>
           </div>
 
             <div className="flex flex-col gap-2">
-              {/* Alert about development vs public environment */}
-              {window.location.hostname.includes('ais-dev') ? (
-                <div className="bg-amber-100 border-2 border-amber-500 p-4 rounded-[2rem] mb-2 animate-pulse">
-                  <p className="text-xs font-black text-amber-900 leading-tight text-center uppercase">
-                    🛑 ESTÁS EN MODO PRUEBA
-                  </p>
-                  <p className="text-[10px] text-amber-800 text-center mt-1">
-                    Para compartir el catálogo con clientes, debes entrar desde el link de <b>COMPARTIR</b> de AI Studio. Los links de esta página roja NO funcionarán para clientes.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-emerald-50 border border-emerald-200 p-2 rounded-[2rem] mb-2">
-                  <p className="text-[9px] font-bold text-emerald-700 text-center flex items-center justify-center gap-1">
-                    <CheckCircle2 size={10} /> LINK PÚBLICO ACTIVO
-                  </p>
-                </div>
-              )}
-              
               <div className="flex gap-2">
                 <button 
                   onClick={() => {
@@ -532,10 +586,10 @@ export default function POS() {
                     navigator.clipboard.writeText(url);
                     alert("✅ Enlace DETAL copiado con éxito.");
                   }}
-                  className="flex-1 py-3 bg-blue-50 text-blue-600 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-blue-100 flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
+                  className="flex-1 py-2 bg-teal-50 text-primary rounded-xl font-black text-[9px] uppercase tracking-widest border border-teal-100 flex items-center justify-center gap-1 hover:bg-teal-100 transition-colors"
                 >
-                  <ShoppingCart size={14} />
-                  AL DETAL
+                  <ShoppingCart size={12} />
+                  DETAL
                 </button>
                 <button 
                   onClick={() => {
@@ -543,10 +597,10 @@ export default function POS() {
                     navigator.clipboard.writeText(url);
                     alert("✅ Enlace MAYORISTA copiado con éxito.");
                   }}
-                  className="flex-1 py-3 bg-purple-50 text-purple-600 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-purple-100 flex items-center justify-center gap-2 hover:bg-purple-100 transition-colors"
+                  className="flex-1 py-2 bg-purple-50 text-purple-600 rounded-xl font-black text-[9px] uppercase tracking-widest border border-purple-100 flex items-center justify-center gap-1 hover:bg-purple-100 transition-colors"
                 >
-                  <Package size={14} />
-                  AL MAYOR
+                  <Package size={12} />
+                  MAYOR
                 </button>
               </div>
 
@@ -554,17 +608,17 @@ export default function POS() {
               disabled={cart.length === 0 || isProcessing || !selectedCustomer}
               onClick={handleCheckout}
               className={cn(
-                "w-full py-5 rounded-[2rem] font-black text-lg transition-all transform active:scale-95 flex items-center justify-center gap-3 shadow-[0_15px_30px_rgba(0,0,0,0.1)]",
+                "w-full py-4 rounded-2xl font-black text-base transition-all transform active:scale-95 flex items-center justify-center gap-3 shadow-lg",
                 cart.length === 0 || !selectedCustomer
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
-                  : "bg-slate-900 hover:bg-black text-white"
+                  : "bg-primary hover:opacity-90 text-white shadow-primary/20"
               )}
             >
               {isProcessing ? (
-                <div className="w-6 h-6 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
+                <div className="w-5 h-5 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <CheckCircle2 size={24} />
+                  <CheckCircle2 size={20} />
                   FACTURAR
                 </>
               )}

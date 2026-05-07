@@ -55,7 +55,7 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, trend }) => {
   const colors = {
-    blue: 'bg-slate-50 text-slate-900 border-slate-100',
+    blue: 'bg-teal-50 text-primary border-teal-100',
     red: 'bg-red-50 text-red-600 border-red-100',
     green: 'bg-emerald-50 text-emerald-600 border-emerald-100',
     amber: 'bg-amber-50 text-amber-600 border-amber-100',
@@ -273,8 +273,9 @@ export default function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
+          <MigrationTool />
           <div className="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 card-depth flex items-center gap-2">
-            <Calendar size={18} className="text-blue-600" />
+            <Calendar size={18} className="text-primary" />
             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{format(new Date(), 'MMMM yyyy', { locale: es })}</span>
           </div>
         </div>
@@ -355,7 +356,7 @@ export default function Dashboard() {
             <h2 className="text-xl font-bold text-slate-900 italic serif">Desempeño del Mes</h2>
             <div className="flex gap-2">
                 <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                    <div className="w-2.5 h-2.5 rounded-full bg-blue-600"></div> Ventas
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary"></div> Ventas
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400 tracking-wider">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-600"></div> Gastos
@@ -376,7 +377,7 @@ export default function Dashboard() {
                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl border border-slate-700">
                           <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
                           <div className="space-y-1">
-                            <p className="text-xs font-bold text-blue-400">Ventas: {formatCurrency(payload[0].value as number)}</p>
+                            <p className="text-xs font-bold text-teal-400">Ventas: {formatCurrency(payload[0].value as number)}</p>
                             <p className="text-xs font-bold text-red-400">Gastos: {formatCurrency(payload[1].value as number)}</p>
                           </div>
                         </div>
@@ -385,7 +386,7 @@ export default function Dashboard() {
                     return null;
                   }}
                 />
-                <Bar dataKey="ventas" fill="#0f172a" radius={[4, 4, 0, 0]} barSize={30} />
+                <Bar dataKey="ventas" fill="#1A7474" radius={[4, 4, 0, 0]} barSize={30} />
                 <Bar dataKey="gastos" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={30} />
               </BarChart>
             </ResponsiveContainer>
@@ -427,9 +428,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="pt-8 border-t border-slate-100">
-        <MigrationTool />
-      </div>
     </div>
   );
 }

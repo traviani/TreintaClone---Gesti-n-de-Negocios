@@ -214,7 +214,7 @@ export default function Catalog() {
   );
 
   return (
-    <div className="min-h-screen bg-italy-gradient font-sans text-slate-900 pb-20">
+    <div className="min-h-screen bg-app-background font-sans text-slate-900 pb-20">
       {/* Header */}
       <header className="bg-white text-slate-900 p-2 md:p-2.5 rounded-2xl md:rounded-[1.5rem] sticky top-1 md:top-2 z-50 shadow-md mx-3 md:mx-4 border border-slate-100">
         <div className="max-w-4xl mx-auto">

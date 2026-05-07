@@ -4,17 +4,14 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", serif;
-  --color-primary: #0f172a; /* slate-900 */
+  --color-primary: #1A7474;
 }
 
 @layer utilities {
-  .bg-italy-gradient {
-    background: linear-gradient(
-      135deg,
-      #f8fafc 0%,
-      #ffffff 50%,
-      #f1f5f9 100%
-    );
+  .bg-app-background {
+    background-color: #E6F7F7;
+    background-image: radial-gradient(#d1eded 1px, transparent 1px);
+    background-size: 24px 24px;
     background-attachment: fixed;
   }
   .card-depth {

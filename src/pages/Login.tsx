@@ -62,7 +62,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-app-background flex items-center justify-center p-4">
       <motion.div 
         key={isRegister ? 'register' : isReset ? 'reset' : 'login'}
         initial={{ opacity: 0, y: 10 }}

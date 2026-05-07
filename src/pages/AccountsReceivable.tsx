@@ -36,6 +36,7 @@ import { es } from 'date-fns/locale';
 
 interface Payment {
   amount: number;
+  discount?: number;
   date: any;
   method: string;
   note?: string;
@@ -64,6 +65,8 @@ export default function AccountsReceivable() {
   
   // Payment Form
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDiscount, setPaymentDiscount] = useState('');
+  const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [paymentNote, setPaymentNote] = useState('');
 
@@ -106,13 +109,27 @@ export default function AccountsReceivable() {
   const handleRegisterPayment = async () => {
     if (!selectedSale || !paymentAmount) return;
     const amount = parseFloat(paymentAmount);
+    const discountInput = parseFloat(paymentDiscount || '0');
+    
     if (isNaN(amount) || amount <= 0) {
       alert('Monto inválido');
       return;
     }
 
-    if (amount > (selectedSale.balance || selectedSale.total)) {
-      alert('El abono no puede ser mayor al saldo pendiente.');
+    if (isNaN(discountInput) || discountInput < 0) {
+      alert('Monto/Porcentaje de descuento inválido');
+      return;
+    }
+
+    let discount = discountInput;
+    if (discountType === 'percent') {
+      discount = ((selectedSale.balance || selectedSale.total) * discountInput) / 100;
+    }
+
+    const totalReduction = amount + discount;
+
+    if (totalReduction > (selectedSale.balance || selectedSale.total) + 0.01) {
+      alert('La suma del abono y descuento no puede ser mayor al saldo pendiente.');
       return;
     }
 
@@ -124,6 +141,7 @@ export default function AccountsReceivable() {
 
       const newPayment: Payment = {
         amount,
+        discount: discount > 0 ? discount : undefined,
         date: new Date(),
         method: paymentMethod,
         note: paymentNote
@@ -131,13 +149,13 @@ export default function AccountsReceivable() {
 
       // 1. Update Sale Balance and add to Payments History
       batch.update(saleRef, {
-        balance: increment(-amount),
+        balance: increment(-totalReduction),
         payments: arrayUnion(newPayment)
       });
 
       // 2. Update Customer overall balance
       batch.update(customerRef, {
-        balance: increment(-amount)
+        balance: increment(-totalReduction)
       });
 
       await batch.commit();
@@ -146,6 +164,7 @@ export default function AccountsReceivable() {
       setShowPaymentModal(false);
       setSelectedSale(null);
       setPaymentAmount('');
+      setPaymentDiscount('');
       setPaymentNote('');
     } catch (error) {
       console.error(error);
@@ -183,7 +202,7 @@ export default function AccountsReceivable() {
 
   if (loading) return (
     <div className="flex items-center justify-center p-20">
-      <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
     </div>
   );
 
@@ -200,7 +219,7 @@ export default function AccountsReceivable() {
           <input 
             type="text" 
             placeholder="Buscar por cliente o factura..."
-            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-blue-500 font-medium"
+            className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-primary/50 font-medium"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -223,7 +242,7 @@ export default function AccountsReceivable() {
           </div>
            <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Clientes con Deuda</p>
-             <p className="text-3xl font-black text-blue-600 tabular-nums">
+             <p className="text-3xl font-black text-primary tabular-nums">
                 {new Set(sales.map(s => s.customerId)).size}
              </p>
           </div>
@@ -267,7 +286,7 @@ export default function AccountsReceivable() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs">
+                        <div className="w-8 h-8 rounded-lg bg-teal-50 text-primary flex items-center justify-center font-black text-xs">
                           {sale.customerName.charAt(0)}
                         </div>
                         <span className="text-sm font-black text-slate-700 uppercase tracking-tight">{sale.customerName}</span>
@@ -305,7 +324,7 @@ export default function AccountsReceivable() {
                         </button>
                         <button 
                           onClick={() => setSelectedSale(sale)}
-                          className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+                          className="p-2.5 bg-primary text-white rounded-xl hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-primary/10 font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
                         >
                           <HandCoins size={14} />
                           Abonar
@@ -372,20 +391,60 @@ export default function AccountsReceivable() {
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="space-y-4">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic ml-1">Monto del Abono</label>
-                    <div className="relative">
-                       <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-black text-2xl">$</span>
-                       <input 
-                        type="number"
-                        placeholder="0.00"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
-                        className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] pl-12 pr-6 py-6 text-3xl font-black text-slate-900 outline-none focus:border-blue-600 transition-all tabular-nums"
-                       />
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-4">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic ml-1">Monto del Abono</label>
+                        <div className="relative">
+                          <span className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 font-black text-xl">$</span>
+                          <input 
+                            type="number"
+                            placeholder="0.00"
+                            value={paymentAmount}
+                            onChange={(e) => setPaymentAmount(e.target.value)}
+                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] pl-10 pr-4 py-4 text-xl font-black text-slate-900 outline-none focus:border-primary transition-all tabular-nums"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between ml-1">
+                          <label className="text-[10px] font-black text-primary uppercase tracking-widest italic">Descuento</label>
+                          <div className="flex bg-teal-50 rounded-lg p-0.5 border border-teal-100">
+                            <button 
+                              onClick={() => setDiscountType('fixed')}
+                              className={cn(
+                                "px-2 py-0.5 text-[8px] font-black rounded-md transition-all",
+                                discountType === 'fixed' ? "bg-primary text-white" : "text-primary/60"
+                              )}
+                            >
+                              $
+                            </button>
+                            <button 
+                              onClick={() => setDiscountType('percent')}
+                              className={cn(
+                                "px-2 py-0.5 text-[8px] font-black rounded-md transition-all",
+                                discountType === 'percent' ? "bg-primary text-white" : "text-primary/60"
+                              )}
+                            >
+                              %
+                            </button>
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-6 top-1/2 -translate-y-1/2 text-primary/30 font-black text-xl">
+                            {discountType === 'fixed' ? '$' : '%'}
+                          </span>
+                          <input 
+                            type="number"
+                            placeholder="0.00"
+                            value={paymentDiscount}
+                            onChange={(e) => setPaymentDiscount(e.target.value)}
+                            className="w-full bg-teal-50 border-2 border-teal-100/50 rounded-[2rem] pl-10 pr-4 py-4 text-xl font-black text-primary outline-none focus:border-primary transition-all tabular-nums"
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
                   <div className="space-y-4">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic ml-1">Método de Pago</label>
@@ -396,7 +455,7 @@ export default function AccountsReceivable() {
                             onClick={() => setPaymentMethod(method)}
                             className={cn(
                               "py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border-2 transition-all",
-                              paymentMethod === method ? "bg-blue-50 border-blue-600 text-blue-700 shadow-md shadow-blue-100" : "bg-white border-slate-100 text-slate-400"
+                              paymentMethod === method ? "bg-teal-50 border-primary text-primary shadow-md shadow-primary/10" : "bg-white border-slate-100 text-slate-400"
                             )}
                            >
                              {method}
@@ -411,7 +470,7 @@ export default function AccountsReceivable() {
                       placeholder="Ej: Pago parcial semanal..."
                       value={paymentNote}
                       onChange={(e) => setPaymentNote(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-600 h-24 resize-none"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/50 h-24 resize-none"
                     />
                   </div>
                 </div>
@@ -427,7 +486,14 @@ export default function AccountsReceivable() {
                       {selectedSale.payments.map((p, idx) => (
                         <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-100">
                           <div>
-                            <p className="text-xs font-black text-slate-900">{formatCurrency(p.amount)}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs font-black text-slate-900">{formatCurrency(p.amount)}</p>
+                              {p.discount && p.discount > 0 && (
+                                <span className="text-[9px] font-black text-primary bg-teal-50 px-1.5 py-0.5 rounded italic">
+                                  DESC: {formatCurrency(p.discount)}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[9px] text-slate-400 font-bold uppercase italic">{p.method} • {p.date?.toDate ? format(p.date.toDate(), 'dd/MM/yy') : format(new Date(p.date), 'dd/MM/yy')}</p>
                           </div>
                           {p.note && <span className="text-[8px] max-w-[100px] text-right truncate italic text-slate-400">{p.note}</span>}
@@ -442,7 +508,7 @@ export default function AccountsReceivable() {
                  <button 
                   disabled={isProcessing || !paymentAmount}
                   onClick={handleRegisterPayment}
-                  className="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-xl shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50"
+                  className="w-full py-5 bg-primary text-white rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3 shadow-xl shadow-primary/10 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
                  >
                     {isProcessing ? (
                       <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />

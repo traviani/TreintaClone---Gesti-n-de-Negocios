@@ -30,7 +30,7 @@ export default function App() {
     <AuthProvider>
       <Router>
         <React.Suspense fallback={
-          <div className="h-screen w-screen flex items-center justify-center bg-italy-gradient font-sans">
+          <div className="h-screen w-screen flex items-center justify-center bg-app-background font-sans">
             <div className="flex flex-col items-center gap-4">
               <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
               <p className="text-slate-400 font-medium animate-pulse">Iniciando aplicación...</p>

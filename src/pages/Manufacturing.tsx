@@ -471,9 +471,9 @@ export default function Manufacturing() {
                                   setBatchAmounts({ ...batchAmounts, [recipe.id]: Math.ceil(item.quantity / (recipe.yield || 1)) });
                                 }
                               }}
-                              className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5 hover:underline"
+                              className="text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-1.5 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors border border-blue-100"
                             >
-                              <Play size={12} fill="currentColor" /> Ver Fórmula y Fabricar
+                              <Play size={12} fill="currentColor" /> Producir
                             </button>
                           ) : (
                             <div className="flex items-center gap-1.5 text-red-500">
@@ -759,18 +759,18 @@ export default function Manufacturing() {
                                                 }}
                                                 disabled={isProducing === recipe.id}
                                                 className={cn(
-                                                    "flex-1 py-5 rounded-2xl font-black flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg relative overflow-hidden group/prod",
+                                                    "flex-1 py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg relative overflow-hidden group/prod",
                                                     isProducing === recipe.id 
                                                         ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
                                                         : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50"
                                                 )}
                                             >
                                                 {isProducing === recipe.id ? (
-                                                    <div className="w-6 h-6 border-3 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                                                    <div className="w-5 h-5 border-3 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
                                                 ) : (
                                                     <>
-                                                        <Play size={18} fill="white" strokeWidth={0} className="group-hover/prod:scale-110 transition-transform" /> 
-                                                        <span className="tracking-[0.2em] uppercase text-xs">Ejecutar Producción</span>
+                                                        <Play size={16} fill="white" strokeWidth={0} className="group-hover/prod:scale-110 transition-transform" /> 
+                                                        <span className="tracking-[0.2em] uppercase text-xs">Producir</span>
                                                     </>
                                                 )}
                                             </button>

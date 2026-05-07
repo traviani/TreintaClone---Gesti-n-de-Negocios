@@ -46,7 +46,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   };
 
   return (
-    <div className="min-h-screen bg-italy-gradient flex flex-col md:flex-row">
+    <div className="min-h-screen bg-app-background flex flex-col md:flex-row">
       {/* Mobile Top Nav */}
       <div className="md:hidden bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between sticky top-0 z-40 print:hidden">
         <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                     className={cn(
                       "flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-200",
                       isActive 
-                        ? "bg-slate-900 text-white font-medium shadow-lg shadow-slate-100" 
+                        ? "bg-primary text-white font-medium shadow-lg shadow-primary/20" 
                         : "text-slate-600 hover:bg-slate-100 border border-transparent"
                     )}
                   >
