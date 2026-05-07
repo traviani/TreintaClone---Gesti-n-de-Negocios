@@ -32,14 +32,13 @@ import {
   Calendar
 } from 'lucide-react';
 import { 
-  BarChart, 
-  Bar, 
+  AreaChart, 
+  Area, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer, 
-  Cell
 } from 'recharts';
 import { motion } from 'motion/react';
 import { startOfMonth, endOfMonth, format, eachDayOfInterval, isSameDay, subDays } from 'date-fns';
@@ -225,27 +224,21 @@ export default function Dashboard() {
 
   const profit = totalSalesAmount - totalExpensesAmount;
   
-  // Create daily chart data for the last 7 days
-  const last7Days = eachDayOfInterval({
-    start: subDays(new Date(), 6),
+  // Create daily chart data for the last 15 days
+  const last15Days = eachDayOfInterval({
+    start: subDays(new Date(), 14),
     end: new Date()
   });
 
-  const chartData = last7Days.map(day => {
+  const chartData = last15Days.map(day => {
     const daySales = sales.filter(s => {
       const date = s.createdAt?.toDate?.() || (s.createdAt ? new Date(s.createdAt) : null);
       return date && isSameDay(date, day);
     }).reduce((acc, s) => acc + (Number(s.total) || 0), 0);
 
-    const dayExpenses = expenses.filter(e => {
-      const date = e.createdAt?.toDate?.() || (e.createdAt ? new Date(e.createdAt) : null);
-      return date && isSameDay(date, day);
-    }).reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
-
     return {
-      name: format(day, 'EEE', { locale: es }),
+      name: format(day, 'dd/MM'),
       ventas: daySales,
-      gastos: dayExpenses
     };
   });
 
@@ -353,42 +346,52 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 card-depth">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-bold text-slate-900 italic serif">Desempeño del Mes</h2>
+            <h2 className="text-xl font-bold text-slate-900 italic serif">Tendencia de Ventas (15 días)</h2>
             <div className="flex gap-2">
-                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                    <div className="w-2.5 h-2.5 rounded-full bg-primary"></div> Ventas
-                </div>
-                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400 tracking-wider">
-                    <div className="w-2.5 h-2.5 rounded-full bg-red-600"></div> Gastos
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase text-primary tracking-wider">
+                    <div className="w-2.5 h-2.5 rounded-full bg-primary"></div> Ventas Diarias
                 </div>
             </div>
           </div>
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748B', fontSize: 10 }} />
+              <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="colorVentas" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#1A7474" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#1A7474" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#64748B', fontSize: 10, fontWeight: 700 }} 
+                />
                 <YAxis hide />
                 <Tooltip 
-                  cursor={{ fill: 'transparent' }}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl border border-slate-700">
-                          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mb-1">{payload[0].payload.name}</p>
-                          <div className="space-y-1">
-                            <p className="text-xs font-bold text-teal-400">Ventas: {formatCurrency(payload[0].value as number)}</p>
-                            <p className="text-xs font-bold text-red-400">Gastos: {formatCurrency(payload[1].value as number)}</p>
-                          </div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Día: {payload[0].payload.name}</p>
+                          <p className="text-sm font-black text-teal-400">{formatCurrency(payload[0].value as number)}</p>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <Bar dataKey="ventas" fill="#1A7474" radius={[4, 4, 0, 0]} barSize={30} />
-                <Bar dataKey="gastos" fill="#dc2626" radius={[4, 4, 0, 0]} barSize={30} />
-              </BarChart>
+                <Area 
+                  type="monotone" 
+                  dataKey="ventas" 
+                  stroke="#1A7474" 
+                  strokeWidth={4}
+                  fillOpacity={1} 
+                  fill="url(#colorVentas)" 
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -406,8 +409,8 @@ export default function Dashboard() {
                     <ShoppingCart size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-900">Venta #{sale.id.slice(-4)}</p>
-                    <p className="text-xs text-slate-500">{format(sale.createdAt?.toDate() || new Date(), 'dd MMM, HH:mm', { locale: es })}</p>
+                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate max-w-[150px]">{sale.customerName || 'Cliente General'}</p>
+                    <p className="text-[10px] text-slate-500 font-bold italic">{format(sale.createdAt?.toDate() || new Date(), 'dd MMM, HH:mm', { locale: es })}</p>
                   </div>
                 </div>
                 <div className="text-right">
