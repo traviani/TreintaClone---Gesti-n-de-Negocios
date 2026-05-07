@@ -189,12 +189,10 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               overflow: visible !important;
             }
             #receipt-print {
-              padding: 0.5cm !important;
+              padding: 0 !important;
               margin: 0 !important;
               width: 100% !important;
               box-shadow: none !important;
-              position: relative !important;
-              top: 0 !important;
             }
             .print\\:hidden { 
               display: none !important; 
