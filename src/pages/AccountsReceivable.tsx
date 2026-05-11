@@ -92,7 +92,7 @@ export default function AccountsReceivable() {
             balance: data.balance !== undefined ? data.balance : data.total
           } as Sale;
         })
-        .filter(s => s.saleType === 'credito' && s.balance! > 0.01)
+        .filter(s => s.saleType === 'credito' && s.balance! > 0.01 && s.customerId) // Ensure customerId exists
         .sort((a, b) => {
           const timeA = a.createdAt?.toMillis?.() || 0;
           const timeB = b.createdAt?.toMillis?.() || 0;
@@ -108,6 +108,12 @@ export default function AccountsReceivable() {
 
   const handleRegisterPayment = async () => {
     if (!selectedSale || !paymentAmount) return;
+    
+    if (!selectedSale.customerId) {
+      alert('Error: Esta venta no tiene un cliente asociado válido.');
+      return;
+    }
+
     const amount = parseFloat(paymentAmount);
     const discountInput = parseFloat(paymentDiscount || '0');
     
