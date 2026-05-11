@@ -145,13 +145,14 @@ export default function AccountsReceivable() {
       const saleRef = doc(db, 'sales', selectedSale.id);
       const customerRef = doc(db, 'customers', selectedSale.customerId);
 
-      const newPayment: Payment = {
+      const newPayment: any = {
         amount,
-        discount: discount > 0 ? discount : undefined,
         date: new Date(),
         method: paymentMethod,
-        note: paymentNote
       };
+
+      if (discount > 0) newPayment.discount = discount;
+      if (paymentNote && paymentNote.trim()) newPayment.note = paymentNote.trim();
 
       // 1. Update Sale Balance and add to Payments History
       batch.update(saleRef, {
