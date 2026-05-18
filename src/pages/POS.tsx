@@ -76,6 +76,7 @@ export default function POS() {
   const [saleType, setSaleType] = useState<'contado' | 'credito'>('credito');
   const [priceType, setPriceType] = useState<'detal' | 'mayor'>('detal');
   const [searchCustomer, setSearchCustomer] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   useEffect(() => {
     const allowedOwnerIds = [effectiveUid];
@@ -304,33 +305,55 @@ export default function POS() {
               {!selectedCustomer ? (
               <div className="flex gap-3">
                 <div className="relative flex-1">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input 
-                    type="text"
-                    placeholder="Buscar cliente..."
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/50"
-                    value={searchCustomer}
-                    onChange={(e) => setSearchCustomer(e.target.value)}
-                  />
-                  {searchCustomer && filteredCustomers.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 max-h-48 overflow-y-auto custom-scrollbar p-2">
-                       {filteredCustomers.map(c => (
-                        <button 
-                          key={c.id}
-                          onClick={() => {
-                            setSelectedCustomer(c);
-                            setSearchCustomer('');
-                          }}
-                          className="w-full text-left p-3 hover:bg-teal-50 rounded-xl transition-all border border-transparent hover:border-teal-100 group flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="text-sm font-bold text-slate-900 group-hover:text-primary">{c.name}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{c.idNumber}</p>
+                  <div className="relative" onMouseLeave={() => {}}>
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="text"
+                      placeholder="Seleccionar cliente..."
+                      className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                      value={searchCustomer}
+                      onFocus={() => setShowCustomerDropdown(true)}
+                      onChange={(e) => {
+                        setSearchCustomer(e.target.value);
+                        setShowCustomerDropdown(true);
+                      }}
+                      onClick={() => setShowCustomerDropdown(true)}
+                    />
+                    <ChevronDown size={16} className={cn("absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-transform", showCustomerDropdown && "rotate-180")} />
+                  </div>
+                  
+                  {showCustomerDropdown && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setShowCustomerDropdown(false)}
+                      />
+                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 max-h-60 overflow-y-auto custom-scrollbar p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {filteredCustomers.length > 0 ? (
+                          filteredCustomers.map(c => (
+                            <button 
+                              key={c.id}
+                              onClick={() => {
+                                setSelectedCustomer(c);
+                                setSearchCustomer('');
+                                setShowCustomerDropdown(false);
+                              }}
+                              className="w-full text-left p-3 hover:bg-teal-50 rounded-xl transition-all border border-transparent hover:border-teal-100 group flex items-center justify-between mb-1 last:mb-0"
+                            >
+                              <div>
+                                <p className="text-sm font-bold text-slate-900 group-hover:text-primary">{c.name}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{c.idNumber}</p>
+                              </div>
+                              <ChevronRight size={14} className="text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                            </button>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center">
+                            <p className="text-xs font-bold text-slate-400 italic">No se encontraron clientes</p>
                           </div>
-                          <ChevronRight size={14} className="text-slate-300" />
-                        </button>
-                      ))}
-                    </div>
+                        )}
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
