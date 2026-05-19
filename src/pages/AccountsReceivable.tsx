@@ -89,10 +89,10 @@ export default function AccountsReceivable() {
           return { 
             id: doc.id, 
             ...data,
-            balance: data.balance !== undefined ? data.balance : data.total
+            balance: data.balance !== undefined ? data.balance : (data.total || 0)
           } as Sale;
         })
-        .filter(s => s.saleType === 'credito' && s.balance! > 0.01 && s.customerId) // Ensure customerId exists
+        .filter(s => s.saleType === 'credito' && (s.balance || 0) > 0.01 && s.customerId) // Ensure customerId exists
         .sort((a, b) => {
           const timeA = a.createdAt?.toMillis?.() || 0;
           const timeB = b.createdAt?.toMillis?.() || 0;
@@ -198,7 +198,8 @@ export default function AccountsReceivable() {
       .filter(s => s.customerId === sale.customerId)
       .reduce((sum, s) => sum + (s.balance || 0), 0);
 
-    const days = differenceInDays(new Date(), sale.createdAt.toDate());
+    const saleDate = sale.createdAt?.toDate?.() || (sale.createdAt ? new Date(sale.createdAt) : new Date());
+    const days = differenceInDays(new Date(), saleDate);
     
     const message = `*ESTADO DE CUENTA*\n\nHola ${sale.customerName}, te enviamos un recordatorio de tu saldo pendiente.\n\n💰 *Saldo Total:* ${formatCurrency(customerTotalBalance)}\n⏰ *Retraso mayor:* ${days} días\n\nPor favor, procesa tu abono cuando te sea posible. ¡Muchas gracias!`;
     const encodedMessage = encodeURIComponent(message);
@@ -244,7 +245,10 @@ export default function AccountsReceivable() {
           <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 italic">Facturas Vencidas (+15d)</p>
              <p className="text-3xl font-black text-red-500 tabular-nums">
-                {sales.filter(s => differenceInDays(new Date(), s.createdAt.toDate()) > 15).length}
+                {sales.filter(s => {
+                  const sDate = s.createdAt?.toDate?.() || (s.createdAt ? new Date(s.createdAt) : null);
+                  return sDate ? differenceInDays(new Date(), sDate) > 15 : false;
+                }).length}
              </p>
           </div>
            <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm">
@@ -270,7 +274,8 @@ export default function AccountsReceivable() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredSales.map((sale) => {
-                const days = differenceInDays(new Date(), sale.createdAt.toDate());
+                const saleDate = sale.createdAt?.toDate?.() || (sale.createdAt ? new Date(sale.createdAt) : null);
+                const days = saleDate ? differenceInDays(new Date(), saleDate) : 0;
                 const isOverdue = days > 15;
                 
                 return (
@@ -287,7 +292,7 @@ export default function AccountsReceivable() {
                           V-{sale.id.slice(-6).toUpperCase()}
                         </span>
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                          {format(sale.createdAt.toDate(), 'dd/MM/yyyy')}
+                          {saleDate ? format(saleDate, 'dd/MM/yyyy') : 'Pendiente'}
                         </span>
                       </div>
                     </td>
@@ -501,7 +506,12 @@ export default function AccountsReceivable() {
                                 </span>
                               )}
                             </div>
-                            <p className="text-[9px] text-slate-400 font-bold uppercase italic">{p.method} • {p.date?.toDate ? format(p.date.toDate(), 'dd/MM/yy') : format(new Date(p.date), 'dd/MM/yy')}</p>
+                            <p className="text-[9px] text-slate-400 font-bold uppercase italic">
+                              {p.method} • {(() => {
+                                const pDate = p.date?.toDate?.() || (p.date ? new Date(p.date) : null);
+                                return pDate && !isNaN(pDate.getTime()) ? format(pDate, 'dd/MM/yy') : 'Reciente';
+                              })()}
+                            </p>
                           </div>
                           {p.note && <span className="text-[8px] max-w-[100px] text-right truncate italic text-slate-400">{p.note}</span>}
                         </div>

@@ -413,7 +413,12 @@ export default function Dashboard() {
                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight truncate max-w-[120px]">{sale.customerName || 'Cliente General'}</p>
                        <span className="text-[9px] font-black text-slate-400 italic">№ {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : `ID-${sale.id.slice(-4).toUpperCase()}`}</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-bold italic">{format(sale.createdAt?.toDate() || new Date(), 'dd MMM, HH:mm', { locale: es })}</p>
+                    <p className="text-[10px] text-slate-500 font-bold italic">
+                      {(() => {
+                        const d = sale.createdAt?.toDate?.() || (sale.createdAt ? new Date(sale.createdAt) : new Date());
+                        return format(d, 'dd MMM, HH:mm', { locale: es });
+                      })()}
+                    </p>
                   </div>
                 </div>
                 <div className="text-right">

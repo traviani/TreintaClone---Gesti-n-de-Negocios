@@ -26,7 +26,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
   };
 
-  const dateStr = sale.createdAt?.toDate 
+  const dateStr = (typeof sale.createdAt?.toDate === 'function')
     ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
     : 'RECIENTE';
 
