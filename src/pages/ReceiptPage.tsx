@@ -93,7 +93,7 @@ export const ReceiptPage: React.FC = () => {
           </div>
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Modo Impresión Directa</p>
         </div>
-        <Receipt sale={sale} hideActions={true} />
+        <Receipt sale={sale} hideActions={false} />
       </div>
     </div>
   );

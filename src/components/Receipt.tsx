@@ -1,6 +1,8 @@
-import React from 'react';
-import { Printer, ShoppingCart, Truck, Hammer, MessageCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Printer, ShoppingCart, Truck, Hammer, MessageCircle, FileText } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 interface ReceiptProps {
   sale: any;
@@ -9,6 +11,8 @@ interface ReceiptProps {
 }
 
 export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideActions = false }) => {
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
   const handlePrint = () => {
     if (sale.id) {
       window.open(`${window.location.origin}/#/receipt/${sale.id}`, '_blank');
@@ -26,6 +30,128 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
   };
 
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPdf(true);
+    
+    // Backup and style sanitization utility
+    const styleBackups: any[] = [];
+    let tempDivCache: HTMLDivElement | null = null;
+    
+    const oklchToRgb = (oklchStr: string): string => {
+      try {
+        if (!tempDivCache) {
+          tempDivCache = document.createElement('div');
+          tempDivCache.style.display = 'none';
+          document.body.appendChild(tempDivCache);
+        }
+        // Safely strip css variables or replace them with 1 within opacity to ensure parsing succeeds
+        let sanitized = oklchStr;
+        if (sanitized.includes('var(')) {
+          sanitized = sanitized.replace(/\/ var\([^)]+\)/g, '');
+        }
+        tempDivCache.style.color = sanitized;
+        const computed = window.getComputedStyle(tempDivCache).color;
+        // If not parsed successfully, fall back to black or neutral dark/light gray
+        if (!computed || computed === 'initial' || computed === 'inherit' || computed === '') {
+          return 'rgba(0, 0, 0, 1)';
+        }
+        return computed;
+      } catch (e) {
+        return 'rgba(0, 0, 0, 1)';
+      }
+    };
+
+    try {
+      const element = document.getElementById('receipt-print');
+      if (!element) {
+        alert('No se pudo encontrar el diseño de la nota de entrega para generar el PDF.');
+        return;
+      }
+
+      // 1. Process style tags to strip oklch
+      const styleTags = Array.from(document.querySelectorAll('style'));
+      for (const style of styleTags) {
+        styleBackups.push({ element: style, originalText: style.innerHTML, type: 'style' });
+        // Replace oklch(...) matches
+        style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, (match) => oklchToRgb(match));
+      }
+
+      // 2. Process link tag stylesheets to convert oklch
+      const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+      for (const link of linkTags) {
+        try {
+          const href = (link as HTMLLinkElement).href;
+          const response = await fetch(href);
+          if (response.ok) {
+            const cssText = await response.text();
+            const cleanCss = cssText.replace(/oklch\([^)]+\)/g, (match) => oklchToRgb(match));
+            
+            const tempStyle = document.createElement('style');
+            tempStyle.innerHTML = cleanCss;
+            tempStyle.setAttribute('data-temp-clean-css', 'true');
+            document.head.appendChild(tempStyle);
+            
+            styleBackups.push({ element: tempStyle, type: 'temp-style' });
+            
+            // Disable original link tag
+            (link as any).disabled = true;
+            styleBackups.push({ element: link, type: 'link-disable' });
+          }
+        } catch (err) {
+          console.warn("Could not fetch and sanitize external stylesheet:", err);
+        }
+      }
+
+      // Convert layout element to a high-density canvas block
+      const canvas = await html2canvas(element, {
+        scale: 3, // Excellent detail preservation (equivalent to ~300 DPI layout)
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Venezuelan half-letter (media carta): 215.9mm width x 139.7mm height (landscape matches layout beautifully)
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: [216, 140]
+      });
+
+      // Fit the image perfectly within the media carta dimensions
+      pdf.addImage(imgData, 'PNG', 0, 0, 216, 140, undefined, 'FAST');
+      
+      const idDisplay = sale.invoiceNumber 
+        ? String(sale.invoiceNumber).padStart(6, '0') 
+        : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
+      
+      pdf.save(`Nota_de_Entrega_No_${idDisplay}.pdf`);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+    } finally {
+      // Restore styles
+      try {
+        for (const backup of styleBackups) {
+          if (backup.type === 'style') {
+            backup.element.innerHTML = backup.originalText;
+          } else if (backup.type === 'temp-style') {
+            backup.element.remove();
+          } else if (backup.type === 'link-disable') {
+            backup.element.disabled = false;
+          }
+        }
+        if (tempDivCache) {
+          tempDivCache.remove();
+        }
+      } catch (restoreError) {
+        console.error("Error restoring stylesheet backups:", restoreError);
+      }
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const dateStr = (typeof sale.createdAt?.toDate === 'function')
     ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
     : 'RECIENTE';
@@ -40,6 +166,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               <img 
                 src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
                 alt="Logo Traviani" 
+                crossOrigin="anonymous"
                 className="w-full h-full object-contain object-left"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://lh3.googleusercontent.com/d/14HE9P_AammpTZ2dQWYRxK_J529N4fKf-";
@@ -225,10 +352,23 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
 
       {!hideActions && (
         <div className="mt-8 text-center print:hidden w-full max-w-[210mm] flex flex-col items-center gap-4">
-          <div className="flex gap-3 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full animate-fade-in">
+            <button 
+              onClick={handleDownloadPDF}
+              disabled={isGeneratingPdf}
+              className="bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs cursor-pointer disabled:cursor-not-allowed"
+            >
+              {isGeneratingPdf ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <FileText size={18} />
+              )}
+              {isGeneratingPdf ? 'GENERANDO...' : 'DESCARGAR PDF'}
+            </button>
+
             <button 
               onClick={handlePrint}
-              className="flex-1 bg-primary hover:opacity-90 text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs"
+              className="bg-primary hover:opacity-90 text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs cursor-pointer"
             >
               <Printer size={18} />
               IMPRIMIR
@@ -236,7 +376,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
             
             <button 
               onClick={handleWhatsApp}
-              className="flex-1 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs"
+              className="bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs cursor-pointer"
             >
               <MessageCircle size={18} />
               WHATSAPP
@@ -246,7 +386,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           {onSecondaryAction && (
             <button 
               onClick={onSecondaryAction}
-              className="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all"
+              className="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all cursor-pointer"
             >
               ← Volver al punto de venta
             </button>
