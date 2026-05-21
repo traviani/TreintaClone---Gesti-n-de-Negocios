@@ -31,7 +31,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     : 'RECIENTE';
 
   return (
-    <div id="receipt-print-root" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white">
+    <div id="receipt-print-wrapper" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white">
       <div id="receipt-print" className="bg-white px-2 pt-[1cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full print:m-0 print:shadow-none">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-2">
@@ -173,6 +173,17 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               size: 216mm 140mm; 
             }
             
+            /* Hide all other elements in the body during print */
+            body * {
+              visibility: hidden !important;
+            }
+
+            /* Make only the receipt print wrapper and its children visible */
+            #receipt-print-wrapper,
+            #receipt-print-wrapper * {
+              visibility: visible !important;
+            }
+
             body {
               background: white !important;
               margin: 0 !important;
@@ -180,7 +191,8 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               display: block !important;
             }
 
-            #receipt-print-root {
+            /* Position the receipt at the extreme top margin */
+            #receipt-print-wrapper {
               display: block !important;
               width: 100% !important;
               height: auto !important;
@@ -199,6 +211,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               padding: 0 !important;
               box-shadow: none !important;
               border: none !important;
+              background: white !important;
             }
 
             .print\\:hidden { 

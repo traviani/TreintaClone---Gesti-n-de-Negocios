@@ -74,7 +74,7 @@ export const ReceiptPage: React.FC = () => {
   }
 
   return (
-    <div id="receipt-print-root" className="min-h-screen bg-app-background py-10 print:bg-white print:py-0 print:m-0">
+    <div id="receipt-page-container" className="min-h-screen bg-app-background py-10 print:bg-white print:py-0 print:m-0">
       <div className="max-w-4xl mx-auto print:max-w-none print:m-0 print:p-0">
         <div className="mb-6 px-4 print:hidden flex justify-between items-center">
           <div className="flex gap-2">
