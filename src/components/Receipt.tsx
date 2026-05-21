@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Printer, ShoppingCart, Truck, Hammer, MessageCircle, FileText } from 'lucide-react';
+import { ShoppingCart, Truck, Hammer, FileText } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -13,53 +13,130 @@ interface ReceiptProps {
 export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideActions = false }) => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const handlePrint = () => {
-    if (sale.id) {
-      window.open(`${window.location.origin}/#/receipt/${sale.id}`, '_blank');
-    } else {
-      window.print();
-    }
-  };
-
-  const handleWhatsApp = () => {
-    const idDisplay = sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
-    const message = `*INVERSIONES TRAVIANI C.A.*\n\nHola *${sale.customerName}*, adjunto su nota de entrega *№ ${idDisplay}*.\n\n*Total a pagar:* $ ${formatCurrency(sale.total).replace('$', '')}\n\nUsted puede ver y descargar su recibo aquí:\n${window.location.origin}/#/receipt/${sale.id || ''}`;
-    
-    const encodedMessage = encodeURIComponent(message);
-    const phoneNumber = sale.customerPhone?.replace(/\D/g, '') || '';
-    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
-  };
-
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
     
-    // Backup and style sanitization utility
-    const styleBackups: any[] = [];
-    let tempDivCache: HTMLDivElement | null = null;
+    const colorCache = new Map<string, string>();
+    const cleanups: (() => void)[] = [];
     
-    const oklchToRgb = (oklchStr: string): string => {
-      try {
-        if (!tempDivCache) {
-          tempDivCache = document.createElement('div');
-          tempDivCache.style.display = 'none';
-          document.body.appendChild(tempDivCache);
-        }
-        // Safely strip css variables or replace them with 1 within opacity to ensure parsing succeeds
-        let sanitized = oklchStr;
-        if (sanitized.includes('var(')) {
-          sanitized = sanitized.replace(/\/ var\([^)]+\)/g, '');
-        }
-        tempDivCache.style.color = sanitized;
-        const computed = window.getComputedStyle(tempDivCache).color;
-        // If not parsed successfully, fall back to black or neutral dark/light gray
-        if (!computed || computed === 'initial' || computed === 'inherit' || computed === '') {
-          return 'rgba(0, 0, 0, 1)';
-        }
-        return computed;
-      } catch (e) {
-        return 'rgba(0, 0, 0, 1)';
+    const colorToRgbFn = (colorStr: string): string => {
+      if (colorCache.has(colorStr)) {
+        return colorCache.get(colorStr)!;
       }
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = colorStr;
+          ctx.fillRect(0, 0, 1, 1);
+          const data = ctx.getImageData(0, 0, 1, 1).data;
+          const rgb = `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${data[3] / 255})`;
+          colorCache.set(colorStr, rgb);
+          return rgb;
+        }
+      } catch (e) {
+        console.warn("Could not convert colors via canvas:", e);
+      }
+      return 'rgb(0, 0, 0)';
     };
+
+    const sanitizeColorCSS = (cssText: string): string => {
+      let result = '';
+      let index = 0;
+      
+      while (index < cssText.length) {
+        const oklchStart = cssText.indexOf('oklch(', index);
+        const oklabStart = cssText.indexOf('oklab(', index);
+        
+        let start = -1;
+        let lengthOfFuncName = 6;
+        if (oklchStart !== -1 && oklabStart !== -1) {
+          if (oklchStart < oklabStart) {
+            start = oklchStart;
+            lengthOfFuncName = 6;
+          } else {
+            start = oklabStart;
+            lengthOfFuncName = 6;
+          }
+        } else if (oklchStart !== -1) {
+          start = oklchStart;
+          lengthOfFuncName = 6;
+        } else if (oklabStart !== -1) {
+          start = oklabStart;
+          lengthOfFuncName = 6;
+        }
+        
+        if (start === -1) {
+          result += cssText.substring(index);
+          break;
+        }
+        
+        result += cssText.substring(index, start);
+        
+        let parenCount = 1;
+        let scanIndex = start + lengthOfFuncName;
+        
+        while (scanIndex < cssText.length && parenCount > 0) {
+          const char = cssText[scanIndex];
+          if (char === '(') {
+            parenCount++;
+          } else if (char === ')') {
+            parenCount--;
+          }
+          scanIndex++;
+        }
+        
+        const colorExpression = cssText.substring(start, scanIndex);
+        const rgbReplacement = colorToRgbFn(colorExpression);
+        result += rgbReplacement;
+        
+        index = scanIndex;
+      }
+      
+      return result;
+    };
+
+    const cleanColorString = (val: string): string => {
+      if (typeof val !== 'string' || (!val.includes('oklch') && !val.includes('oklab'))) {
+        return val;
+      }
+      return sanitizeColorCSS(val);
+    };
+
+    const patchWindow = (win: Window) => {
+      const orig = win.getComputedStyle;
+      if (!orig) return;
+      
+      win.getComputedStyle = function(el, pseudo) {
+        const style = orig.call(win, el, pseudo);
+        return new Proxy(style, {
+          get(target, prop) {
+            if (prop === 'getPropertyValue') {
+              return function(propertyName: string) {
+                const val = target.getPropertyValue(propertyName);
+                return cleanColorString(val);
+              };
+            }
+            const val = (target as any)[prop];
+            if (typeof prop === 'string' && typeof val === 'string') {
+              return cleanColorString(val);
+            }
+            if (typeof val === 'function') {
+              return val.bind(target);
+            }
+            return val;
+          }
+        });
+      };
+      
+      cleanups.push(() => {
+        win.getComputedStyle = orig;
+      });
+    };
+
+    let iframe: HTMLIFrameElement | null = null;
 
     try {
       const element = document.getElementById('receipt-print');
@@ -68,43 +145,162 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         return;
       }
 
-      // 1. Process style tags to strip oklch
-      const styleTags = Array.from(document.querySelectorAll('style'));
-      for (const style of styleTags) {
-        styleBackups.push({ element: style, originalText: style.innerHTML, type: 'style' });
-        // Replace oklch(...) matches
-        style.innerHTML = style.innerHTML.replace(/oklch\([^)]+\)/g, (match) => oklchToRgb(match));
-      }
+      // 1. Compile and sanitize ALL readable stylesheets/style tags active in the document beforehand
+      let combinedCss = '';
+      
+      // Look at style tags text content (always readable without CORS/iframe limits)
+      const styleTags = document.querySelectorAll('style');
+      styleTags.forEach(tag => {
+        combinedCss += (tag.textContent || '') + '\n';
+      });
 
-      // 2. Process link tag stylesheets to convert oklch
-      const linkTags = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
-      for (const link of linkTags) {
-        try {
-          const href = (link as HTMLLinkElement).href;
-          const response = await fetch(href);
-          if (response.ok) {
-            const cssText = await response.text();
-            const cleanCss = cssText.replace(/oklch\([^)]+\)/g, (match) => oklchToRgb(match));
-            
-            const tempStyle = document.createElement('style');
-            tempStyle.innerHTML = cleanCss;
-            tempStyle.setAttribute('data-temp-clean-css', 'true');
-            document.head.appendChild(tempStyle);
-            
-            styleBackups.push({ element: tempStyle, type: 'temp-style' });
-            
-            // Disable original link tag
-            (link as any).disabled = true;
-            styleBackups.push({ element: link, type: 'link-disable' });
+      // Look at link tags if same-origin
+      const linkTags = document.querySelectorAll('link[rel="stylesheet"]');
+      for (let i = 0; i < linkTags.length; i++) {
+        const link = linkTags[i] as HTMLLinkElement;
+        const href = link.href;
+        if (href) {
+          try {
+            const linkUrl = new URL(href, window.location.origin);
+            if (linkUrl.origin === window.location.origin) {
+              const res = await fetch(href);
+              if (res.ok) {
+                const text = await res.text();
+                combinedCss += text + '\n';
+              }
+            }
+          } catch (e) {
+            // Ignore fetch fails
           }
-        } catch (err) {
-          console.warn("Could not fetch and sanitize external stylesheet:", err);
         }
       }
 
-      // Convert layout element to a high-density canvas block
-      const canvas = await html2canvas(element, {
-        scale: 3, // Excellent detail preservation (equivalent to ~300 DPI layout)
+      // Fallback to active styleSheets if we didn't capture enough styling
+      if (combinedCss.trim().length < 50) {
+        for (let i = 0; i < document.styleSheets.length; i++) {
+          const sheet = document.styleSheets[i];
+          try {
+            const rules = sheet.cssRules || sheet.rules;
+            if (rules) {
+              for (let j = 0; j < rules.length; j++) {
+                combinedCss += rules[j].cssText + '\n';
+              }
+            }
+          } catch (e) {
+            // Cross-origin CSS fails to read cssRules, which is skipped safely
+          }
+        }
+      }
+
+      const sanitizedCss = sanitizeColorCSS(combinedCss);
+
+      // 2. Create the hidden sandboxed iframe
+      iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.width = '210mm';
+      iframe.style.height = '140mm';
+      iframe.style.top = '-10000px';
+      iframe.style.left = '-10000px';
+      iframe.style.visibility = 'hidden';
+      
+      document.body.appendChild(iframe);
+      
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        throw new Error('No se pudo inicializar el sandbox del iframe.');
+      }
+
+      // 3. Write clean HTML including sanitized styles to the iframe
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              ${sanitizedCss}
+              body {
+                background-color: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                height: 140mm !important;
+                overflow: hidden !important;
+              }
+              #receipt-print-sandbox {
+                background-color: #ffffff !important;
+                width: 210mm !important;
+                height: 140mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+              }
+            </style>
+          </head>
+          <body>
+            <div id="receipt-print-sandbox"></div>
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Wait a short slice of time for stylesheets parsing
+      await new Promise(resolve => setTimeout(resolve, 80));
+
+      // Wait for fonts to be ready/loaded in both windows
+      try {
+        await Promise.all([
+          document.fonts.ready,
+          iframeDoc.fonts.ready,
+          iframe.contentWindow ? (iframe.contentWindow as any).document?.fonts?.ready : Promise.resolve()
+        ].filter(Boolean));
+      } catch (fontErr) {
+        console.warn("Error waiting for fonts:", fontErr);
+      }
+
+      // Patch computed styles on both main window & iframe window (must run after iframeDoc.close())
+      patchWindow(window);
+      if (iframe.contentWindow) {
+        patchWindow(iframe.contentWindow);
+      }
+
+      const sandboxWrapper = iframeDoc.getElementById('receipt-print-sandbox');
+      if (!sandboxWrapper) {
+        throw new Error('No se pudo encontrar el contenedor del sandbox.');
+      }
+
+      // 4. Import the print element clone into our iframe sandbox
+      const clonedNode = iframeDoc.importNode(element, true);
+      sandboxWrapper.appendChild(clonedNode);
+
+      // 5. Sanitize any inline styles that might contain oklch in the cloned elements
+      const allClonedElements = sandboxWrapper.querySelectorAll('*');
+      allClonedElements.forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        const styleAttr = htmlEl.getAttribute('style');
+        if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
+          htmlEl.setAttribute('style', sanitizeColorCSS(styleAttr));
+        }
+      });
+
+      // 6. Wait for all resources/images to be completely loaded inside the iframe
+      const iframeImages = Array.from(sandboxWrapper.querySelectorAll('img'));
+      await Promise.all(
+        iframeImages.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+          });
+        })
+      );
+
+      // Tiny delay for layout compilation
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // 7. Run html2canvas inside the clean sandboxed iframe document!
+      const canvas = await html2canvas(clonedNode as HTMLElement, {
+        scale: 3, // High density
         useCORS: true,
         allowTaint: true,
         logging: false,
@@ -121,6 +317,8 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       });
 
       // Fit the image perfectly within the media carta dimensions
+      pdf.addPage(undefined, 'landscape'); // Make sure we orient a clean, correct format page
+      pdf.deletePage(1); // delete default letter/a4 page
       pdf.addImage(imgData, 'PNG', 0, 0, 216, 140, undefined, 'FAST');
       
       const idDisplay = sale.invoiceNumber 
@@ -130,23 +328,20 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       pdf.save(`Nota_de_Entrega_No_${idDisplay}.pdf`);
     } catch (error) {
       console.error("Error generating PDF:", error);
+      alert('Error al generar PDF: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
-      // Restore styles
-      try {
-        for (const backup of styleBackups) {
-          if (backup.type === 'style') {
-            backup.element.innerHTML = backup.originalText;
-          } else if (backup.type === 'temp-style') {
-            backup.element.remove();
-          } else if (backup.type === 'link-disable') {
-            backup.element.disabled = false;
-          }
+      // Restore dynamic original states
+      cleanups.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (e) {
+          console.warn("Error running computedStyle cleanup:", e);
         }
-        if (tempDivCache) {
-          tempDivCache.remove();
-        }
-      } catch (restoreError) {
-        console.error("Error restoring stylesheet backups:", restoreError);
+      });
+      
+      // 8. Securely clean up the iframe node
+      if (iframe && iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
       }
       setIsGeneratingPdf(false);
     }
@@ -161,19 +356,24 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       <div id="receipt-print" className="bg-white px-2 pt-[1cm] w-[210mm] mx-auto print:p-0 print:pt-0 print:w-full print:m-0 print:shadow-none">
         {/* Header Section */}
         <div className="flex justify-between items-center mb-2">
-          <div className="flex items-center gap-4">
-            <div className="w-[100px] h-[32px] overflow-hidden">
+          <div className="flex items-center gap-6">
+            <div className="w-[145px] h-[45px] pl-2 flex items-center justify-start overflow-visible">
               <img 
                 src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
                 alt="Logo Traviani" 
                 crossOrigin="anonymous"
-                className="w-full h-full object-contain object-left"
+                className="h-full object-contain object-left"
+                style={{
+                  maxWidth: "140px",
+                  maxHeight: "45px",
+                  display: "block"
+                }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = "https://lh3.googleusercontent.com/d/14HE9P_AammpTZ2dQWYRxK_J529N4fKf-";
                 }}
               />
             </div>
-            <h1 className="text-lg font-black text-slate-900 italic tracking-tight uppercase leading-none">Inversiones Traviani C.A.</h1>
+            <h1 className="font-black text-slate-900 italic tracking-tight uppercase leading-none" style={{ fontSize: '0.9rem', marginLeft: '10px' }}>Inversiones Traviani C.A.</h1>
           </div>
           <div className="text-right leading-none">
             <p className="text-xl font-black text-slate-900 tracking-tight">
@@ -183,8 +383,13 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           </div>
         </div>
 
-        <div className="text-center mb-3">
-          <p className="text-xl font-black text-black italic tracking-[0.3em] border-y border-black py-0.5 leading-none">NOTA DE ENTREGA</p>
+        {/* NOTA DE ENTREGA Header Section with separate borders for perfect canvas compatibility */}
+        <div className="text-center mb-3 flex flex-col items-center">
+          <div className="w-full border-t border-black"></div>
+          <p className="text-xl font-black text-black italic tracking-[0.3em] py-1 leading-none uppercase select-none my-0.5">
+            NOTA DE ENTREGA
+          </p>
+          <div className="w-full border-b border-black"></div>
         </div>
 
         {/* Customer Information Section - Compact & Accurate */}
@@ -220,32 +425,36 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           </div>
         </div>
 
-        {/* Items Table */}
-        <div className="mb-2">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="border-y border-black">
-                <th className="py-1 text-[11px] font-black italic uppercase w-16">CANT</th>
-                <th className="py-1 text-[11px] font-black italic uppercase px-4">DESCRIPCIÓN</th>
-                <th className="py-1 text-[11px] font-black italic uppercase text-right w-24">P.UNIT</th>
-                <th className="py-1 text-[11px] font-black italic uppercase text-right w-32">TOTAL</th>
-              </tr>
-            </thead>
-            <tbody className="text-[13px]">
+        {/* Items Table with standard flex rows to avoid html2canvas cell border collapses striking through text */}
+        <div className="mb-2 w-full">
+          <div className="w-full">
+            {/* Header row with precise border divs */}
+            <div className="w-full">
+              <div className="w-full border-t border-black"></div>
+              <div className="flex items-center py-1 text-[11px] font-black italic uppercase select-none">
+                <div className="w-16 text-center">CANT</div>
+                <div className="flex-1 px-4 text-left">DESCRIPCIÓN</div>
+                <div className="w-24 text-right">P.UNIT</div>
+                <div className="w-32 text-right">TOTAL</div>
+              </div>
+              <div className="w-full border-b border-black"></div>
+            </div>
+            {/* Table Body */}
+            <div className="text-[13px] divide-y divide-slate-50">
               {sale.items.map((item: any, i: number) => (
-                <tr key={i} className="border-b border-slate-50">
-                  <td className="py-0.5 font-black text-center">{item.quantity}</td>
-                  <td className="py-0.5 px-4 font-bold text-slate-800 uppercase leading-none">{item.name}</td>
-                  <td className="py-0.5 text-right text-slate-600 italic whitespace-nowrap">
+                <div key={i} className="flex items-center py-0.5 border-b border-slate-50/50">
+                  <div className="w-16 text-center font-black">{item.quantity}</div>
+                  <div className="flex-1 px-4 font-bold text-slate-800 uppercase leading-none">{item.name}</div>
+                  <div className="w-24 text-right text-slate-600 italic whitespace-nowrap">
                     $ {formatCurrency(item.price).replace('$', '')}
-                  </td>
-                  <td className="py-0.5 text-right font-black text-slate-900 whitespace-nowrap">
+                  </div>
+                  <div className="w-32 text-right font-black text-slate-900 whitespace-nowrap">
                     $ {formatCurrency(item.price * item.quantity).replace('$', '')}
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
 
         {/* Total Net Section */}
@@ -352,11 +561,11 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
 
       {!hideActions && (
         <div className="mt-8 text-center print:hidden w-full max-w-[210mm] flex flex-col items-center gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full animate-fade-in">
+          <div className="w-full max-w-sm animate-fade-in">
             <button 
               onClick={handleDownloadPDF}
               disabled={isGeneratingPdf}
-              className="bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs cursor-pointer disabled:cursor-not-allowed"
+              className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white rounded-xl py-4 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-sm cursor-pointer disabled:cursor-not-allowed"
             >
               {isGeneratingPdf ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -364,22 +573,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
                 <FileText size={18} />
               )}
               {isGeneratingPdf ? 'GENERANDO...' : 'DESCARGAR PDF'}
-            </button>
-
-            <button 
-              onClick={handlePrint}
-              className="bg-primary hover:opacity-90 text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs cursor-pointer"
-            >
-              <Printer size={18} />
-              IMPRIMIR
-            </button>
-            
-            <button 
-              onClick={handleWhatsApp}
-              className="bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl py-3 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-xs cursor-pointer"
-            >
-              <MessageCircle size={18} />
-              WHATSAPP
             </button>
           </div>
 
