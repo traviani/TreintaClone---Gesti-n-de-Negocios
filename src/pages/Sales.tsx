@@ -431,9 +431,9 @@ export default function Sales() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white z-[60] flex flex-col items-center justify-center p-4 overflow-y-auto"
+            className="fixed inset-0 bg-white z-[60] flex flex-col items-center justify-center p-4 overflow-y-auto print:p-0 print:m-0 print:bg-white print:block"
           >
-            <div className="max-w-2xl w-full flex flex-col items-center">
+            <div className="max-w-2xl w-full flex flex-col items-center print:p-0 print:m-0 print:block print:h-auto">
               <Receipt 
                 sale={selectedSale} 
                 onSecondaryAction={() => setShowReceipt(false)} 

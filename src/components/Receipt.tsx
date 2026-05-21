@@ -173,9 +173,13 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               size: 216mm 140mm; 
             }
             
-            /* Hide all other elements in the body during print */
-            body * {
+            /* Hide body and let inheritance handle the rest of DOM hiding naturally, avoiding parent pruning bugs */
+            body {
               visibility: hidden !important;
+              background: white !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              display: block !important;
             }
 
             /* Make only the receipt print wrapper and its children visible */
@@ -184,14 +188,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               visibility: visible !important;
             }
 
-            body {
-              background: white !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              display: block !important;
-            }
-
-            /* Position the receipt at the extreme top margin */
+            /* Natural document flow, positioned at the top-left margin coordinate naturally */
             #receipt-print-wrapper {
               display: block !important;
               width: 100% !important;
@@ -199,9 +196,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               margin: 0 !important;
               padding: 0 !important;
               background: white !important;
-              position: absolute !important;
-              top: 0 !important;
-              left: 0 !important;
+              position: relative !important;
             }
 
             #receipt-print {
@@ -218,7 +213,8 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               display: none !important; 
             }
 
-            img {
+            /* Force perfect color and image rendering across all print engines */
+            * {
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
