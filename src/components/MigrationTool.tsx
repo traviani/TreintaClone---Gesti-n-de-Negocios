@@ -95,14 +95,14 @@ export const MigrationTool: React.FC = () => {
         onClick={handleSync}
         disabled={loading}
         title="Sincronizar todos los datos para que sean públicos"
-        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+        className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all shadow-xs ${
           loading 
             ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-            : 'bg-white text-slate-400 hover:text-primary border border-slate-200 hover:border-primary border-opacity-30 shadow-sm active:scale-95'
+            : 'bg-white text-slate-600 hover:text-slate-900 border border-slate-200/80 hover:border-slate-300 shadow-sm active:scale-95'
         }`}
       >
-        <Database size={14} className={loading ? "animate-bounce" : ""} />
-        {loading ? 'Sincronizando...' : 'Sincronizar Datos'}
+        <Database size={16} className={loading ? "animate-bounce text-primary" : "text-slate-500"} />
+        {loading ? 'SINCRONIZANDO...' : 'SINCRONIZAR DATOS'}
       </button>
     </div>
   );

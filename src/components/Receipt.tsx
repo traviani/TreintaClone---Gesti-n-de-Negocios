@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Truck, Hammer, FileText } from 'lucide-react';
+import { ShoppingCart, Truck, Hammer, FileText, Printer } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -12,6 +12,116 @@ interface ReceiptProps {
 
 export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideActions = false }) => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const handlePrint = async () => {
+    try {
+      setIsPrinting(true);
+      const receiptElement = document.getElementById('printable-receipt');
+      if (!receiptElement) {
+        window.print();
+        setIsPrinting(false);
+        return;
+      }
+
+      // Remove existing print iframe if any
+      const existingIframe = document.getElementById('receipt-print-iframe');
+      if (existingIframe) {
+        existingIframe.remove();
+      }
+
+      // Create a hidden print iframe
+      const printIframe = document.createElement('iframe');
+      printIframe.id = 'receipt-print-iframe';
+      printIframe.style.position = 'fixed';
+      printIframe.style.right = '0';
+      printIframe.style.bottom = '0';
+      printIframe.style.width = '0';
+      printIframe.style.height = '0';
+      printIframe.style.border = 'none';
+      printIframe.style.visibility = 'hidden';
+      document.body.appendChild(printIframe);
+
+      const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+      if (!iframeDoc || !printIframe.contentWindow) {
+        window.print();
+        setIsPrinting(false);
+        return;
+      }
+
+      // Gather current page styles
+      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+        .map(el => el.outerHTML)
+        .join('\n');
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Factura - ${sale.id || 'Inversiones Traviani'}</title>
+            ${styles}
+            <style>
+              @page {
+                size: 216mm 140mm;
+                margin: 0;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background-color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+              #printable-receipt {
+                width: 100% !important;
+                max-width: 216mm !important;
+                min-height: auto !important;
+                margin: 0 auto !important;
+                padding: 6mm 12mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                background-color: #ffffff !important;
+              }
+            </style>
+          </head>
+          <body>
+            ${receiptElement.outerHTML}
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      // Ensure images inside print frame are loaded
+      const images = Array.from(iframeDoc.images);
+      await Promise.all(
+        images.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        })
+      );
+
+      setTimeout(() => {
+        try {
+          printIframe.contentWindow?.focus();
+          printIframe.contentWindow?.print();
+        } catch (e) {
+          console.warn('Iframe print failed, falling back to window.print():', e);
+          window.print();
+        } finally {
+          setIsPrinting(false);
+        }
+      }, 300);
+    } catch (err) {
+      console.error('Error during print preparation:', err);
+      window.print();
+      setIsPrinting(false);
+    }
+  };
 
   const handleDownloadPDF = async () => {
     setIsGeneratingPdf(true);
@@ -561,7 +671,21 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
 
       {!hideActions && (
         <div className="mt-8 text-center print:hidden w-full max-w-[210mm] flex flex-col items-center gap-4">
-          <div className="w-full max-w-sm animate-fade-in">
+          <div className="w-full max-w-md grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in">
+            <button 
+              onClick={handlePrint}
+              disabled={isPrinting}
+              className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white rounded-xl py-4 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-sm cursor-pointer disabled:cursor-not-allowed"
+              title="Imprimir directamente a tu impresora Samsung ML-2165"
+            >
+              {isPrinting ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Printer size={18} />
+              )}
+              {isPrinting ? 'PREPARANDO...' : 'IMPRIMIR FACTURA'}
+            </button>
+
             <button 
               onClick={handleDownloadPDF}
               disabled={isGeneratingPdf}

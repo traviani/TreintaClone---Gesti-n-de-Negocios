@@ -48,37 +48,37 @@ interface StatCardProps {
   title: string;
   value: number;
   icon: React.ElementType;
-  color: 'blue' | 'red' | 'green' | 'amber';
+  color: 'teal' | 'red' | 'green' | 'amber';
   trend?: { value: number; isUp: boolean };
 }
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, trend }) => {
-  const colors = {
-    blue: 'bg-teal-50 text-primary border-teal-100',
-    red: 'bg-red-50 text-red-600 border-red-100',
-    green: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-    amber: 'bg-amber-50 text-amber-600 border-amber-100',
+  const iconColors = {
+    teal: 'bg-teal-50 text-teal-600 border border-teal-100',
+    red: 'bg-rose-50 text-rose-500 border border-rose-100',
+    green: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
+    amber: 'bg-amber-50 text-amber-600 border border-amber-100',
   };
 
   return (
     <motion.div 
-      whileHover={{ y: -5 }}
-      className={cn("p-4 rounded-3xl border bg-white card-depth flex flex-col justify-between", colors[color])}
+      whileHover={{ y: -3, transition: { duration: 0.15 } }}
+      className="p-5 rounded-[24px] border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[135px]"
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className={cn("p-2 rounded-xl", colors[color].split(' ')[0])}>
-          <Icon size={20} />
+      <div className="flex items-center justify-between mb-3">
+        <div className={cn("p-2.5 rounded-xl flex items-center justify-center", iconColors[color])}>
+          <Icon size={20} strokeWidth={2.2} />
         </div>
         {trend && (
-          <div className={cn("flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full", trend.isUp ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700")}>
-            {trend.isUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+          <div className={cn("flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-full border", trend.isUp ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100")}>
+            {trend.isUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
             {trend.value}%
           </div>
         )}
       </div>
       <div>
-        <p className="text-[10px] font-medium text-slate-500 mb-0.5 uppercase tracking-wider">{title}</p>
-        <h3 className="text-lg font-bold text-slate-900 tracking-tight leading-tight">{formatCurrency(value)}</h3>
+        <p className="text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">{title}</p>
+        <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{formatCurrency(value)}</h3>
       </div>
     </motion.div>
   );
@@ -261,25 +261,25 @@ export default function Dashboard() {
     <div className="space-y-8">
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 italic serif tracking-tight">RESUMEN MENSUAL</h1>
+          <h1 className="text-3xl font-black text-slate-900 italic tracking-tight font-sans">RESUMEN MENSUAL</h1>
           <p className="text-slate-500 mt-1 font-medium italic">Hola{user?.displayName ? `, ${user.displayName.split(' ')[0]}` : ''}. Revisa el estado de tu negocio este mes.</p>
         </div>
 
         <div className="flex items-center gap-3">
           <MigrationTool />
-          <div className="bg-white px-5 py-2.5 rounded-2xl border border-slate-200 card-depth flex items-center gap-2">
+          <div className="bg-white px-5 py-2.5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-2">
             <Calendar size={18} className="text-primary" />
             <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{format(new Date(), 'MMMM yyyy', { locale: es })}</span>
           </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         <StatCard 
           title="Ventas del Mes" 
           value={totalSalesAmount} 
           icon={TrendingUp} 
-          color="blue" 
+          color="teal" 
           trend={{ value: 12, isUp: true }}
         />
         <StatCard 
@@ -292,7 +292,7 @@ export default function Dashboard() {
           title="Cuentas por Cobrar" 
           value={totalDebts} 
           icon={CreditCard} 
-          color="blue" 
+          color="teal" 
         />
         <StatCard 
           title="Cuentas por Pagar" 
@@ -310,26 +310,26 @@ export default function Dashboard() {
           title="Valor de Venta Est." 
           value={totalRetailValue} 
           icon={TrendingUp} 
-          color="blue" 
+          color="teal" 
         />
         {lowStockCount > 0 ? (
           <motion.div 
-            whileHover={{ y: -5 }}
-            className="p-4 rounded-3xl border border-red-100 bg-red-100 card-depth flex flex-col justify-between"
+            whileHover={{ y: -3, transition: { duration: 0.15 } }}
+            className="p-5 rounded-[24px] border border-rose-200/80 bg-rose-100/60 shadow-xs flex flex-col justify-between min-h-[135px]"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="p-2 rounded-xl bg-red-100 text-red-600">
-                <AlertTriangle size={20} />
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-2.5 rounded-xl bg-white text-red-600 border border-rose-100 shadow-xs flex items-center justify-center">
+                <AlertTriangle size={20} strokeWidth={2.2} />
               </div>
-              <div className="flex items-center text-[8px] font-black px-1.5 py-0.5 bg-red-600 text-white rounded-full uppercase animate-pulse">
-                Acción
+              <div className="flex items-center text-[9px] font-black px-2.5 py-0.5 bg-red-600 text-white rounded-full uppercase tracking-wider shadow-sm">
+                ACCIÓN
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-medium text-slate-500 mb-0.5 whitespace-nowrap">Stock Crítico</p>
-              <h3 className="text-lg font-black text-red-600 italic serif leading-tight">{lowStockCount} items</h3>
-              <Link to="/inventory" className="text-[8px] font-bold text-red-400 hover:text-red-600 flex items-center gap-0.5 mt-1 uppercase tracking-widest whitespace-nowrap">
-                Revisar <ChevronRight size={8} />
+              <p className="text-xs font-semibold text-slate-600 mb-0.5">Stock Crítico</p>
+              <h3 className="text-2xl font-black text-red-600 italic tracking-tight leading-none">{lowStockCount} items</h3>
+              <Link to="/inventory" className="text-[10px] font-black text-rose-500 hover:text-rose-700 flex items-center gap-1 uppercase tracking-widest mt-1.5">
+                REVISAR <ChevronRight size={12} />
               </Link>
             </div>
           </motion.div>
