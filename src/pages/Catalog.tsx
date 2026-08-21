@@ -5,7 +5,10 @@ import {
   query, 
   where, 
   getDocs,
-  limit
+  limit,
+  doc,
+  onSnapshot,
+  getDoc
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { formatCurrency, cn, getGoogleDriveDirectLink } from '../lib/utils';
@@ -13,7 +16,7 @@ import {
   ShoppingCart, 
   Phone, 
   Share2, 
-  Check,
+  Check, 
   ChevronRight,
   Package,
   Search,
@@ -24,11 +27,14 @@ import {
   Minus,
   MessageCircle,
   Truck,
-  Hammer
+  Hammer,
+  Megaphone,
+  Upload
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_OWNER_ID } from '../constants';
+import { PromoBanner, CatalogBannerData, BannerEditorModal } from '../components/PromoBanner';
 
 interface CartItem {
   id: string;
@@ -42,7 +48,7 @@ interface CartItem {
 export default function Catalog() {
   const { ownerId: paramOwnerId } = useParams();
   const { user, effectiveUid, loading: authLoading } = useAuth();
-  const ownerId = paramOwnerId || effectiveUid;
+  const ownerId = paramOwnerId || effectiveUid || DEFAULT_OWNER_ID;
   
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState<any[]>([]);
@@ -52,11 +58,46 @@ export default function Catalog() {
   const [showShareOptions, setShowShareOptions] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
+  const [banner, setBanner] = useState<CatalogBannerData | null>(null);
+  const [isBannerEditorOpen, setIsBannerEditorOpen] = useState(false);
+
+  // Determine if viewing user is the owner/admin
+  const isOwner = Boolean(user && (!paramOwnerId || paramOwnerId === effectiveUid || paramOwnerId === DEFAULT_OWNER_ID));
 
   // Get price type from URL: ?type=mayor or ?type=detal (default)
   const priceType = searchParams.get('type') === 'mayor' ? 'mayor' : 'detal';
 
   const [error, setError] = useState<string | null>(null);
+
+  // Subscribe to real-time banner updates
+  useEffect(() => {
+    if (!ownerId) return;
+
+    const bannerDocRef = doc(db, 'banners', `catalog_${ownerId}`);
+    const unsubscribe = onSnapshot(bannerDocRef, async (docSnap) => {
+      if (docSnap.exists()) {
+        setBanner({ id: docSnap.id, ...docSnap.data() } as CatalogBannerData);
+      } else if (ownerId !== DEFAULT_OWNER_ID) {
+        // Fallback to default owner banner if custom does not exist yet
+        try {
+          const fallbackSnap = await getDoc(doc(db, 'banners', `catalog_${DEFAULT_OWNER_ID}`));
+          if (fallbackSnap.exists()) {
+            setBanner({ id: fallbackSnap.id, ...fallbackSnap.data() } as CatalogBannerData);
+          } else {
+            setBanner(null);
+          }
+        } catch {
+          setBanner(null);
+        }
+      } else {
+        setBanner(null);
+      }
+    }, (err) => {
+      console.warn("Banner subscription note:", err);
+    });
+
+    return () => unsubscribe();
+  }, [ownerId]);
 
   useEffect(() => {
     async function fetchCatalog() {
@@ -236,6 +277,16 @@ export default function Catalog() {
                   Mayorista
                 </span>
               )}
+              {isOwner && (
+                <button 
+                  onClick={() => setIsBannerEditorOpen(true)}
+                  className="bg-blue-50 text-blue-700 hover:bg-blue-100 p-1.5 md:p-2 rounded-lg transition-all flex items-center gap-1.5 group border border-blue-200 shadow-sm"
+                  title="Configurar Banner y Propaganda"
+                >
+                  <Megaphone size={12} className="group-hover:scale-110 transition-transform text-blue-600" />
+                  <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest">Propaganda</span>
+                </button>
+              )}
               <button 
                   onClick={() => setShowShareOptions(true)}
                   className="bg-white text-slate-900 hover:bg-slate-50 p-1.5 md:p-2 rounded-lg transition-all flex items-center gap-1.5 group border border-slate-200 shadow-sm"
@@ -259,8 +310,17 @@ export default function Catalog() {
         </div>
       </header>
 
+      {/* Promotional Banner */}
+      <PromoBanner 
+        banner={banner}
+        priceType={priceType}
+        ownerId={ownerId}
+        isOwner={isOwner}
+        onBannerUpdated={(updated) => setBanner(updated)}
+      />
+
       {/* Product List */}
-      <div className="max-w-4xl mx-auto px-6 pt-10">
+      <div className="max-w-4xl mx-auto px-6 pt-6 md:pt-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
           {filtered.map(product => (
             <motion.div 
@@ -588,6 +648,21 @@ export default function Catalog() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isBannerEditorOpen && (
+          <BannerEditorModal
+            isOpen={isBannerEditorOpen}
+            onClose={() => setIsBannerEditorOpen(false)}
+            initialBanner={banner}
+            ownerId={ownerId}
+            onSaved={(saved) => {
+              setBanner(saved);
+              setIsBannerEditorOpen(false);
+            }}
+          />
         )}
       </AnimatePresence>
     </div>

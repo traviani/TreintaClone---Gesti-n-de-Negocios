@@ -127,9 +127,32 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["productId", "amount", "ownerId"]
+    },
+    "CatalogBanner": {
+      "title": "Catalog Banner",
+      "description": "Promotional billboard and advertisement banner for the digital catalog",
+      "type": "object",
+      "properties": {
+        "imageUrl": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "badge": { "type": "string" },
+        "discountText": { "type": "string" },
+        "linkUrl": { "type": "string" },
+        "targetAudience": { "type": "string", "enum": ["all", "detal", "mayor"] },
+        "isActive": { "type": "boolean" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["imageUrl", "isActive", "ownerId"]
     }
   },
   "firestore": {
+    "/banners/{bannerId}": {
+      "schema": "CatalogBanner",
+      "description": "Promotional banners for catalogs"
+    },
     "/products/{productId}": {
       "schema": "Product",
       "description": "Master product list"
