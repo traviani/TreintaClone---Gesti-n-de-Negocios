@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Sparkles, 
   Image as ImageIcon, 
@@ -16,7 +17,8 @@ import {
   Percent,
   Layers,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  Maximize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { doc, setDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
@@ -379,12 +381,23 @@ export function BannerEditorModal({
               </p>
             </div>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/promotions"
+              onClick={onClose}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-xl transition-all"
+              title="Abrir en pantalla completa de publicidad"
+            >
+              <Maximize2 size={13} />
+              <span>Pantalla Completa</span>
+            </Link>
+            <button 
+              onClick={onClose}
+              className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Scrollable Form Body */}

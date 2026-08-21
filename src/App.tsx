@@ -24,6 +24,7 @@ const Sales = React.lazy(() => import('./pages/Sales'));
 const ReceiptPage = React.lazy(() => import('./pages/ReceiptPage'));
 const AccountsReceivable = React.lazy(() => import('./pages/AccountsReceivable'));
 const DemandAnalysis = React.lazy(() => import('./pages/DemandAnalysis'));
+const Promotions = React.lazy(() => import('./pages/Promotions'));
 
 export default function App() {
   return (
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="/sales" element={<Layout><Sales /></Layout>} />
             <Route path="/receivable" element={<Layout><AccountsReceivable /></Layout>} />
             <Route path="/demand" element={<Layout><DemandAnalysis /></Layout>} />
+            <Route path="/promotions" element={<Layout><Promotions /></Layout>} />
             
             {/* Registration/Login still available if someone wants to use it */}
             <Route path="/login" element={<Login />} />

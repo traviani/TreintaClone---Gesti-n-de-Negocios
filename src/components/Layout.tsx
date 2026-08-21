@@ -13,7 +13,8 @@ import {
   Truck,
   HandCoins,
   Sparkles,
-  Share2
+  Share2,
+  Megaphone
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../lib/firebase';
@@ -31,6 +32,7 @@ const navItems = [
   { id: 'receivable', label: 'Cuentas por Cobrar', path: '/receivable', icon: HandCoins },
   { id: 'customers', label: 'Clientes / Fiados', path: '/customers', icon: Users },
   { id: 'catalog', label: 'Catálogo', path: '/catalog', icon: Share2 },
+  { id: 'promotions', label: 'Publicidad / Banners', path: '/promotions', icon: Megaphone },
   { id: 'demand', label: 'Análisis IA', path: '/demand', icon: Sparkles },
 ];
 
