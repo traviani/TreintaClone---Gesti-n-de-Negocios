@@ -33,11 +33,13 @@ import {
   RotateCcw,
   CreditCard,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  Printer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { RecipeSheet, RecipeIngredientDetail } from '../components/RecipeSheet';
 
 interface Product {
   id: string;
@@ -89,6 +91,7 @@ export default function Manufacturing() {
   const [batchAmounts, setBatchAmounts] = useState<Record<string, number>>({});
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>('');
   const [recipeYield, setRecipeYield] = useState<number>(1);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const getNormalizedQuantity = (ingredientId: string, quantity: number, targetUnit: string) => {
     const ingredient = products.find(p => p.id === ingredientId);
@@ -456,7 +459,7 @@ export default function Manufacturing() {
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Pendiente en {item.totalSales} Ventas</p>
                           </div>
                           <div className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-black">
-                            {item.quantity} {product?.unit || 'Años'}
+                            {item.quantity} {product?.unit || 'unid'}
                           </div>
                         </div>
 
@@ -506,8 +509,8 @@ export default function Manufacturing() {
                        <span className="text-2xl font-black">{pendingItems.length}</span>
                     </div>
                     <div className="flex justify-between items-end border-b border-white/10 pb-4">
-                       <span className="text-sm font-bold opacity-60">Total Años</span>
-                       <span className="text-2xl font-black">{pendingItems.reduce((sum, i) => sum + i.quantity, 0)} Años</span>
+                       <span className="text-sm font-bold opacity-60">Total Unidades</span>
+                       <span className="text-2xl font-black">{pendingItems.reduce((sum, i) => sum + i.quantity, 0)}</span>
                     </div>
                  </div>
                  <p className="text-[10px] font-medium text-slate-400 leading-relaxed italic">
@@ -543,7 +546,7 @@ export default function Manufacturing() {
                                     const product = products.find(p => p.id === recipe.productId);
                                     return (
                                         <option key={recipe.id} value={recipe.id} className="bg-white text-slate-900">
-                                            {product?.name || 'Receta'} ({product?.unit || 'Años'})
+                                            {product?.name || 'Receta'} ({product?.unit || 'unid'})
                                         </option>
                                     );
                                 })}
@@ -585,20 +588,39 @@ export default function Manufacturing() {
                                     className="space-y-8"
                                 >
                                     <div className="grid grid-cols-1 gap-6">
-                                        {/* Formula Panel - Now potentially wider or more centered */}
+                                        {/* Formula Panel */}
                                         <div className="space-y-4">
-                                            <div className="flex items-center justify-between px-2">
+                                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
                                                 <div className="flex flex-col">
-                                                    <h3 className="text-sm font-black text-slate-600 uppercase tracking-widest italic font-sans">Análisis de Insumos</h3>
-                                                    {recipe.yield && recipe.yield !== 1 && (
-                                                        <span className="text-[10px] font-bold text-blue-500 italic">Rendimiento: {recipe.yield} {product?.unit} por tanda</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
+                                                            Receta Maestra
+                                                        </span>
+                                                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                                                            {product?.name || 'Receta'}
+                                                        </h3>
+                                                    </div>
+                                                    {recipe.yield && (
+                                                        <span className="text-[11px] font-bold text-slate-500 italic mt-1">
+                                                            Rendimiento base: {recipe.yield} {product?.unit || 'unid'} por tanda
+                                                        </span>
                                                     )}
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="text-[11px] font-black text-slate-400 uppercase italic block">En Inventario</span>
-                                                    <span className="text-xl font-bold text-slate-900">
-                                                        {product?.stock || 0} <span className="text-xs text-slate-400">{product?.unit || 'Años'}</span>
-                                                    </span>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={() => setIsPrintModalOpen(true)}
+                                                        className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
+                                                        title="Imprimir Hoja de Producción y Receta"
+                                                    >
+                                                        <Printer size={15} />
+                                                        <span>Imprimir Receta</span>
+                                                    </button>
+                                                    <div className="text-right pl-3 border-l border-slate-200">
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase italic block">En Inventario</span>
+                                                        <span className="text-lg font-bold text-slate-900">
+                                                            {product?.stock || 0} <span className="text-xs text-slate-400">{product?.unit || 'unid'}</span>
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -623,7 +645,7 @@ export default function Manufacturing() {
                                                                 <div className="flex flex-col col-span-1">
                                                                     <span className="text-base font-bold text-slate-900 truncate leading-tight">{ingProduct?.name || 'Insumo'}</span>
                                                                     <span className="text-[9px] text-blue-600 uppercase font-black">
-                                                                        {formatCurrency(getDisplayUnitCost(ingProduct?.cost || 0, ingProduct?.unit || 'unid', ing.unit || 'unid'), 4)} / {ing.unit || ingProduct?.unit || 'Años'}
+                                                                        {formatCurrency(getDisplayUnitCost(ingProduct?.cost || 0, ingProduct?.unit || 'unid', ing.unit || 'unid'), 4)} / {ing.unit || ingProduct?.unit || 'unid'}
                                                                     </span>
                                                                 </div>
                                                                 
@@ -655,7 +677,7 @@ export default function Manufacturing() {
 
                                     {/* Final Production Control & Profitability Bar */}
                                     <div className="pt-6 border-t border-slate-200/60 space-y-4">
-                                    {/* Horizontal Profitability Bar - High Contrast Light Style */}
+                                    {/* Horizontal Profitability Bar */}
                                     <div className="bg-blue-50/50 p-6 rounded-[3rem] border border-blue-100 space-y-4 shadow-sm mt-6">
                                             {/* Row 1: Prices Indicator (Horizontal) */}
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -712,7 +734,7 @@ export default function Manufacturing() {
                                                 {/* Batch Summary Row */}
                                                 <div className="bg-white p-5 rounded-[2rem] border border-blue-100/50 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
                                                     <div className="flex flex-col items-center sm:items-start text-center sm:text-left transition-all">
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic mb-1">Total Lote ({((recipe.yield || 1) * (batchAmounts[recipe.id] || 1)).toLocaleString()} {product?.unit})</span>
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic mb-1">Total Lote ({((recipe.yield || 1) * (batchAmounts[recipe.id] || 1)).toLocaleString()} {product?.unit || 'unid'})</span>
                                                         <div className="flex items-baseline gap-2">
                                                             <span className="text-[9px] font-bold text-slate-400 uppercase">Venta (AL MAYOR):</span>
                                                             <span className="text-xl font-black text-blue-600 italic">{formatCurrency(wholesalePrice * (recipe.yield || 1) * (batchAmounts[recipe.id] || 1))}</span>
@@ -726,12 +748,12 @@ export default function Manufacturing() {
                                                 </div>
                                             </div>
 
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-40 shrink-0">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                                            <div className="w-full sm:w-44 shrink-0">
                                                 <div className="flex items-center bg-blue-50 rounded-2xl p-1.5 border border-blue-200 shadow-sm">
                                                     <button 
                                                         onClick={() => setBatchAmounts({ ...batchAmounts, [recipe.id]: Math.max(1, (batchAmounts[recipe.id] || 1) - 1) })}
-                                                        className="w-10 h-10 flex items-center justify-center text-blue-700 hover:bg-blue-100 rounded-xl transition-all font-black text-xl"
+                                                        className="w-10 h-10 flex items-center justify-center text-blue-700 hover:bg-blue-100 rounded-xl transition-all font-black text-xl cursor-pointer"
                                                     >
                                                         -
                                                     </button>
@@ -744,13 +766,22 @@ export default function Manufacturing() {
                                                     />
                                                     <button 
                                                         onClick={() => setBatchAmounts({ ...batchAmounts, [recipe.id]: (batchAmounts[recipe.id] || 1) + 1 })}
-                                                        className="w-10 h-10 flex items-center justify-center text-blue-700 hover:bg-blue-100 rounded-xl transition-all font-black text-xl"
+                                                        className="w-10 h-10 flex items-center justify-center text-blue-700 hover:bg-blue-100 rounded-xl transition-all font-black text-xl cursor-pointer"
                                                     >
                                                         +
                                                     </button>
                                                 </div>
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 block text-center italic">Paquetes a Producir</span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 block text-center italic">Tandas a Producir</span>
                                             </div>
+
+                                            <button 
+                                                onClick={() => setIsPrintModalOpen(true)}
+                                                className="py-4 px-6 rounded-2xl font-black bg-slate-900 text-white hover:bg-slate-800 border border-slate-900 flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md cursor-pointer"
+                                                title="Imprimir Hoja de Producción y Receta"
+                                            >
+                                                <Printer size={18} className="text-blue-300" />
+                                                <span className="tracking-widest uppercase text-xs">Imprimir Receta</span>
+                                            </button>
 
                                             <button 
                                                 onClick={(e) => {
@@ -759,7 +790,7 @@ export default function Manufacturing() {
                                                 }}
                                                 disabled={isProducing === recipe.id}
                                                 className={cn(
-                                                    "flex-1 py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg relative overflow-hidden group/prod",
+                                                    "flex-1 py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg relative overflow-hidden group/prod cursor-pointer",
                                                     isProducing === recipe.id 
                                                         ? "bg-slate-100 text-slate-400 cursor-not-allowed" 
                                                         : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200/50"
@@ -875,7 +906,7 @@ export default function Manufacturing() {
                                 onChange={(e) => setSelectedProduct(e.target.value)}
                             >
                                 <option value="">Selecciona qué producto sale...</option>
-                                {finishedProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'Años'})</option>)}
+                                {finishedProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'unid'})</option>)}
                             </select>
                         </div>
                         <div className="space-y-2">
@@ -911,7 +942,7 @@ export default function Manufacturing() {
                                     }}
                                 >
                                     <option value="">Insumo...</option>
-                                    {ingredientChoices.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'Años'})</option>)}
+                                    {ingredientChoices.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'unid'})</option>)}
                                 </select>
                                 <div className="flex items-center gap-2">
                                     <input 
@@ -954,7 +985,7 @@ export default function Manufacturing() {
                                             <option value="ml">ml</option>
                                         </select>
                                     ) : (
-                                        <span className="text-[10px] font-black text-slate-400 uppercase w-10 text-center">{item.unit || 'Años'}</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase w-10 text-center">{item.unit || 'unid'}</span>
                                     )}
                                 </div>
                                 <button onClick={() => removeIngredient(idx)} className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
@@ -966,7 +997,7 @@ export default function Manufacturing() {
                             onClick={addIngredientToRecipe}
                             className="w-full py-5 border-4 border-dotted border-slate-100 text-slate-400 rounded-3xl text-xs font-black uppercase tracking-[0.2em] hover:border-blue-200 hover:text-blue-500 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
                         >
-                            <Plus size={20} /> Agregar Insumo a la Recta
+                            <Plus size={20} /> Agregar Insumo a la Receta
                         </button>
                     </div>
                 </div>
@@ -982,6 +1013,58 @@ export default function Manufacturing() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Printable Recipe Sheet Modal */}
+      {(() => {
+        const currentRecipeObj = recipes.find(r => r.id === selectedRecipeId);
+        const currentProductObj = products.find(p => p.id === currentRecipeObj?.productId);
+        
+        if (!currentRecipeObj || !currentProductObj) return null;
+
+        const yieldAmount = currentRecipeObj.yield || 1;
+        const multiplier = batchAmounts[currentRecipeObj.id] || 1;
+        const totalRecipeCost = (currentRecipeObj.ingredients.reduce((acc, ing) => {
+          const ingProduct = products.find(p => p.id === ing.ingredientId);
+          const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity || 0, ing.unit || 'unid');
+          return acc + (Number(ingProduct?.cost || 0) * normalizedQty);
+        }, 0)) / yieldAmount;
+
+        const ingDetails: RecipeIngredientDetail[] = currentRecipeObj.ingredients.map(ing => {
+          const ingProduct = products.find(p => p.id === ing.ingredientId);
+          const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity || 0, ing.unit || 'unid');
+          const totalNeeded = normalizedQty * multiplier;
+          const baseUnit = ingProduct?.unit || 'unid';
+          const targetUnit = ing.unit || baseUnit;
+          const unitCost = getDisplayUnitCost(ingProduct?.cost || 0, baseUnit, targetUnit);
+          const lineCost = (ingProduct?.cost || 0) * totalNeeded;
+
+          return {
+            ingredientId: ing.ingredientId,
+            name: ingProduct?.name || 'Insumo',
+            unit: targetUnit,
+            baseUnit: baseUnit,
+            baseQuantity: ing.quantity || 0,
+            totalQuantity: (ing.quantity || 0) * multiplier,
+            currentStock: ingProduct?.stock || 0,
+            unitCost: unitCost,
+            totalCost: lineCost,
+            hasEnoughStock: (ingProduct?.stock || 0) >= totalNeeded
+          };
+        });
+
+        return (
+          <RecipeSheet
+            isOpen={isPrintModalOpen}
+            onClose={() => setIsPrintModalOpen(false)}
+            recipe={currentRecipeObj}
+            product={currentProductObj}
+            ingredients={ingDetails}
+            batchMultiplier={multiplier}
+            totalRecipeCostPerUnit={totalRecipeCost}
+            totalBatchCost={totalRecipeCost * yieldAmount * multiplier}
+          />
+        );
+      })()}
     </div>
   );
 }
