@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Truck, Hammer, FileText, Printer, Receipt as ReceiptIcon } from 'lucide-react';
+import { FileText, Printer, Receipt as ReceiptIcon } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -20,11 +20,14 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="receipt-single-half w-full bg-white px-4 py-2 flex flex-col justify-between box-border" style={{ minHeight: '124mm', maxHeight: '130mm' }}>
+    <div 
+      className="receipt-single-half w-full bg-white px-5 py-3 flex flex-col justify-between box-border text-slate-900 font-sans" 
+      style={{ minHeight: '124mm', maxHeight: '130mm', color: '#0f172a' }}
+    >
       {/* Header Section */}
-      <div className="flex justify-between items-center mb-1 pb-0.5 border-b border-slate-200">
+      <div className="flex justify-between items-center mb-1 pb-1 border-b border-slate-300">
         <div className="flex items-center gap-3">
-          <div className="w-[125px] h-[34px] flex items-center justify-start overflow-hidden">
+          <div className="w-[125px] h-[36px] flex items-center justify-start overflow-hidden">
             {!imgError ? (
               <img 
                 src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
@@ -33,61 +36,61 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
                 className="max-h-full max-w-full object-contain object-left"
                 style={{
                   maxWidth: "125px",
-                  maxHeight: "34px",
+                  maxHeight: "36px",
                   display: "block"
                 }}
-                onError={() => {
-                  setImgError(true);
-                }}
+                onError={() => setImgError(true)}
               />
             ) : (
-              <div className="flex items-center gap-1.5 font-black text-slate-900 tracking-tighter">
-                <span className="bg-teal-700 text-white text-xs px-2 py-0.5 rounded font-black tracking-tight">TRAVIANI</span>
+              <div className="flex items-center gap-1.5 font-black text-slate-900 tracking-tight">
+                <span className="bg-teal-700 text-white text-xs px-2 py-0.5 rounded font-black">TRAVIANI</span>
               </div>
             )}
           </div>
           <div>
-            <h1 className="font-black text-slate-900 italic tracking-tight uppercase leading-none text-[13px]">
+            <h1 className="font-extrabold text-slate-900 tracking-tight uppercase leading-tight text-[13.5px]">
               Inversiones Traviani C.A.
             </h1>
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-0.5 leading-none">
+            <p className="text-[10px] font-bold text-slate-700 uppercase tracking-wide leading-tight">
               RIF: J-501798788
             </p>
           </div>
         </div>
 
         <div className="text-right leading-tight">
-          <p className="text-base font-black text-slate-900 tracking-tight">
+          <p className="text-[15px] font-black text-slate-950 tracking-tight">
             № {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : `ID-${sale.id?.slice(-4).toUpperCase() || '6313'}`}
           </p>
-          <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">FECHA: {dateStr}</p>
+          <p className="text-[10px] font-bold text-slate-700 uppercase mt-0.5">FECHA: {dateStr}</p>
         </div>
       </div>
 
       {/* NOTA DE ENTREGA Title Banner */}
       <div className="text-center my-0.5 flex flex-col items-center">
-        <div className="w-full border-t border-black"></div>
-        <p className="text-[13px] font-black text-black italic tracking-[0.2em] py-0.5 leading-none uppercase select-none my-0.5">
+        <div className="w-full border-t-2 border-slate-900"></div>
+        <p className="text-[13px] font-black text-slate-950 tracking-[0.15em] py-0.5 leading-none uppercase select-none my-0.5">
           NOTA DE ENTREGA
         </p>
-        <div className="w-full border-b border-black"></div>
+        <div className="w-full border-b-2 border-slate-900"></div>
       </div>
 
       {/* Customer Information Section */}
-      <div className="pt-0.5 mb-1 text-[10px]">
-        <div className="flex justify-between items-start mb-0.5">
+      <div className="pt-0.5 mb-1 text-[11px] leading-tight font-medium text-slate-900">
+        <div className="flex justify-between items-start mb-1">
           <div className="flex gap-2">
-            <span className="font-black italic uppercase text-slate-900">CLIENTE:</span>
-            <span className="font-bold text-slate-800 uppercase">{sale.customerName}</span>
+            <span className="font-extrabold uppercase text-slate-950">CLIENTE:</span>
+            <span className="font-bold text-slate-900 uppercase">{sale.customerName}</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex gap-1.5">
-              <span className="font-black italic uppercase text-slate-900">RIF/CI:</span>
-              <span className="font-bold text-slate-800 whitespace-nowrap">{sale.customerIdNumber || 'J-501798788'}</span>
+              <span className="font-extrabold uppercase text-slate-950">RIF/CI:</span>
+              <span className="font-bold text-slate-900 whitespace-nowrap">{sale.customerIdNumber || 'J-501798788'}</span>
             </div>
             <span className={cn(
-              "font-black italic uppercase px-1.5 py-0.2 rounded text-[9px]",
-              sale.saleType === 'credito' ? "text-red-600 bg-red-50" : "text-emerald-700 bg-emerald-50"
+              "font-extrabold uppercase px-2 py-0.5 rounded text-[10px] border",
+              sale.saleType === 'credito' 
+                ? "text-red-700 bg-red-50 border-red-200" 
+                : "text-emerald-800 bg-emerald-50 border-emerald-200"
             )}>
               {sale.saleType === 'credito' ? 'Crédito' : 'Contado'}
             </span>
@@ -96,12 +99,14 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
         
         <div className="space-y-0.5">
           <div className="flex gap-2">
-            <span className="font-black italic uppercase text-slate-900">TEL:</span>
-            <span className="font-bold text-slate-800">{sale.customerPhone || '584147096535'}</span>
+            <span className="font-extrabold uppercase text-slate-950">TELÉFONO:</span>
+            <span className="font-bold text-slate-900">{sale.customerPhone || '584147096535'}</span>
           </div>
           <div className="flex items-start gap-2">
-            <span className="font-black italic uppercase text-slate-900 shrink-0">DIRECCIÓN:</span>
-            <span className="font-bold text-slate-700 uppercase leading-tight text-[9.5px]">{sale.customerAddress || 'av gonzález rincones qta la nena la trinidad caracas'}</span>
+            <span className="font-extrabold uppercase text-slate-950 shrink-0">DIRECCIÓN:</span>
+            <span className="font-medium text-slate-800 uppercase leading-snug text-[10.5px]">
+              {sale.customerAddress || 'AV GONZÁLEZ RINCONES QTA LA NENA LA TRINIDAD CARACAS'}
+            </span>
           </div>
         </div>
       </div>
@@ -111,25 +116,25 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
         <div className="w-full">
           {/* Header row */}
           <div className="w-full">
-            <div className="w-full border-t border-black"></div>
-            <div className="flex items-center py-0.5 text-[9px] font-black italic uppercase select-none">
-              <div className="w-12 text-center">CANT</div>
-              <div className="flex-1 px-2 text-left">DESCRIPCIÓN</div>
-              <div className="w-20 text-right">P.UNIT</div>
-              <div className="w-24 text-right">TOTAL</div>
+            <div className="w-full border-t-2 border-slate-900"></div>
+            <div className="flex items-center py-1 text-[10px] font-black uppercase select-none text-slate-950 bg-slate-100">
+              <div className="w-14 text-center">CANT</div>
+              <div className="flex-1 px-2 text-left">DESCRIPCIÓN DEL PRODUCTO</div>
+              <div className="w-24 text-right">P. UNITARIO</div>
+              <div className="w-24 text-right pr-1">TOTAL</div>
             </div>
-            <div className="w-full border-b border-black"></div>
+            <div className="w-full border-b-2 border-slate-900"></div>
           </div>
           {/* Table Body */}
-          <div className="text-[10px]">
+          <div className="text-[11px]">
             {sale.items.map((item: any, i: number) => (
-              <div key={i} className="flex items-center py-0.5 border-b border-slate-100">
-                <div className="w-12 text-center font-black">{item.quantity}</div>
-                <div className="flex-1 px-2 font-bold text-slate-800 uppercase leading-tight">{item.name}</div>
-                <div className="w-20 text-right text-slate-600 italic whitespace-nowrap">
+              <div key={i} className="flex items-center py-1 border-b border-slate-200 font-medium">
+                <div className="w-14 text-center font-black text-slate-950">{item.quantity}</div>
+                <div className="flex-1 px-2 font-bold text-slate-900 uppercase leading-tight">{item.name}</div>
+                <div className="w-24 text-right text-slate-800 font-semibold whitespace-nowrap">
                   $ {formatCurrency(item.price).replace('$', '')}
                 </div>
-                <div className="w-24 text-right font-black text-slate-900 whitespace-nowrap">
+                <div className="w-24 text-right font-black text-slate-950 pr-1 whitespace-nowrap">
                   $ {formatCurrency(item.price * item.quantity).replace('$', '')}
                 </div>
               </div>
@@ -139,47 +144,47 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
       </div>
 
       {/* Total Net Section */}
-      <div className="space-y-0 mb-1 border-t border-black pt-0.5">
+      <div className="space-y-0.5 mb-1.5 border-t-2 border-slate-900 pt-1">
         {(sale.discount > 0 || sale.isSample) && (
           <>
-            <div className="flex justify-between items-center text-[9px] font-bold text-slate-500 uppercase italic">
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-700 uppercase">
               <span>SUBTOTAL:</span>
-              <span>$ {formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}</span>
+              <span className="font-extrabold">$ {formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}</span>
             </div>
-            <div className="flex justify-between items-center text-[9px] font-black text-emerald-700 uppercase italic leading-none">
+            <div className="flex justify-between items-center text-[10.5px] font-black text-emerald-800 uppercase leading-none">
               <span>{sale.isSample ? 'BONIFICACIÓN (MUESTRA):' : 'DESCUENTO:'}</span>
               <span>- $ {formatCurrency(sale.discount).replace('$', '')}</span>
             </div>
           </>
         )}
-        <div className="flex justify-between items-center leading-tight">
-          <h2 className="font-black italic uppercase tracking-tight text-xs text-slate-900">TOTAL NETO A PAGAR</h2>
-          <span className="text-sm font-black tabular-nums tracking-tight text-slate-900">
+        <div className="flex justify-between items-center leading-tight py-0.5">
+          <h2 className="font-extrabold uppercase tracking-tight text-xs text-slate-950">TOTAL NETO A PAGAR</h2>
+          <span className="text-[15px] font-black tabular-nums tracking-tight text-slate-950">
              $ {formatCurrency(sale.total).replace('$', '')}
           </span>
         </div>
       </div>
 
       {/* Payment Channels */}
-      <div className="grid grid-cols-3 gap-1 border-y border-slate-200 py-1 text-[7.5px] mb-1">
-        <div className="pr-1.5 border-r border-slate-200">
-          <span className="font-black text-slate-500 block mb-0.5">PAGO MÓVIL</span>
-          <p className="font-bold text-slate-800 uppercase leading-tight">MERCANTIL | 0414-2391131 | V-13493831</p>
+      <div className="grid grid-cols-3 gap-1 border-y border-slate-300 py-1 text-[8.5px] mb-1 bg-slate-50 rounded">
+        <div className="px-1.5 border-r border-slate-300">
+          <span className="font-extrabold text-slate-900 block mb-0.5">PAGO MÓVIL</span>
+          <p className="font-bold text-slate-850 uppercase leading-snug">MERCANTIL | 0414-2391131 | V-13493831</p>
         </div>
-        <div className="px-1.5 border-r border-slate-200">
-          <span className="font-black text-slate-500 block mb-0.5">TRANSFERENCIA</span>
-          <p className="font-bold text-slate-800 uppercase leading-tight">0105-0750-21-1750063115 | Marco T.</p>
+        <div className="px-1.5 border-r border-slate-300">
+          <span className="font-extrabold text-slate-900 block mb-0.5">TRANSFERENCIA</span>
+          <p className="font-bold text-slate-850 uppercase leading-snug">0105-0750-21-1750063115 | Marco T.</p>
         </div>
-        <div className="pl-1.5 text-right">
-          <span className="font-black text-teal-700 block mb-0.5">ZELLE / BINANCE</span>
-          <p className="font-bold text-slate-800 leading-tight">tramontemarco27@gmail.com</p>
+        <div className="px-1.5 text-right">
+          <span className="font-extrabold text-teal-800 block mb-0.5">ZELLE / BINANCE</span>
+          <p className="font-bold text-slate-850 leading-snug">tramontemarco27@gmail.com</p>
         </div>
       </div>
 
       {/* Footer */}
       <div className="text-center leading-none">
-        <p className="text-[11px] font-black italic uppercase tracking-[0.15em] mb-0 text-slate-900">¡GRACIAS POR SU CONFIANZA!</p>
-        <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{copyLabel}</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.1em] mb-0 text-slate-950">¡GRACIAS POR SU CONFIANZA!</p>
+        <p className="text-[8.5px] font-bold text-slate-500 uppercase mt-0.5">{copyLabel}</p>
       </div>
     </div>
   );
@@ -195,84 +200,92 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
 
   return (
     <div 
-      className="receipt-thermal-ticket w-[76mm] bg-white text-black p-2 font-mono text-[11px] leading-tight box-border mx-auto"
-      style={{ width: '76mm', maxWidth: '76mm', color: '#000000', backgroundColor: '#ffffff' }}
+      className="receipt-thermal-ticket w-[76mm] bg-white text-black p-3 font-sans box-border mx-auto leading-snug"
+      style={{ 
+        width: '76mm', 
+        maxWidth: '76mm', 
+        color: '#000000', 
+        backgroundColor: '#ffffff',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif'
+      }}
     >
       {/* Header */}
-      <div className="text-center mb-2 pb-1 border-b border-black border-dashed">
+      <div className="text-center mb-2 pb-1.5 border-b-2 border-black">
         {!imgError ? (
-          <div className="w-full flex justify-center mb-1">
+          <div className="w-full flex justify-center mb-1.5">
             <img 
               src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
               alt="Logo Traviani" 
               referrerPolicy="no-referrer"
-              className="h-9 object-contain mx-auto filter grayscale contrast-200"
-              style={{ maxHeight: '36px', maxWidth: '120px' }}
+              className="h-10 object-contain mx-auto filter grayscale contrast-200"
+              style={{ maxHeight: '40px', maxWidth: '140px' }}
               onError={() => setImgError(true)}
             />
           </div>
         ) : null}
 
-        <p className="font-black text-[13px] tracking-tight uppercase leading-none mb-0.5">
+        <p className="font-black text-[14px] tracking-tight uppercase leading-tight mb-0.5">
           INVERSIONES TRAVIANI C.A.
         </p>
-        <p className="text-[10px] font-bold uppercase">RIF: J-501798788</p>
+        <p className="text-[11px] font-extrabold uppercase tracking-wide">RIF: J-501798788</p>
         
-        <div className="my-1 py-0.5 border-y border-black font-black text-[11px] uppercase tracking-wider">
-          NOTA DE ENTREGA / TICKET
+        <div className="my-1.5 py-1 border-y-2 border-black font-black text-[12.5px] uppercase tracking-wider bg-black text-white">
+          NOTA DE ENTREGA
         </div>
 
-        <div className="flex justify-between items-center text-[10px] font-bold mt-1">
+        <div className="flex justify-between items-center text-[12px] font-extrabold mt-1">
           <span>№ {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : `ID-${sale.id?.slice(-4).toUpperCase() || '6313'}`}</span>
           <span>{dateStr}</span>
         </div>
       </div>
 
       {/* Customer Info */}
-      <div className="mb-2 pb-1 border-b border-black border-dashed text-[10px] space-y-0.5">
-        <div className="flex justify-between">
-          <span className="font-bold">CLIENTE:</span>
-          <span className="font-black uppercase text-right truncate max-w-[150px]">{sale.customerName}</span>
+      <div className="mb-2 pb-1.5 border-b border-black border-dashed text-[11.5px] space-y-1 font-medium">
+        <div className="flex justify-between items-start gap-1">
+          <span className="font-extrabold uppercase shrink-0">CLIENTE:</span>
+          <span className="font-black uppercase text-right leading-tight">{sale.customerName}</span>
         </div>
         <div className="flex justify-between">
-          <span className="font-bold">RIF/CI:</span>
+          <span className="font-extrabold">RIF/CI:</span>
           <span className="font-bold">{sale.customerIdNumber || 'J-501798788'}</span>
         </div>
         <div className="flex justify-between">
-          <span className="font-bold">TELÉFONO:</span>
-          <span>{sale.customerPhone || '584147096535'}</span>
+          <span className="font-extrabold">TELÉFONO:</span>
+          <span className="font-bold">{sale.customerPhone || '584147096535'}</span>
         </div>
         {sale.customerAddress && (
           <div>
-            <span className="font-bold block">DIRECCIÓN:</span>
-            <span className="text-[9px] uppercase leading-tight">{sale.customerAddress}</span>
+            <span className="font-extrabold block">DIRECCIÓN:</span>
+            <span className="text-[10.5px] font-bold uppercase leading-tight block">{sale.customerAddress}</span>
           </div>
         )}
-        <div className="flex justify-between pt-0.5">
-          <span className="font-bold">CONDICIÓN:</span>
-          <span className="font-black uppercase">{sale.saleType === 'credito' ? 'CRÉDITO' : 'CONTADO'}</span>
+        <div className="flex justify-between items-center pt-0.5">
+          <span className="font-extrabold">CONDICIÓN:</span>
+          <span className="font-black uppercase text-[11.5px] border border-black px-1.5 py-0.2 rounded">
+            {sale.saleType === 'credito' ? 'CRÉDITO' : 'CONTADO'}
+          </span>
         </div>
       </div>
 
       {/* Items Table */}
-      <div className="mb-2 pb-1 border-b border-black border-dashed">
-        <div className="flex justify-between font-black text-[10px] pb-1 border-b border-black">
-          <span className="w-8">CANT</span>
+      <div className="mb-2 pb-1.5 border-b-2 border-black">
+        <div className="flex justify-between font-black text-[11.5px] pb-1 border-b border-black uppercase">
+          <span className="w-10">CANT</span>
           <span className="flex-1 px-1">DESCRIPCIÓN</span>
-          <span className="w-14 text-right">TOTAL</span>
+          <span className="w-16 text-right">TOTAL</span>
         </div>
-        <div className="space-y-1.5 pt-1 text-[10.5px]">
+        <div className="space-y-2 pt-1.5 text-[12px]">
           {sale.items.map((item: any, i: number) => (
-            <div key={i}>
-              <div className="flex justify-between items-baseline font-bold">
-                <span className="w-8 font-black">{item.quantity}x</span>
+            <div key={i} className="border-b border-gray-200 pb-1">
+              <div className="flex justify-between items-baseline">
+                <span className="w-10 font-black text-[13px]">{item.quantity} x</span>
                 <span className="flex-1 px-1 font-bold uppercase leading-tight">{item.name}</span>
-                <span className="w-14 text-right font-black whitespace-nowrap">
+                <span className="w-16 text-right font-black text-[13px] whitespace-nowrap">
                   ${formatCurrency(item.price * item.quantity).replace('$', '')}
                 </span>
               </div>
-              <div className="text-[9px] text-right text-gray-700">
-                P.U: ${formatCurrency(item.price).replace('$', '')}
+              <div className="text-[10.5px] text-right font-bold text-gray-900 pr-0.5 mt-0.5">
+                (P.U: ${formatCurrency(item.price).replace('$', '')})
               </div>
             </div>
           ))}
@@ -280,47 +293,47 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
       </div>
 
       {/* Totals */}
-      <div className="mb-2 pb-1 border-b border-black border-dashed space-y-0.5 text-[10px]">
+      <div className="mb-2 pb-1.5 border-b border-black border-dashed space-y-1 text-[11.5px]">
         {(sale.discount > 0 || sale.isSample) && (
           <>
-            <div className="flex justify-between">
+            <div className="flex justify-between font-bold">
               <span>SUBTOTAL:</span>
               <span>${formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}</span>
             </div>
-            <div className="flex justify-between font-bold">
+            <div className="flex justify-between font-extrabold">
               <span>{sale.isSample ? 'BONIFICACIÓN (MUESTRA):' : 'DESCUENTO:'}</span>
               <span>-${formatCurrency(sale.discount).replace('$', '')}</span>
             </div>
           </>
         )}
-        <div className="flex justify-between items-center text-[13px] font-black pt-1 border-t border-black">
+        <div className="flex justify-between items-center text-[15px] font-black pt-1.5 border-t-2 border-black">
           <span>TOTAL A PAGAR:</span>
-          <span>${formatCurrency(sale.total).replace('$', '')}</span>
+          <span className="text-[17px]">${formatCurrency(sale.total).replace('$', '')}</span>
         </div>
       </div>
 
       {/* Payment Accounts */}
-      <div className="mb-2 pb-1 border-b border-black border-dashed text-[9px] space-y-1">
-        <p className="font-black text-center text-[9.5px] uppercase">FORMAS DE PAGO</p>
+      <div className="mb-2 pb-1.5 border-b border-black border-dashed text-[10.5px] space-y-1 font-medium">
+        <p className="font-black text-center text-[11px] uppercase border-b border-black pb-0.5">FORMAS DE PAGO</p>
         <div>
           <p className="font-black">PAGO MÓVIL:</p>
-          <p>MERCANTIL | 0414-2391131 | V-13493831</p>
+          <p className="font-bold">MERCANTIL | 0414-2391131 | V-13493831</p>
         </div>
         <div>
           <p className="font-black">TRANSFERENCIA:</p>
-          <p>0105-0750-21-1750063115 | Marco T.</p>
+          <p className="font-bold">0105-0750-21-1750063115 | Marco T.</p>
         </div>
         <div>
           <p className="font-black">ZELLE / BINANCE:</p>
-          <p>tramontemarco27@gmail.com</p>
+          <p className="font-bold">tramontemarco27@gmail.com</p>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="text-center text-[10px] space-y-1 pt-1 pb-4">
-        <p className="font-black uppercase tracking-wider">¡GRACIAS POR SU CONFIANZA!</p>
-        <p className="text-[8px] uppercase">NO VÁLIDO COMO FACTURA FISCAL</p>
-        <p className="text-[8px] text-gray-500 font-mono tracking-widest pt-2">--- FIN DEL TICKET ---</p>
+      <div className="text-center text-[11px] space-y-1 pt-1 pb-6">
+        <p className="font-black uppercase tracking-wider text-[12px]">¡GRACIAS POR SU CONFIANZA!</p>
+        <p className="text-[9.5px] font-bold uppercase">NO VÁLIDO COMO FACTURA FISCAL</p>
+        <p className="text-[9px] font-bold text-gray-700 tracking-widest pt-2">===============================</p>
       </div>
     </div>
   );
@@ -396,7 +409,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
                 background-color: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
               }
               #receipt-print {
                 width: 215.9mm !important;
@@ -512,7 +525,9 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
                 background-color: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+                font-smooth: never !important;
+                -webkit-font-smoothing: antialiased !important;
               }
               .receipt-thermal-ticket {
                 width: 76mm !important;
@@ -522,6 +537,8 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
                 box-sizing: border-box !important;
                 background-color: #ffffff !important;
                 color: #000000 !important;
+                font-size: 12px !important;
+                line-height: 1.25 !important;
               }
             </style>
           </head>
@@ -856,7 +873,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     <div id="receipt-print-wrapper" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white w-full">
       {/* Format Selector Tab (Screen Only) */}
       {!hideActions && (
-        <div className="mb-4 print:hidden flex items-center justify-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-sm">
+        <div className="mb-4 print:hidden flex items-center justify-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-sm">
           <button
             onClick={() => setActivePreview('letter')}
             className={cn(
@@ -903,12 +920,12 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           />
 
           {/* CUT / DIVIDER LINE */}
-          <div className="w-full flex items-center justify-center my-1 select-none print:my-0.5 opacity-80">
-            <div className="flex-1 border-t border-dashed border-slate-400"></div>
-            <span className="px-3 text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+          <div className="w-full flex items-center justify-center my-1 select-none print:my-0.5 opacity-90">
+            <div className="flex-1 border-t-2 border-dashed border-slate-400"></div>
+            <span className="px-3 text-[10px] font-mono font-black text-slate-600 uppercase tracking-wider flex items-center gap-1">
               ✂ CORTAR AQUÍ (ORIGINAL CLIENTE / COPIA ADMINISTRACIÓN) ✂
             </span>
-            <div className="flex-1 border-t border-dashed border-slate-400"></div>
+            <div className="flex-1 border-t-2 border-dashed border-slate-400"></div>
           </div>
 
           {/* BOTTOM COPY (COPIA) */}
@@ -923,7 +940,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         <div 
           id="receipt-thermal-container"
           className={cn(
-            "bg-white border border-slate-300 shadow-xl rounded-xl p-3 w-fit mx-auto print:border-none print:shadow-none",
+            "bg-white border border-slate-300 shadow-xl rounded-xl p-4 w-fit mx-auto print:border-none print:shadow-none",
             activePreview === 'ticket' ? "block" : "hidden"
           )}
         >
