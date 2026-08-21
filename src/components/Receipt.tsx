@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Truck, Hammer, FileText, Printer } from 'lucide-react';
+import { ShoppingCart, Truck, Hammer, FileText, Printer, Receipt as ReceiptIcon } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -185,31 +185,172 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
   );
 };
 
+interface ThermalTicketProps {
+  sale: any;
+  dateStr: string;
+}
+
+const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <div 
+      className="receipt-thermal-ticket w-[76mm] bg-white text-black p-2 font-mono text-[11px] leading-tight box-border mx-auto"
+      style={{ width: '76mm', maxWidth: '76mm', color: '#000000', backgroundColor: '#ffffff' }}
+    >
+      {/* Header */}
+      <div className="text-center mb-2 pb-1 border-b border-black border-dashed">
+        {!imgError ? (
+          <div className="w-full flex justify-center mb-1">
+            <img 
+              src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
+              alt="Logo Traviani" 
+              referrerPolicy="no-referrer"
+              className="h-9 object-contain mx-auto filter grayscale contrast-200"
+              style={{ maxHeight: '36px', maxWidth: '120px' }}
+              onError={() => setImgError(true)}
+            />
+          </div>
+        ) : null}
+
+        <p className="font-black text-[13px] tracking-tight uppercase leading-none mb-0.5">
+          INVERSIONES TRAVIANI C.A.
+        </p>
+        <p className="text-[10px] font-bold uppercase">RIF: J-501798788</p>
+        
+        <div className="my-1 py-0.5 border-y border-black font-black text-[11px] uppercase tracking-wider">
+          NOTA DE ENTREGA / TICKET
+        </div>
+
+        <div className="flex justify-between items-center text-[10px] font-bold mt-1">
+          <span>№ {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : `ID-${sale.id?.slice(-4).toUpperCase() || '6313'}`}</span>
+          <span>{dateStr}</span>
+        </div>
+      </div>
+
+      {/* Customer Info */}
+      <div className="mb-2 pb-1 border-b border-black border-dashed text-[10px] space-y-0.5">
+        <div className="flex justify-between">
+          <span className="font-bold">CLIENTE:</span>
+          <span className="font-black uppercase text-right truncate max-w-[150px]">{sale.customerName}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="font-bold">RIF/CI:</span>
+          <span className="font-bold">{sale.customerIdNumber || 'J-501798788'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="font-bold">TELÉFONO:</span>
+          <span>{sale.customerPhone || '584147096535'}</span>
+        </div>
+        {sale.customerAddress && (
+          <div>
+            <span className="font-bold block">DIRECCIÓN:</span>
+            <span className="text-[9px] uppercase leading-tight">{sale.customerAddress}</span>
+          </div>
+        )}
+        <div className="flex justify-between pt-0.5">
+          <span className="font-bold">CONDICIÓN:</span>
+          <span className="font-black uppercase">{sale.saleType === 'credito' ? 'CRÉDITO' : 'CONTADO'}</span>
+        </div>
+      </div>
+
+      {/* Items Table */}
+      <div className="mb-2 pb-1 border-b border-black border-dashed">
+        <div className="flex justify-between font-black text-[10px] pb-1 border-b border-black">
+          <span className="w-8">CANT</span>
+          <span className="flex-1 px-1">DESCRIPCIÓN</span>
+          <span className="w-14 text-right">TOTAL</span>
+        </div>
+        <div className="space-y-1.5 pt-1 text-[10.5px]">
+          {sale.items.map((item: any, i: number) => (
+            <div key={i}>
+              <div className="flex justify-between items-baseline font-bold">
+                <span className="w-8 font-black">{item.quantity}x</span>
+                <span className="flex-1 px-1 font-bold uppercase leading-tight">{item.name}</span>
+                <span className="w-14 text-right font-black whitespace-nowrap">
+                  ${formatCurrency(item.price * item.quantity).replace('$', '')}
+                </span>
+              </div>
+              <div className="text-[9px] text-right text-gray-700">
+                P.U: ${formatCurrency(item.price).replace('$', '')}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Totals */}
+      <div className="mb-2 pb-1 border-b border-black border-dashed space-y-0.5 text-[10px]">
+        {(sale.discount > 0 || sale.isSample) && (
+          <>
+            <div className="flex justify-between">
+              <span>SUBTOTAL:</span>
+              <span>${formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}</span>
+            </div>
+            <div className="flex justify-between font-bold">
+              <span>{sale.isSample ? 'BONIFICACIÓN (MUESTRA):' : 'DESCUENTO:'}</span>
+              <span>-${formatCurrency(sale.discount).replace('$', '')}</span>
+            </div>
+          </>
+        )}
+        <div className="flex justify-between items-center text-[13px] font-black pt-1 border-t border-black">
+          <span>TOTAL A PAGAR:</span>
+          <span>${formatCurrency(sale.total).replace('$', '')}</span>
+        </div>
+      </div>
+
+      {/* Payment Accounts */}
+      <div className="mb-2 pb-1 border-b border-black border-dashed text-[9px] space-y-1">
+        <p className="font-black text-center text-[9.5px] uppercase">FORMAS DE PAGO</p>
+        <div>
+          <p className="font-black">PAGO MÓVIL:</p>
+          <p>MERCANTIL | 0414-2391131 | V-13493831</p>
+        </div>
+        <div>
+          <p className="font-black">TRANSFERENCIA:</p>
+          <p>0105-0750-21-1750063115 | Marco T.</p>
+        </div>
+        <div>
+          <p className="font-black">ZELLE / BINANCE:</p>
+          <p>tramontemarco27@gmail.com</p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center text-[10px] space-y-1 pt-1 pb-4">
+        <p className="font-black uppercase tracking-wider">¡GRACIAS POR SU CONFIANZA!</p>
+        <p className="text-[8px] uppercase">NO VÁLIDO COMO FACTURA FISCAL</p>
+        <p className="text-[8px] text-gray-500 font-mono tracking-widest pt-2">--- FIN DEL TICKET ---</p>
+      </div>
+    </div>
+  );
+};
+
 export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideActions = false }) => {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
+  const [isPrintingLetter, setIsPrintingLetter] = useState(false);
+  const [isPrintingTicket, setIsPrintingTicket] = useState(false);
+  const [activePreview, setActivePreview] = useState<'letter' | 'ticket'>('letter');
 
   const dateStr = (typeof sale.createdAt?.toDate === 'function')
     ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
     : 'RECIENTE';
 
-  const handlePrint = async () => {
+  const handlePrintLetter = async () => {
     try {
-      setIsPrinting(true);
+      setIsPrintingLetter(true);
       const receiptElement = document.getElementById('receipt-print');
       if (!receiptElement) {
         window.print();
-        setIsPrinting(false);
+        setIsPrintingLetter(false);
         return;
       }
 
-      // Remove existing print iframe if any
       const existingIframe = document.getElementById('receipt-print-iframe');
       if (existingIframe) {
         existingIframe.remove();
       }
 
-      // Create an offscreen, fully visible print iframe for Letter format
       const printIframe = document.createElement('iframe');
       printIframe.id = 'receipt-print-iframe';
       printIframe.style.position = 'fixed';
@@ -226,11 +367,10 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
       if (!iframeDoc || !printIframe.contentWindow) {
         window.print();
-        setIsPrinting(false);
+        setIsPrintingLetter(false);
         return;
       }
 
-      // Gather current page styles
       const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
         .map(el => el.outerHTML)
         .join('\n');
@@ -241,7 +381,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         <html>
           <head>
             <meta charset="utf-8">
-            <title>Facturas Carta (2 Copias) - ${sale.id || 'Inversiones Traviani'}</title>
+            <title>Factura Hoja Carta (2 Copias) - ${sale.id || 'Inversiones Traviani'}</title>
             ${styles}
             <style>
               @page {
@@ -284,7 +424,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       `);
       iframeDoc.close();
 
-      // Ensure images inside print frame are loaded
       const images = Array.from(iframeDoc.images);
       await Promise.all(
         images.map(img => {
@@ -304,13 +443,121 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           console.warn('Iframe print failed, fallback to window.print():', e);
           window.print();
         } finally {
-          setIsPrinting(false);
+          setIsPrintingLetter(false);
         }
       }, 350);
     } catch (err) {
       console.error('Error during print preparation:', err);
       window.print();
-      setIsPrinting(false);
+      setIsPrintingLetter(false);
+    }
+  };
+
+  const handlePrintTicket = async () => {
+    try {
+      setIsPrintingTicket(true);
+      const ticketElement = document.getElementById('receipt-thermal-container');
+      if (!ticketElement) {
+        window.print();
+        setIsPrintingTicket(false);
+        return;
+      }
+
+      const existingIframe = document.getElementById('receipt-ticket-print-iframe');
+      if (existingIframe) {
+        existingIframe.remove();
+      }
+
+      const printIframe = document.createElement('iframe');
+      printIframe.id = 'receipt-ticket-print-iframe';
+      printIframe.style.position = 'fixed';
+      printIframe.style.left = '-9999px';
+      printIframe.style.top = '0';
+      printIframe.style.width = '80mm';
+      printIframe.style.height = 'auto';
+      printIframe.style.border = 'none';
+      printIframe.style.opacity = '0.01';
+      printIframe.style.pointerEvents = 'none';
+      printIframe.style.zIndex = '-999';
+      document.body.appendChild(printIframe);
+
+      const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
+      if (!iframeDoc || !printIframe.contentWindow) {
+        window.print();
+        setIsPrintingTicket(false);
+        return;
+      }
+
+      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+        .map(el => el.outerHTML)
+        .join('\n');
+
+      iframeDoc.open();
+      iframeDoc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <title>Ticket Aclas PP7X - ${sale.id || 'Inversiones Traviani'}</title>
+            ${styles}
+            <style>
+              @page {
+                size: 80mm auto;
+                margin: 0;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 80mm !important;
+                background-color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+              }
+              .receipt-thermal-ticket {
+                width: 76mm !important;
+                max-width: 76mm !important;
+                margin: 0 auto !important;
+                padding: 3mm 2mm !important;
+                box-sizing: border-box !important;
+                background-color: #ffffff !important;
+                color: #000000 !important;
+              }
+            </style>
+          </head>
+          <body>
+            ${ticketElement.innerHTML}
+          </body>
+        </html>
+      `);
+      iframeDoc.close();
+
+      const images = Array.from(iframeDoc.images);
+      await Promise.all(
+        images.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        })
+      );
+
+      setTimeout(() => {
+        try {
+          printIframe.contentWindow?.focus();
+          printIframe.contentWindow?.print();
+        } catch (e) {
+          console.warn('Ticket print failed, fallback to window.print():', e);
+          window.print();
+        } finally {
+          setIsPrintingTicket(false);
+        }
+      }, 350);
+    } catch (err) {
+      console.error('Error during ticket print preparation:', err);
+      window.print();
+      setIsPrintingTicket(false);
     }
   };
 
@@ -439,7 +686,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         throw new Error('Elemento de factura no encontrado.');
       }
 
-      // 1. Gather all stylesheets and inline styles from the host document
       let combinedCss = '';
       const styleElements = document.querySelectorAll('style, link[rel="stylesheet"]');
       
@@ -463,7 +709,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
 
       const sanitizedCss = sanitizeColorCSS(combinedCss);
 
-      // 2. Create the hidden sandboxed iframe for Letter portrait (215.9mm x 279.4mm)
       iframe = document.createElement('iframe');
       iframe.style.position = 'absolute';
       iframe.style.width = '215.9mm';
@@ -479,7 +724,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         throw new Error('No se pudo inicializar el sandbox del iframe.');
       }
 
-      // 3. Write clean HTML including sanitized styles to the iframe
       iframeDoc.open();
       iframeDoc.write(`
         <!DOCTYPE html>
@@ -517,10 +761,8 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       `);
       iframeDoc.close();
 
-      // Wait a short slice of time for stylesheets parsing
       await new Promise(resolve => setTimeout(resolve, 80));
 
-      // Wait for fonts to be ready/loaded in both windows
       try {
         await Promise.all([
           document.fonts.ready,
@@ -531,7 +773,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         console.warn("Error waiting for fonts:", fontErr);
       }
 
-      // Patch computed styles on both main window & iframe window
       patchWindow(window);
       if (iframe.contentWindow) {
         patchWindow(iframe.contentWindow);
@@ -542,11 +783,9 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         throw new Error('No se pudo encontrar el contenedor del sandbox.');
       }
 
-      // 4. Import the print element clone into our iframe sandbox
       const clonedNode = iframeDoc.importNode(element, true);
       sandboxWrapper.appendChild(clonedNode);
 
-      // 5. Sanitize any inline styles that might contain oklch in the cloned elements
       const allClonedElements = sandboxWrapper.querySelectorAll('*');
       allClonedElements.forEach((el) => {
         const htmlEl = el as HTMLElement;
@@ -556,7 +795,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         }
       });
 
-      // 6. Wait for all resources/images to be completely loaded inside the iframe
       const iframeImages = Array.from(sandboxWrapper.querySelectorAll('img'));
       await Promise.all(
         iframeImages.map(img => {
@@ -568,12 +806,10 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         })
       );
 
-      // Tiny delay for layout compilation
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // 7. Run html2canvas inside the clean sandboxed iframe document!
       const canvas = await html2canvas(clonedNode as HTMLElement, {
-        scale: 3, // High density
+        scale: 3,
         useCORS: true,
         allowTaint: true,
         logging: false,
@@ -582,16 +818,14 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
 
       const imgData = canvas.toDataURL('image/png');
       
-      // Standard Letter (Carta): 215.9mm x 279.4mm portrait containing 2 copies
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'letter'
       });
 
-      // Fit the image perfectly within the Letter dimensions
       pdf.addPage(undefined, 'portrait');
-      pdf.deletePage(1); // delete default page
+      pdf.deletePage(1);
       pdf.addImage(imgData, 'PNG', 0, 0, 215.9, 279.4, undefined, 'FAST');
       
       const idDisplay = sale.invoiceNumber 
@@ -619,123 +853,128 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
   };
 
   return (
-    <div id="receipt-print-wrapper" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white">
-      {/* Letter Sheet with 2 identical copies */}
-      <div 
-        id="receipt-print" 
-        className="bg-white border border-slate-200 shadow-lg rounded-xl p-3 w-full max-w-[215.9mm] mx-auto print:p-0 print:w-full print:m-0 print:shadow-none print:border-none flex flex-col justify-between"
-        style={{ minHeight: '270mm' }}
-      >
-        {/* TOP COPY (ORIGINAL) */}
-        <SingleInvoiceHalf 
-          sale={sale} 
-          dateStr={dateStr} 
-          copyLabel="ORIGINAL - NO FACTURA FISCAL" 
-        />
+    <div id="receipt-print-wrapper" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white w-full">
+      {/* Format Selector Tab (Screen Only) */}
+      {!hideActions && (
+        <div className="mb-4 print:hidden flex items-center justify-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-sm">
+          <button
+            onClick={() => setActivePreview('letter')}
+            className={cn(
+              "px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 cursor-pointer",
+              activePreview === 'letter'
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            <Printer size={15} />
+            VISTA HOJA CARTA (2 COPIAS)
+          </button>
+          <button
+            onClick={() => setActivePreview('ticket')}
+            className={cn(
+              "px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 cursor-pointer",
+              activePreview === 'ticket'
+                ? "bg-white text-teal-800 shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            )}
+          >
+            <ReceiptIcon size={15} />
+            VISTA TICKET (ACLAS PP7X 80MM)
+          </button>
+        </div>
+      )}
 
-        {/* CUT / DIVIDER LINE */}
-        <div className="w-full flex items-center justify-center my-1 select-none print:my-0.5 opacity-80">
-          <div className="flex-1 border-t border-dashed border-slate-400"></div>
-          <span className="px-3 text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-            ✂ CORTAR AQUÍ (ORIGINAL CLIENTE / COPIA ADMINISTRACIÓN) ✂
-          </span>
-          <div className="flex-1 border-t border-dashed border-slate-400"></div>
+      {/* PREVIEW CONTAINER */}
+      <div className="w-full flex justify-center">
+        {/* Letter Sheet View */}
+        <div 
+          id="receipt-print" 
+          className={cn(
+            "bg-white border border-slate-200 shadow-lg rounded-xl p-3 w-full max-w-[215.9mm] mx-auto print:p-0 print:w-full print:m-0 print:shadow-none print:border-none flex flex-col justify-between",
+            activePreview === 'letter' ? "block" : "hidden print:block"
+          )}
+          style={{ minHeight: '270mm' }}
+        >
+          {/* TOP COPY (ORIGINAL) */}
+          <SingleInvoiceHalf 
+            sale={sale} 
+            dateStr={dateStr} 
+            copyLabel="ORIGINAL - NO FACTURA FISCAL" 
+          />
+
+          {/* CUT / DIVIDER LINE */}
+          <div className="w-full flex items-center justify-center my-1 select-none print:my-0.5 opacity-80">
+            <div className="flex-1 border-t border-dashed border-slate-400"></div>
+            <span className="px-3 text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              ✂ CORTAR AQUÍ (ORIGINAL CLIENTE / COPIA ADMINISTRACIÓN) ✂
+            </span>
+            <div className="flex-1 border-t border-dashed border-slate-400"></div>
+          </div>
+
+          {/* BOTTOM COPY (COPIA) */}
+          <SingleInvoiceHalf 
+            sale={sale} 
+            dateStr={dateStr} 
+            copyLabel="COPIA - NO FACTURA FISCAL" 
+          />
         </div>
 
-        {/* BOTTOM COPY (COPIA) */}
-        <SingleInvoiceHalf 
-          sale={sale} 
-          dateStr={dateStr} 
-          copyLabel="COPIA - NO FACTURA FISCAL" 
-        />
-
-        <style>
-          {`
-          @media print {
-            @page { 
-              margin: 0 !important; 
-              size: letter portrait !important; 
-            }
-            
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              background-color: #ffffff !important;
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-
-            /* Hide everything outside the receipt wrapper during print */
-            aside, nav, header, .print\\:hidden, #mobile-menu {
-              display: none !important;
-            }
-
-            #receipt-print-wrapper {
-              display: block !important;
-              width: 215.9mm !important;
-              height: 279.4mm !important;
-              margin: 0 !important;
-              padding: 0 !important;
-              background: #ffffff !important;
-              position: absolute !important;
-              top: 0 !important;
-              left: 0 !important;
-              z-index: 999999 !important;
-            }
-
-            #receipt-print {
-              display: flex !important;
-              flex-direction: column !important;
-              justify-content: space-between !important;
-              width: 215.9mm !important;
-              height: 279.4mm !important;
-              max-width: 215.9mm !important;
-              max-height: 279.4mm !important;
-              margin: 0 auto !important;
-              padding: 4mm 6mm !important;
-              box-sizing: border-box !important;
-              box-shadow: none !important;
-              border: none !important;
-              background: #ffffff !important;
-              page-break-after: avoid !important;
-              page-break-inside: avoid !important;
-            }
-
-            * {
-              -webkit-print-color-adjust: exact !important;
-              print-color-adjust: exact !important;
-            }
-          }
-        `}
-        </style>
+        {/* Thermal Ticket View (Aclas PP7X) */}
+        <div 
+          id="receipt-thermal-container"
+          className={cn(
+            "bg-white border border-slate-300 shadow-xl rounded-xl p-3 w-fit mx-auto print:border-none print:shadow-none",
+            activePreview === 'ticket' ? "block" : "hidden"
+          )}
+        >
+          <ThermalTicket sale={sale} dateStr={dateStr} />
+        </div>
       </div>
 
+      {/* ACTION BUTTONS */}
       {!hideActions && (
         <div className="mt-8 text-center print:hidden w-full max-w-[215.9mm] flex flex-col items-center gap-4">
-          <div className="w-full max-w-md grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in">
+          <div className="w-full max-w-xl grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in">
+            {/* Button 1: Imprimir Hoja Carta */}
             <button 
-              onClick={handlePrint}
-              disabled={isPrinting}
-              className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white rounded-xl py-4 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-sm cursor-pointer disabled:cursor-not-allowed"
-              title="Imprimir hoja carta con 2 facturas"
+              onClick={handlePrintLetter}
+              disabled={isPrintingLetter}
+              className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white rounded-xl py-3.5 px-3 font-black flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 text-xs cursor-pointer disabled:cursor-not-allowed"
+              title="Imprimir hoja carta con 2 facturas en tu impresora estándar"
             >
-              {isPrinting ? (
+              {isPrintingLetter ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <Printer size={18} />
+                <Printer size={16} />
               )}
-              {isPrinting ? 'PREPARANDO...' : 'IMPRIMIR HOJA CARTA'}
+              {isPrintingLetter ? 'PREPARANDO...' : 'IMPRIMIR CARTA'}
             </button>
 
+            {/* Button 2: TICKET (Aclas PP7X) */}
+            <button 
+              onClick={handlePrintTicket}
+              disabled={isPrintingTicket}
+              className="w-full bg-teal-700 hover:bg-teal-800 disabled:bg-teal-600 text-white rounded-xl py-3.5 px-3 font-black flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 text-xs cursor-pointer disabled:cursor-not-allowed"
+              title="Imprimir ticket térmico en impresora Aclas PP7X de 80mm"
+            >
+              {isPrintingTicket ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <ReceiptIcon size={16} />
+              )}
+              {isPrintingTicket ? 'IMPRIMIENDO...' : 'TICKET (ACLAS)'}
+            </button>
+
+            {/* Button 3: Descargar PDF */}
             <button 
               onClick={handleDownloadPDF}
               disabled={isGeneratingPdf}
-              className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white rounded-xl py-4 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-sm cursor-pointer disabled:cursor-not-allowed"
+              className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white rounded-xl py-3.5 px-3 font-black flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 text-xs cursor-pointer disabled:cursor-not-allowed"
             >
               {isGeneratingPdf ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <FileText size={18} />
+                <FileText size={16} />
               )}
               {isGeneratingPdf ? 'GENERANDO...' : 'DESCARGAR PDF'}
             </button>
@@ -744,13 +983,73 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           {onSecondaryAction && (
             <button 
               onClick={onSecondaryAction}
-              className="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all cursor-pointer"
+              className="text-[10px] font-black text-slate-400 hover:text-slate-600 uppercase tracking-widest transition-all cursor-pointer mt-1"
             >
               ← Volver al punto de venta
             </button>
           )}
         </div>
       )}
+
+      {/* Global Print Media Rules */}
+      <style>
+        {`
+        @media print {
+          @page { 
+            margin: 0 !important; 
+            size: letter portrait !important; 
+          }
+          
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          aside, nav, header, .print\\:hidden, #mobile-menu {
+            display: none !important;
+          }
+
+          #receipt-print-wrapper {
+            display: block !important;
+            width: 215.9mm !important;
+            height: 279.4mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 999999 !important;
+          }
+
+          #receipt-print {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            width: 215.9mm !important;
+            height: 279.4mm !important;
+            max-width: 215.9mm !important;
+            max-height: 279.4mm !important;
+            margin: 0 !important;
+            padding: 4mm 6mm !important;
+            box-sizing: border-box !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: #ffffff !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+          }
+
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}
+      </style>
     </div>
   );
 };
