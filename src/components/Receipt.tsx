@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
-import { FileText, Printer, Receipt as ReceiptIcon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Printer, Receipt as ReceiptIcon, MessageCircle } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 
-interface ReceiptProps {
+export interface ReceiptProps {
   sale: any;
   onSecondaryAction?: () => void;
   hideActions?: boolean;
+  initialFormat?: 'letter' | 'ticket';
+  autoTrigger?: 'letter' | 'ticket' | 'whatsapp';
 }
 
 interface SingleInvoiceHalfProps {
@@ -15,6 +15,87 @@ interface SingleInvoiceHalfProps {
   dateStr: string;
   copyLabel: string;
 }
+
+export const formatSaleWhatsAppMessage = (sale: any, dateStr?: string) => {
+  if (!sale) return '';
+
+  const formattedDate = dateStr || ((typeof sale.createdAt?.toDate === 'function')
+    ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
+    : (sale.createdAt ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(new Date(sale.createdAt)) : 'RECIENTE'));
+
+  const invoiceNum = sale.invoiceNumber
+    ? String(sale.invoiceNumber).padStart(6, '0')
+    : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
+
+  const itemsText = sale.items && sale.items.length > 0
+    ? sale.items
+        .map(
+          (item: any) =>
+            `• *${item.quantity}x* ${item.name} - $${formatCurrency(item.price * item.quantity).replace('$', '')} ($${formatCurrency(item.price).replace('$', '')} c/u)`
+        )
+        .join('\n')
+    : '• Productos de venta';
+
+  let discountDetails = '';
+  if (sale.discount > 0 || sale.isSample) {
+    discountDetails = `\n*Subtotal:* $${formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}\n*${sale.isSample ? 'Bonificación (Muestra)' : 'Descuento'}:* -$${formatCurrency(sale.discount).replace('$', '')}`;
+  }
+
+  const receiptLink = sale.id 
+    ? `\n\n📄 *Ver o descargar nota de entrega:* \n${window.location.origin}/#/receipt/${sale.id}`
+    : '';
+
+  return `🏢 *INVERSIONES TRAVIANI C.A.*
+RIF: J-501798788
+
+📄 *NOTA DE ENTREGA Nº ${invoiceNum}*
+🗓 *Fecha:* ${formattedDate}
+👤 *Cliente:* ${sale.customerName || 'Cliente'}
+🪪 *RIF/CI:* ${sale.customerIdNumber || 'J-501798788'}
+📞 *Teléfono:* ${sale.customerPhone || sale.phone || 'No registrado'}
+${sale.customerAddress || sale.address ? `📍 *Dirección:* ${sale.customerAddress || sale.address}\n` : ''}🏷 *Condición:* ${sale.saleType === 'credito' ? 'CRÉDITO' : 'CONTADO'}
+
+📦 *DETALLE DE LA COMPRA:*
+${itemsText}${discountDetails}
+
+💰 *TOTAL A PAGAR: $${formatCurrency(sale.total).replace('$', '')}*
+
+💳 *FORMAS DE PAGO:*
+📱 *Pago Móvil:* MERCANTIL | 0414-2391131 | V-13493831
+🏦 *Transferencia:* 0105-0750-21-1750063115 | Marco T.
+💵 *Binance:* tramontemarco27@gmail.com${receiptLink}
+
+✨ _¡Gracias por su compra y preferencia!_`;
+};
+
+export const sendSaleWhatsApp = (sale: any, dateStr?: string) => {
+  if (!sale) return;
+
+  // Normalizar número telefónico
+  let rawPhone = (sale.customerPhone || sale.phone || '').toString().trim();
+  let cleanPhone = rawPhone.replace(/\D/g, '');
+
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = '58' + cleanPhone.slice(1);
+  } else if (
+    cleanPhone.length === 10 &&
+    (cleanPhone.startsWith('414') ||
+      cleanPhone.startsWith('424') ||
+      cleanPhone.startsWith('412') ||
+      cleanPhone.startsWith('416') ||
+      cleanPhone.startsWith('426'))
+  ) {
+    cleanPhone = '58' + cleanPhone;
+  }
+
+  const message = formatSaleWhatsAppMessage(sale, dateStr);
+  const encodedMsg = encodeURIComponent(message);
+  const waUrl = cleanPhone 
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMsg}`
+    : `https://api.whatsapp.com/send?text=${encodedMsg}`;
+
+  window.open(waUrl, '_blank');
+};
 
 const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, copyLabel }) => {
   const [imgError, setImgError] = useState(false);
@@ -165,7 +246,7 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
         </div>
       </div>
 
-      {/* Payment Channels */}
+      {/* Payment Channels (Sin Zelle) */}
       <div className="grid grid-cols-3 gap-1 border-y border-slate-300 py-1 text-[8.5px] mb-1 bg-slate-50 rounded">
         <div className="px-1.5 border-r border-slate-300">
           <span className="font-extrabold text-slate-900 block mb-0.5">PAGO MÓVIL</span>
@@ -176,7 +257,7 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
           <p className="font-bold text-slate-850 uppercase leading-snug">0105-0750-21-1750063115 | Marco T.</p>
         </div>
         <div className="px-1.5 text-right">
-          <span className="font-extrabold text-teal-800 block mb-0.5">ZELLE / BINANCE</span>
+          <span className="font-extrabold text-teal-800 block mb-0.5">BINANCE</span>
           <p className="font-bold text-slate-850 leading-snug">tramontemarco27@gmail.com</p>
         </div>
       </div>
@@ -312,7 +393,7 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
         </div>
       </div>
 
-      {/* Payment Accounts */}
+      {/* Payment Accounts (Sin Zelle) */}
       <div className="mb-2 pb-1.5 border-b border-black border-dashed text-[10.5px] space-y-1 font-medium">
         <p className="font-black text-center text-[11px] uppercase border-b border-black pb-0.5">FORMAS DE PAGO</p>
         <div>
@@ -324,7 +405,7 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
           <p className="font-bold">0105-0750-21-1750063115 | Marco T.</p>
         </div>
         <div>
-          <p className="font-black">ZELLE / BINANCE:</p>
+          <p className="font-black">BINANCE:</p>
           <p className="font-bold">tramontemarco27@gmail.com</p>
         </div>
       </div>
@@ -339,15 +420,21 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
   );
 };
 
-export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideActions = false }) => {
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+export const Receipt: React.FC<ReceiptProps> = ({ 
+  sale, 
+  onSecondaryAction, 
+  hideActions = false, 
+  initialFormat = 'letter',
+  autoTrigger 
+}) => {
   const [isPrintingLetter, setIsPrintingLetter] = useState(false);
   const [isPrintingTicket, setIsPrintingTicket] = useState(false);
-  const [activePreview, setActivePreview] = useState<'letter' | 'ticket'>('letter');
+  const [activePreview, setActivePreview] = useState<'letter' | 'ticket'>(initialFormat);
+  const hasAutoTriggeredRef = useRef(false);
 
   const dateStr = (typeof sale.createdAt?.toDate === 'function')
     ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
-    : 'RECIENTE';
+    : (sale.createdAt ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(new Date(sale.createdAt)) : 'RECIENTE');
 
   const handlePrintLetter = async () => {
     try {
@@ -578,296 +665,29 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
     }
   };
 
-  const handleDownloadPDF = async () => {
-    setIsGeneratingPdf(true);
-    
-    const colorCache = new Map<string, string>();
-    const cleanups: (() => void)[] = [];
-    
-    const colorToRgbFn = (colorStr: string): string => {
-      if (colorCache.has(colorStr)) {
-        return colorCache.get(colorStr)!;
-      }
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 1;
-        canvas.height = 1;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = colorStr;
-          ctx.fillRect(0, 0, 1, 1);
-          const data = ctx.getImageData(0, 0, 1, 1).data;
-          const rgb = `rgba(${data[0]}, ${data[1]}, ${data[2]}, ${data[3] / 255})`;
-          colorCache.set(colorStr, rgb);
-          return rgb;
-        }
-      } catch (e) {
-        console.warn("Error converting color string:", colorStr, e);
-      }
-      return 'rgb(0, 0, 0)';
-    };
-
-    const sanitizeColorCSS = (cssText: string): string => {
-      let result = '';
-      let index = 0;
-      
-      while (index < cssText.length) {
-        const oklchStart = cssText.indexOf('oklch(', index);
-        const oklabStart = cssText.indexOf('oklab(', index);
-        
-        let start = -1;
-        let lengthOfFuncName = 6;
-        if (oklchStart !== -1 && oklabStart !== -1) {
-          if (oklchStart < oklabStart) {
-            start = oklchStart;
-            lengthOfFuncName = 6;
-          } else {
-            start = oklabStart;
-            lengthOfFuncName = 6;
-          }
-        } else if (oklchStart !== -1) {
-          start = oklchStart;
-          lengthOfFuncName = 6;
-        } else if (oklabStart !== -1) {
-          start = oklabStart;
-          lengthOfFuncName = 6;
-        }
-        
-        if (start === -1) {
-          result += cssText.substring(index);
-          break;
-        }
-        
-        result += cssText.substring(index, start);
-        
-        let parenCount = 1;
-        let scanIndex = start + lengthOfFuncName;
-        
-        while (scanIndex < cssText.length && parenCount > 0) {
-          const char = cssText[scanIndex];
-          if (char === '(') parenCount++;
-          if (char === ')') parenCount--;
-          scanIndex++;
-        }
-        
-        const colorExpression = cssText.substring(start, scanIndex);
-        const rgbReplacement = colorToRgbFn(colorExpression);
-        result += rgbReplacement;
-        
-        index = scanIndex;
-      }
-      return result;
-    };
-
-    const cleanColorString = (val: string): string => {
-      if (typeof val !== 'string' || (!val.includes('oklch') && !val.includes('oklab'))) {
-        return val;
-      }
-      return sanitizeColorCSS(val);
-    };
-
-    const patchWindow = (win: Window) => {
-      const origGetComputedStyle = win.getComputedStyle;
-      win.getComputedStyle = function(el: Element, pseudo?: string | null) {
-        const style = origGetComputedStyle.call(win, el, pseudo);
-        return new Proxy(style, {
-          get(target, prop: string | symbol) {
-            if (prop === 'getPropertyValue') {
-              return function(propertyName: string) {
-                const val = target.getPropertyValue(propertyName);
-                return cleanColorString(val);
-              };
-            }
-            const val = (target as any)[prop];
-            if (typeof val === 'string') {
-              return cleanColorString(val);
-            }
-            if (typeof val === 'function') {
-              return val.bind(target);
-            }
-            return val;
-          }
-        });
-      };
-
-      cleanups.push(() => {
-        win.getComputedStyle = origGetComputedStyle;
-      });
-    };
-
-    let iframe: HTMLIFrameElement | null = null;
-
-    try {
-      const element = document.getElementById('receipt-print');
-      if (!element) {
-        throw new Error('Elemento de factura no encontrado.');
-      }
-
-      let combinedCss = '';
-      const styleElements = document.querySelectorAll('style, link[rel="stylesheet"]');
-      
-      for (let i = 0; i < styleElements.length; i++) {
-        const node = styleElements[i];
-        if (node.tagName.toLowerCase() === 'style') {
-          combinedCss += '\n' + node.textContent;
-        } else if (node.tagName.toLowerCase() === 'link') {
-          try {
-            const sheet = (node as HTMLLinkElement).sheet;
-            if (sheet && sheet.cssRules) {
-              for (let j = 0; j < sheet.cssRules.length; j++) {
-                combinedCss += '\n' + sheet.cssRules[j].cssText;
-              }
-            }
-          } catch (e) {
-            // Cross-origin CSS fails safely
-          }
-        }
-      }
-
-      const sanitizedCss = sanitizeColorCSS(combinedCss);
-
-      iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.width = '215.9mm';
-      iframe.style.height = '279.4mm';
-      iframe.style.top = '-10000px';
-      iframe.style.left = '-10000px';
-      iframe.style.visibility = 'hidden';
-      
-      document.body.appendChild(iframe);
-      
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        throw new Error('No se pudo inicializar el sandbox del iframe.');
-      }
-
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              ${sanitizedCss}
-              body {
-                background-color: #ffffff !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 215.9mm !important;
-                height: 279.4mm !important;
-                overflow: hidden !important;
-              }
-              #receipt-print-sandbox {
-                background-color: #ffffff !important;
-                width: 215.9mm !important;
-                height: 279.4mm !important;
-                margin: 0 !important;
-                padding: 4mm 6mm !important;
-                box-sizing: border-box !important;
-                overflow: hidden !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: space-between !important;
-              }
-            </style>
-          </head>
-          <body>
-            <div id="receipt-print-sandbox"></div>
-          </body>
-        </html>
-      `);
-      iframeDoc.close();
-
-      await new Promise(resolve => setTimeout(resolve, 80));
-
-      try {
-        await Promise.all([
-          document.fonts.ready,
-          iframeDoc.fonts.ready,
-          iframe.contentWindow ? (iframe.contentWindow as any).document?.fonts?.ready : Promise.resolve()
-        ].filter(Boolean));
-      } catch (fontErr) {
-        console.warn("Error waiting for fonts:", fontErr);
-      }
-
-      patchWindow(window);
-      if (iframe.contentWindow) {
-        patchWindow(iframe.contentWindow);
-      }
-
-      const sandboxWrapper = iframeDoc.getElementById('receipt-print-sandbox');
-      if (!sandboxWrapper) {
-        throw new Error('No se pudo encontrar el contenedor del sandbox.');
-      }
-
-      const clonedNode = iframeDoc.importNode(element, true);
-      sandboxWrapper.appendChild(clonedNode);
-
-      const allClonedElements = sandboxWrapper.querySelectorAll('*');
-      allClonedElements.forEach((el) => {
-        const htmlEl = el as HTMLElement;
-        const styleAttr = htmlEl.getAttribute('style');
-        if (styleAttr && (styleAttr.includes('oklch') || styleAttr.includes('oklab'))) {
-          htmlEl.setAttribute('style', sanitizeColorCSS(styleAttr));
-        }
-      });
-
-      const iframeImages = Array.from(sandboxWrapper.querySelectorAll('img'));
-      await Promise.all(
-        iframeImages.map(img => {
-          if (img.complete) return Promise.resolve();
-          return new Promise<void>((resolve) => {
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-          });
-        })
-      );
-
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      const canvas = await html2canvas(clonedNode as HTMLElement, {
-        scale: 3,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'letter'
-      });
-
-      pdf.addPage(undefined, 'portrait');
-      pdf.deletePage(1);
-      pdf.addImage(imgData, 'PNG', 0, 0, 215.9, 279.4, undefined, 'FAST');
-      
-      const idDisplay = sale.invoiceNumber 
-        ? String(sale.invoiceNumber).padStart(6, '0') 
-        : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
-      
-      pdf.save(`Nota_de_Entrega_Carta_Doble_No_${idDisplay}.pdf`);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert('Error al generar PDF: ' + (error instanceof Error ? error.message : String(error)));
-    } finally {
-      cleanups.forEach(cleanup => {
-        try {
-          cleanup();
-        } catch (e) {
-          console.warn("Error running computedStyle cleanup:", e);
-        }
-      });
-      
-      if (iframe && iframe.parentNode) {
-        iframe.parentNode.removeChild(iframe);
-      }
-      setIsGeneratingPdf(false);
-    }
+  const handleSendWhatsApp = () => {
+    sendSaleWhatsApp(sale, dateStr);
   };
+
+  // Auto trigger if specified on first mount
+  useEffect(() => {
+    if (hasAutoTriggeredRef.current || !autoTrigger) return;
+    hasAutoTriggeredRef.current = true;
+
+    const timer = setTimeout(() => {
+      if (autoTrigger === 'letter') {
+        setActivePreview('letter');
+        handlePrintLetter();
+      } else if (autoTrigger === 'ticket') {
+        setActivePreview('ticket');
+        handlePrintTicket();
+      } else if (autoTrigger === 'whatsapp') {
+        handleSendWhatsApp();
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [autoTrigger]);
 
   return (
     <div id="receipt-print-wrapper" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white w-full">
@@ -982,18 +802,14 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               {isPrintingTicket ? 'IMPRIMIENDO...' : 'TICKET (ACLAS)'}
             </button>
 
-            {/* Button 3: Descargar PDF */}
+            {/* Button 3: Enviar por WhatsApp */}
             <button 
-              onClick={handleDownloadPDF}
-              disabled={isGeneratingPdf}
-              className="w-full bg-rose-600 hover:bg-rose-700 disabled:bg-rose-400 text-white rounded-xl py-3.5 px-3 font-black flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 text-xs cursor-pointer disabled:cursor-not-allowed"
+              onClick={handleSendWhatsApp}
+              className="w-full bg-[#25D366] hover:bg-[#1EBE5D] text-white rounded-xl py-3.5 px-3 font-black flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 text-xs cursor-pointer"
+              title="Enviar nota de entrega completa al número de WhatsApp del cliente"
             >
-              {isGeneratingPdf ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <FileText size={16} />
-              )}
-              {isGeneratingPdf ? 'GENERANDO...' : 'DESCARGAR PDF'}
+              <MessageCircle size={16} />
+              ENVIAR WHATSAPP
             </button>
           </div>
 

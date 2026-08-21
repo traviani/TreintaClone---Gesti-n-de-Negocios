@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Receipt } from '../components/Receipt';
+import { Receipt, sendSaleWhatsApp } from '../components/Receipt';
 import { Loader2, ArrowLeft, MessageCircle } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
 
 export const ReceiptPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,24 +30,10 @@ export const ReceiptPage: React.FC = () => {
     fetchSale();
   }, [id]);
 
-  useEffect(() => {
-    if (sale) {
-      // Pequeño delay para asegurar que el logo y estilos carguen
-      const timer = setTimeout(() => {
-        window.print();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [sale]);
-
   const handleWhatsApp = () => {
-    if (!sale) return;
-    const idDisplay = sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : (sale.id?.replace(/\D/g, '').slice(-4) || '6313');
-    const message = `*INVERSIONES TRAVIANI C.A.*\n\nHola *${sale.customerName}*, adjunto su nota de entrega *№ ${idDisplay}*.\n\n*Total a pagar:* $ ${formatCurrency(sale.total).replace('$', '')}\n\nUsted puede ver y descargar su recibo aquí:\n${window.location.origin}/#/receipt/${sale.id || ''}`;
-    
-    const encodedMessage = encodeURIComponent(message);
-    const phoneNumber = sale.customerPhone?.replace(/\D/g, '') || '';
-    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank');
+    if (sale) {
+      sendSaleWhatsApp(sale);
+    }
   };
 
   if (loading) {
@@ -80,13 +65,13 @@ export const ReceiptPage: React.FC = () => {
           <div className="flex gap-2">
             <button 
               onClick={() => navigate('/sales')}
-              className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-xl text-slate-600 font-black uppercase text-[10px] shadow-sm hover:bg-white transition-all"
+              className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-2 rounded-xl text-slate-600 font-black uppercase text-[10px] shadow-sm hover:bg-white transition-all cursor-pointer"
             >
               <ArrowLeft size={14} /> Volver
             </button>
             <button 
               onClick={handleWhatsApp}
-              className="flex items-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 px-4 py-2 rounded-xl text-[#25D366] font-black uppercase text-[10px] transition-all"
+              className="flex items-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-white px-4 py-2 rounded-xl font-black uppercase text-[10px] transition-all shadow-sm cursor-pointer"
             >
               <MessageCircle size={14} /> WhatsApp
             </button>

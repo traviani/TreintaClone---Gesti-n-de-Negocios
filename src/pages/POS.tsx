@@ -3,31 +3,32 @@ import {
   collection, 
   query, 
   where, 
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-  increment,
-  runTransaction,
-  doc
+  onSnapshot, 
+  serverTimestamp, 
+  increment, 
+  runTransaction, 
+  doc 
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn, getGoogleDriveDirectLink } from '../lib/utils';
-import { Receipt } from '../components/Receipt';
+import { Receipt, sendSaleWhatsApp } from '../components/Receipt';
 import { 
   Search, 
   ShoppingCart, 
   Trash2, 
   Plus, 
-  Minus,
-  ChevronRight,
-  User,
-  CheckCircle2,
-  X,
-  Printer,
-  ChevronDown,
-  Package
+  Minus, 
+  ChevronRight, 
+  User, 
+  CheckCircle2, 
+  X, 
+  Printer, 
+  Receipt as ReceiptIcon,
+  MessageCircle,
+  ChevronDown, 
+  Package 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -64,8 +65,10 @@ export default function POS() {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [activeActionLoading, setActiveActionLoading] = useState<'letter' | 'ticket' | 'whatsapp' | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
+  const [autoReceiptTrigger, setAutoReceiptTrigger] = useState<'letter' | 'ticket' | 'whatsapp' | undefined>(undefined);
 
   // Discount and Sample state
   const [discount, setDiscount] = useState<number>(0);
@@ -152,9 +155,10 @@ export default function POS() {
 
   const total = isSample ? 0 : Math.max(0, subtotal - discount);
 
-  const handleCheckout = async () => {
-    if (cart.length === 0 || !selectedCustomer) return;
+  const handleCheckout = async (actionType: 'letter' | 'ticket' | 'whatsapp') => {
+    if (cart.length === 0 || !selectedCustomer || isProcessing) return;
     setIsProcessing(true);
+    setActiveActionLoading(actionType);
 
     try {
       let saleWithId: any = null;
@@ -175,11 +179,11 @@ export default function POS() {
         transaction.set(counterRef, { lastNumber: nextInvoiceNumber }, { merge: true });
 
         // 2. Prepare Sale Data
-        const subtotal = cart.reduce((acc, item) => {
+        const currentSubtotal = cart.reduce((acc, item) => {
           const price = priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price;
           return acc + (price * item.quantity);
         }, 0);
-        const total = isSample ? 0 : Math.max(0, subtotal - discount);
+        const currentTotal = isSample ? 0 : Math.max(0, currentSubtotal - discount);
 
         const saleRef = doc(collection(db, 'sales'));
         const saleData = {
@@ -197,11 +201,11 @@ export default function POS() {
             isBajoPedido: item.stock <= 0 || item.isBajoPedido
           })),
           hasBajoPedido: cart.some(item => item.stock <= 0 || item.isBajoPedido),
-          subtotal,
-          discount: isSample ? subtotal : discount,
+          subtotal: currentSubtotal,
+          discount: isSample ? currentSubtotal : discount,
           isSample,
-          total,
-          balance: saleType === 'credito' ? total : 0,
+          total: currentTotal,
+          balance: saleType === 'credito' ? currentTotal : 0,
           payments: [],
           saleType,
           priceType,
@@ -216,7 +220,7 @@ export default function POS() {
         if (saleType === 'credito') {
           const customerRef = doc(db, 'customers', selectedCustomer.id);
           transaction.update(customerRef, {
-            balance: increment(total)
+            balance: increment(currentTotal)
           });
         }
 
@@ -233,6 +237,12 @@ export default function POS() {
       });
       
       if (saleWithId) {
+        // If action is WhatsApp, open directly
+        if (actionType === 'whatsapp') {
+          sendSaleWhatsApp(saleWithId);
+        }
+
+        setAutoReceiptTrigger(actionType);
         setLastSale(saleWithId);
         setCart([]);
         setDiscount(0);
@@ -243,6 +253,7 @@ export default function POS() {
       handleFirestoreError(error, OperationType.WRITE, 'sales');
     } finally {
       setIsProcessing(false);
+      setActiveActionLoading(null);
     }
   };
 
@@ -265,23 +276,29 @@ export default function POS() {
     if (!search) return true;
     
     const name = (c.name || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const idNumber = (c.idNumber || '').toLowerCase(); // Usually IDs don't have accents but for safety...
+    const idNumber = (c.idNumber || '').toLowerCase();
     
     return name.includes(search) || idNumber.includes(search);
   });
 
   if (showSuccess && lastSale) {
     return (
-        <div className="fixed inset-0 bg-app-background z-50 flex flex-col items-center justify-start p-4 overflow-y-auto print:p-0 print:m-0 print:bg-white print:block">
-            <div className="h-full min-h-max py-8 flex flex-col items-center print:p-0 print:m-0 print:block print:h-auto">
-              <Receipt sale={lastSale} onSecondaryAction={() => {
-                  setShowSuccess(false);
-                  setLastSale(null);
-                  setSelectedCustomer(null);
-                  setSaleType('credito');
-              }} />
-            </div>
+      <div className="fixed inset-0 bg-app-background z-50 flex flex-col items-center justify-start p-4 overflow-y-auto print:p-0 print:m-0 print:bg-white print:block">
+        <div className="h-full min-h-max py-8 flex flex-col items-center print:p-0 print:m-0 print:block print:h-auto w-full max-w-4xl">
+          <Receipt 
+            sale={lastSale} 
+            initialFormat={autoReceiptTrigger === 'ticket' ? 'ticket' : 'letter'}
+            autoTrigger={autoReceiptTrigger}
+            onSecondaryAction={() => {
+              setShowSuccess(false);
+              setLastSale(null);
+              setAutoReceiptTrigger(undefined);
+              setSelectedCustomer(null);
+              setSaleType('credito');
+            }} 
+          />
         </div>
+      </div>
     );
   }
 
@@ -298,14 +315,14 @@ export default function POS() {
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">1. Cliente</h3>
               {selectedCustomer && (
-                <button onClick={() => setSelectedCustomer(null)} className="text-blue-600 text-xs font-bold hover:underline italic">Cambiar</button>
+                <button onClick={() => setSelectedCustomer(null)} className="text-blue-600 text-xs font-bold hover:underline italic cursor-pointer">Cambiar</button>
               )}
             </div>
             
-              {!selectedCustomer ? (
+            {!selectedCustomer ? (
               <div className="flex gap-3">
                 <div className="relative flex-1">
-                  <div className="relative" onMouseLeave={() => {}}>
+                  <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
                       type="text"
@@ -338,7 +355,7 @@ export default function POS() {
                                 setSearchCustomer('');
                                 setShowCustomerDropdown(false);
                               }}
-                              className="w-full text-left p-3 hover:bg-teal-50 rounded-xl transition-all border border-transparent hover:border-teal-100 group flex items-center justify-between mb-1 last:mb-0"
+                              className="w-full text-left p-3 hover:bg-teal-50 rounded-xl transition-all border border-transparent hover:border-teal-100 group flex items-center justify-between mb-1 last:mb-0 cursor-pointer"
                             >
                               <div>
                                 <p className="text-sm font-bold text-slate-900 group-hover:text-primary">{c.name}</p>
@@ -348,9 +365,7 @@ export default function POS() {
                             </button>
                           ))
                         ) : (
-                          <div className="p-4 text-center">
-                            <p className="text-xs font-bold text-slate-400 italic">No se encontraron clientes</p>
-                          </div>
+                          <p className="text-xs text-slate-400 p-3 text-center">No hay clientes</p>
                         )}
                       </div>
                     </>
@@ -358,145 +373,143 @@ export default function POS() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-4 bg-teal-50/50 p-3 rounded-2xl border border-teal-100">
-                <div className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center font-black italic">
-                  {selectedCustomer.name.charAt(0)}
+              <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold">
+                    <User size={18} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900 leading-tight">{selectedCustomer.name}</h4>
+                    <p className="text-xs text-slate-400 font-medium">CI/RIF: {selectedCustomer.idNumber}</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-black text-slate-900 uppercase">{selectedCustomer.name}</p>
-                  <p className="text-[10px] text-slate-500 font-bold tracking-widest">{selectedCustomer.idNumber}</p>
-                </div>
-                <CheckCircle2 className="text-primary" size={20} />
+                {selectedCustomer.phone && (
+                  <span className="text-xs font-bold text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                    {selectedCustomer.phone}
+                  </span>
+                )}
               </div>
             )}
           </div>
 
-          {/* Combined Step 2 & 3: Condicion y Tarifa */}
-          <div className="md:col-span-6 grid grid-cols-2 gap-4">
-            {/* Step 2: Sale Type */}
-            <div className={cn(
-              "bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 transition-all",
-              !selectedCustomer && "opacity-40 pointer-events-none grayscale"
-            )}>
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">2. Condición</h3>
-              <div className="flex flex-col gap-2">
-                <button 
-                  onClick={() => setSaleType('contado')}
-                  className={cn(
-                    "py-2 rounded-xl text-[10px] font-black italic transition-all border-2",
-                    saleType === 'contado' ? "bg-emerald-50 border-emerald-500 text-emerald-700" : "bg-slate-50 border-transparent text-slate-400"
-                  )}
-                >
-                  DE CONTADO
-                </button>
-                <button 
-                  onClick={() => setSaleType('credito')}
-                  className={cn(
-                    "py-2 rounded-xl text-[10px] font-black italic transition-all border-2",
-                    saleType === 'credito' ? "bg-amber-50 border-amber-500 text-amber-700" : "bg-slate-50 border-transparent text-slate-400"
-                  )}
-                >
-                  CRÉDITO
-                </button>
-              </div>
+          {/* Step 2: Condición de Pago */}
+          <div className="md:col-span-3 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">2. Condición</h3>
+            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100">
+              <button 
+                type="button"
+                onClick={() => setSaleType('credito')}
+                className={cn(
+                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                  saleType === 'credito' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                Crédito
+              </button>
+              <button 
+                type="button"
+                onClick={() => setSaleType('contado')}
+                className={cn(
+                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                  saleType === 'contado' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                Contado
+              </button>
             </div>
+          </div>
 
-            {/* Step 3: Price Type (Tarifa) */}
-            <div className={cn(
-              "bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 transition-all",
-              !selectedCustomer && "opacity-40 pointer-events-none grayscale"
-            )}>
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">3. Tarifa</h3>
-              <div className="flex flex-col gap-2">
-                <button 
-                  onClick={() => setPriceType('detal')}
-                  className={cn(
-                    "py-2 rounded-xl text-[10px] font-black italic transition-all border-2",
-                    priceType === 'detal' ? "bg-primary border-primary/50 text-white shadow-sm" : "bg-slate-50 border-transparent text-slate-400"
-                  )}
-                >
-                  DETAL (PVP)
-                </button>
-                <button 
-                  onClick={() => setPriceType('mayor')}
-                  className={cn(
-                    "py-2 rounded-xl text-[10px] font-black italic transition-all border-2",
-                    priceType === 'mayor' ? "bg-purple-50 border-purple-500 text-purple-700 shadow-sm" : "bg-slate-50 border-transparent text-slate-400"
-                  )}
-                >
-                  MAYORISTA
-                </button>
-              </div>
+          {/* Step 3: Tipo de Tarifa */}
+          <div className="md:col-span-3 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">3. Tarifa</h3>
+            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100">
+              <button 
+                type="button"
+                onClick={() => setPriceType('detal')}
+                className={cn(
+                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                  priceType === 'detal' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                Detal
+              </button>
+              <button 
+                type="button"
+                onClick={() => setPriceType('mayor')}
+                className={cn(
+                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                  priceType === 'mayor' ? "bg-white text-slate-900 shadow-sm border border-slate-200" : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                Mayor
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Product Section: Search and List */}
-        <div className={cn(
-          "flex-1 flex flex-col min-w-0 transition-all",
-          !selectedCustomer && "opacity-20 pointer-events-none blur-[2px]"
-        )}>
-          <div className="relative mb-4">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input 
-              type="text" 
-              placeholder="Buscar productos por nombre o categoría..."
-              className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-[2rem] outline-none shadow-xl shadow-slate-100 focus:ring-2 focus:ring-primary/50 transition-all font-bold italic"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+        {/* Product Catalog Grid */}
+        <div className="flex-1 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col min-h-0 overflow-hidden">
+          {/* Search Header */}
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text"
+                placeholder="Buscar por nombre de producto terminado..."
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+              {filteredProducts.length} Productos Disponibles
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 xxl:grid-cols-5 gap-4">
-              {filteredProducts.map((product) => (
+          {/* Products Scrollable Area */}
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              {filteredProducts.map(p => (
                 <motion.button
-                  layout
-                  key={product.id}
-                  onClick={() => addToCart(product)}
-                  disabled={product.stock <= 0 && !product.isBajoPedido}
+                  key={p.id}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => addToCart(p)}
+                  disabled={p.stock <= 0 && !p.isBajoPedido}
                   className={cn(
-                    "rounded-3xl border text-left flex flex-col h-64 transition-all group relative overflow-hidden",
-                    (product.stock <= 0 && !product.isBajoPedido)
-                    ? "bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed" 
-                    : "bg-white border-slate-200 hover:border-blue-500 hover:shadow-2xl active:scale-95"
+                    "p-3 rounded-2xl border text-left flex flex-col justify-between transition-all group relative overflow-hidden cursor-pointer",
+                    p.stock <= 0 && !p.isBajoPedido
+                      ? "bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed"
+                      : "bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-md"
                   )}
                 >
-                  {/* Imagen del Producto - Ancho completo */}
-                  <div className="h-32 w-full bg-slate-50 overflow-hidden relative">
-                    {product.imageUrl ? (
-                      <img 
-                        src={getGoogleDriveDirectLink(product.imageUrl)} 
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
-                        referrerPolicy="no-referrer" 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-slate-200">
-                        <ShoppingCart size={32} />
-                      </div>
-                    )}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 border border-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center p-0.5">
+                      {p.imageUrl ? (
+                        <img 
+                          src={getGoogleDriveDirectLink(p.imageUrl)} 
+                          alt={p.name}
+                          className="w-full h-full object-contain"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <Package size={14} className="text-slate-300" />
+                      )}
+                    </div>
+                    <span className={cn(
+                      "text-[9px] font-black uppercase px-2 py-0.5 rounded-full border",
+                      p.stock > 0 ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-purple-50 text-purple-700 border-purple-100"
+                    )}>
+                      {p.stock > 0 ? `${p.stock} Disp.` : 'Bajo Pedido'}
+                    </span>
                   </div>
 
-                  <div className="p-4 flex flex-col justify-between flex-1">
-                    <div>
-                      <h3 className="font-bold text-slate-900 leading-tight line-clamp-2 text-sm">{product.name}</h3>
-                      <span className="text-[7px] font-black uppercase tracking-[0.2em] text-primary bg-teal-50 px-1.5 py-0.5 rounded italic mt-1 inline-block">
-                          {product.category}
-                      </span>
-                    </div>
-                    
-                    <div className="mt-2 text-right">
-                      <p className="text-2xl font-black text-slate-900 flex items-baseline gap-1 tracking-tighter">
-                        <span className="text-xs text-slate-400 font-bold">$</span>
-                        {formatCurrency(priceType === 'mayor' && product.wholesalePrice ? product.wholesalePrice : product.price).replace('$','')}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-1">
-                          <div className={cn("w-1.5 h-1.5 rounded-full", product.stock <= 0 ? "bg-amber-500" : product.stock <= 5 ? "bg-amber-400 animate-pulse" : "bg-emerald-400")} />
-                          <p className={cn("text-[10px] font-bold uppercase", product.stock <= 0 ? "text-amber-600" : product.stock <= 5 ? "text-amber-500" : "text-slate-400")}>
-                            {product.stock > 0 ? `${product.stock} ${product.unit || 'und'}` : product.isBajoPedido ? "Bajo Pedido" : "Agotado"}
-                          </p>
-                      </div>
-                    </div>
+                  <div>
+                    <h4 className="font-bold text-xs text-slate-900 leading-tight line-clamp-2 mb-1 group-hover:text-primary transition-colors">
+                      {p.name}
+                    </h4>
+                    <p className="text-xs font-black text-slate-900">
+                      {formatCurrency(priceType === 'mayor' && p.wholesalePrice ? p.wholesalePrice : p.price)}
+                    </p>
                   </div>
                 </motion.button>
               ))}
@@ -513,7 +526,7 @@ export default function POS() {
 
       {/* Cart Sidebar */}
       <div className={cn(
-        "w-full lg:w-[400px] flex flex-col bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden relative transition-all",
+        "w-full lg:w-[420px] flex flex-col bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden relative transition-all",
         !selectedCustomer && "opacity-10 pointer-events-none translate-x-10"
       )}>
         <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
@@ -537,11 +550,11 @@ export default function POS() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-0.5 shadow-sm">
-                  <button onClick={() => updateQuantity(item.id, -1)} className="p-0.5 text-slate-400 hover:text-blue-600"><Minus size={12} /></button>
+                  <button onClick={() => updateQuantity(item.id, -1)} className="p-0.5 text-slate-400 hover:text-blue-600 cursor-pointer"><Minus size={12} /></button>
                   <span className="w-6 text-center text-xs font-black tabular-nums">{item.quantity}</span>
-                  <button onClick={() => updateQuantity(item.id, 1)} className="p-0.5 text-slate-400 hover:text-blue-600"><Plus size={12} /></button>
+                  <button onClick={() => updateQuantity(item.id, 1)} className="p-0.5 text-slate-400 hover:text-blue-600 cursor-pointer"><Plus size={12} /></button>
                 </div>
-                <button onClick={() => removeFromCart(item.id)} className="p-2 text-slate-300 hover:text-red-500 bg-white hover:bg-red-50 rounded-xl transition-all border border-slate-100"><Trash2 size={14} /></button>
+                <button onClick={() => removeFromCart(item.id)} className="p-2 text-slate-300 hover:text-red-500 bg-white hover:bg-red-50 rounded-xl transition-all border border-slate-100 cursor-pointer"><Trash2 size={14} /></button>
               </div>
             </div>
           ))}
@@ -556,7 +569,7 @@ export default function POS() {
           )}
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-100 space-y-4">
+        <div className="p-5 bg-slate-50 border-t border-slate-100 space-y-4">
           {/* Discounts & Sample Toggle */}
           <div className="space-y-3 px-1">
             <div className="flex items-center justify-between">
@@ -603,74 +616,122 @@ export default function POS() {
 
           <div className="space-y-2 bg-white p-4 rounded-[1.5rem] border border-slate-200 shadow-inner">
             <div className="flex items-center justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
-                <span>Subtotal</span>
-                <span>{formatCurrency(subtotal)}</span>
+              <span>Subtotal</span>
+              <span>{formatCurrency(subtotal)}</span>
             </div>
             
             {discount > 0 && !isSample && (
               <div className="flex items-center justify-between text-[10px] font-black text-primary uppercase tracking-widest italic">
-                  <span>Descuento</span>
-                  <span>- {formatCurrency(discount)}</span>
+                <span>Descuento</span>
+                <span>- {formatCurrency(discount)}</span>
               </div>
             )}
 
             {isSample && (
               <div className="flex items-center justify-between text-[10px] font-black text-primary uppercase tracking-widest italic">
-                  <span>Muestra (100% Bonificado)</span>
-                  <span>- {formatCurrency(subtotal)}</span>
+                <span>Muestra (100% Bonificado)</span>
+                <span>- {formatCurrency(subtotal)}</span>
               </div>
             )}
 
             <div className="flex items-center justify-between text-2xl font-black text-slate-900 tracking-tighter tabular-nums">
-                <span className="italic">Total</span>
-                <span>{formatCurrency(total)}</span>
+              <span className="italic">Total</span>
+              <span>{formatCurrency(total)}</span>
             </div>
           </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => {
-                    const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=detal`;
-                    navigator.clipboard.writeText(url);
-                    alert("✅ Enlace DETAL copiado con éxito.");
-                  }}
-                  className="flex-1 py-2 bg-teal-50 text-primary rounded-xl font-black text-[9px] uppercase tracking-widest border border-teal-100 flex items-center justify-center gap-1 hover:bg-teal-100 transition-colors"
-                >
-                  <ShoppingCart size={12} />
-                  DETAL
-                </button>
-                <button 
-                  onClick={() => {
-                    const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=mayor`;
-                    navigator.clipboard.writeText(url);
-                    alert("✅ Enlace MAYORISTA copiado con éxito.");
-                  }}
-                  className="flex-1 py-2 bg-purple-50 text-purple-600 rounded-xl font-black text-[9px] uppercase tracking-widest border border-purple-100 flex items-center justify-center gap-1 hover:bg-purple-100 transition-colors"
-                >
-                  <Package size={12} />
-                  MAYOR
-                </button>
-              </div>
-
+          {/* Quick Catalog Link Buttons */}
+          <div className="flex gap-2">
             <button 
+              type="button"
+              onClick={() => {
+                const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=detal`;
+                navigator.clipboard.writeText(url);
+                alert("✅ Enlace DETAL copiado con éxito.");
+              }}
+              className="flex-1 py-2 bg-teal-50 text-primary rounded-xl font-black text-[9px] uppercase tracking-widest border border-teal-100 flex items-center justify-center gap-1 hover:bg-teal-100 transition-colors cursor-pointer"
+            >
+              <ShoppingCart size={12} />
+              DETAL
+            </button>
+            <button 
+              type="button"
+              onClick={() => {
+                const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=mayor`;
+                navigator.clipboard.writeText(url);
+                alert("✅ Enlace MAYORISTA copiado con éxito.");
+              }}
+              className="flex-1 py-2 bg-purple-50 text-purple-600 rounded-xl font-black text-[9px] uppercase tracking-widest border border-purple-100 flex items-center justify-center gap-1 hover:bg-purple-100 transition-colors cursor-pointer"
+            >
+              <Package size={12} />
+              MAYOR
+            </button>
+          </div>
+
+          {/* Direct POS Billing & Action Buttons */}
+          <div className="flex flex-col gap-2 pt-1">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">
+              Facturar y Emitir
+            </p>
+
+            {/* Button 1: Imprimir Hoja Carta (2 Copias) */}
+            <button 
+              type="button"
               disabled={cart.length === 0 || isProcessing || !selectedCustomer}
-              onClick={handleCheckout}
+              onClick={() => handleCheckout('letter')}
               className={cn(
-                "w-full py-4 rounded-2xl font-black text-base transition-all transform active:scale-95 flex items-center justify-center gap-3 shadow-lg",
-                cart.length === 0 || !selectedCustomer
+                "w-full py-3 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-md cursor-pointer",
+                cart.length === 0 || !selectedCustomer || isProcessing
                   ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
-                  : "bg-primary hover:opacity-90 text-white shadow-primary/20"
+                  : "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
               )}
             >
-              {isProcessing ? (
-                <div className="w-5 h-5 border-[3px] border-white/20 border-t-white rounded-full animate-spin" />
+              {activeActionLoading === 'letter' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
-                <>
-                  <CheckCircle2 size={20} />
-                  FACTURAR
-                </>
+                <Printer size={15} />
               )}
+              <span>{activeActionLoading === 'letter' ? 'FACTURANDO...' : 'FACTURAR E IMPRIMIR CARTA'}</span>
+            </button>
+
+            {/* Button 2: Ticket Térmico Aclas PP7X */}
+            <button 
+              type="button"
+              disabled={cart.length === 0 || isProcessing || !selectedCustomer}
+              onClick={() => handleCheckout('ticket')}
+              className={cn(
+                "w-full py-3 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-md cursor-pointer",
+                cart.length === 0 || !selectedCustomer || isProcessing
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+                  : "bg-teal-700 hover:bg-teal-800 text-white shadow-teal-700/10"
+              )}
+            >
+              {activeActionLoading === 'ticket' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <ReceiptIcon size={15} />
+              )}
+              <span>{activeActionLoading === 'ticket' ? 'FACTURANDO...' : 'FACTURAR Y TICKET ACLAS'}</span>
+            </button>
+
+            {/* Button 3: Enviar Nota por WhatsApp */}
+            <button 
+              type="button"
+              disabled={cart.length === 0 || isProcessing || !selectedCustomer}
+              onClick={() => handleCheckout('whatsapp')}
+              className={cn(
+                "w-full py-3 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-md cursor-pointer",
+                cart.length === 0 || !selectedCustomer || isProcessing
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+                  : "bg-[#25D366] hover:bg-[#1EBE5D] text-white shadow-emerald-500/20"
+              )}
+            >
+              {activeActionLoading === 'whatsapp' ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <MessageCircle size={16} />
+              )}
+              <span>{activeActionLoading === 'whatsapp' ? 'FACTURANDO...' : 'FACTURAR Y ENVIAR WHATSAPP'}</span>
             </button>
           </div>
         </div>
