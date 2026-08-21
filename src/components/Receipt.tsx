@@ -17,63 +17,77 @@ interface SingleInvoiceHalfProps {
 }
 
 const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, copyLabel }) => {
+  const [imgError, setImgError] = useState(false);
+
   return (
-    <div className="receipt-single-half w-full bg-white px-3 py-1 flex flex-col justify-between" style={{ minHeight: '126mm' }}>
+    <div className="receipt-single-half w-full bg-white px-4 py-2 flex flex-col justify-between box-border" style={{ minHeight: '124mm', maxHeight: '130mm' }}>
       {/* Header Section */}
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-1 pb-0.5 border-b border-slate-200">
         <div className="flex items-center gap-3">
-          <div className="w-[125px] h-[36px] pl-1 flex items-center justify-start overflow-visible">
-            <img 
-              src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
-              alt="Logo Traviani" 
-              crossOrigin="anonymous"
-              className="h-full object-contain object-left"
-              style={{
-                maxWidth: "125px",
-                maxHeight: "36px",
-                display: "block"
-              }}
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = "https://lh3.googleusercontent.com/d/14HE9P_AammpTZ2dQWYRxK_J529N4fKf-";
-              }}
-            />
+          <div className="w-[125px] h-[34px] flex items-center justify-start overflow-hidden">
+            {!imgError ? (
+              <img 
+                src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
+                alt="Logo Traviani" 
+                referrerPolicy="no-referrer"
+                className="max-h-full max-w-full object-contain object-left"
+                style={{
+                  maxWidth: "125px",
+                  maxHeight: "34px",
+                  display: "block"
+                }}
+                onError={() => {
+                  setImgError(true);
+                }}
+              />
+            ) : (
+              <div className="flex items-center gap-1.5 font-black text-slate-900 tracking-tighter">
+                <span className="bg-teal-700 text-white text-xs px-2 py-0.5 rounded font-black tracking-tight">TRAVIANI</span>
+              </div>
+            )}
           </div>
-          <h1 className="font-black text-slate-900 italic tracking-tight uppercase leading-none" style={{ fontSize: '0.85rem' }}>
-            Inversiones Traviani C.A.
-          </h1>
+          <div>
+            <h1 className="font-black text-slate-900 italic tracking-tight uppercase leading-none text-[13px]">
+              Inversiones Traviani C.A.
+            </h1>
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-0.5 leading-none">
+              RIF: J-501798788
+            </p>
+          </div>
         </div>
-        <div className="text-right leading-none">
-          <p className="text-lg font-black text-slate-900 tracking-tight">
+
+        <div className="text-right leading-tight">
+          <p className="text-base font-black text-slate-900 tracking-tight">
             № {sale.invoiceNumber ? String(sale.invoiceNumber).padStart(6, '0') : `ID-${sale.id?.slice(-4).toUpperCase() || '6313'}`}
           </p>
           <p className="text-[9px] font-bold text-slate-500 uppercase mt-0.5">FECHA: {dateStr}</p>
         </div>
       </div>
 
-      {/* NOTA DE ENTREGA Header Section */}
-      <div className="text-center mb-1.5 flex flex-col items-center">
+      {/* NOTA DE ENTREGA Title Banner */}
+      <div className="text-center my-0.5 flex flex-col items-center">
         <div className="w-full border-t border-black"></div>
-        <p className="text-base font-black text-black italic tracking-[0.25em] py-0.5 leading-none uppercase select-none my-0.5">
+        <p className="text-[13px] font-black text-black italic tracking-[0.2em] py-0.5 leading-none uppercase select-none my-0.5">
           NOTA DE ENTREGA
         </p>
         <div className="w-full border-b border-black"></div>
       </div>
 
       {/* Customer Information Section */}
-      <div className="pt-0.5 mb-1 text-[10px] border-t border-slate-200">
+      <div className="pt-0.5 mb-1 text-[10px]">
         <div className="flex justify-between items-start mb-0.5">
           <div className="flex gap-2">
-            <span className="font-black italic uppercase">CLIENTE:</span>
+            <span className="font-black italic uppercase text-slate-900">CLIENTE:</span>
             <span className="font-bold text-slate-800 uppercase">{sale.customerName}</span>
           </div>
-          <div className="flex items-center gap-5">
-            <div className="flex gap-2">
-              <span className="font-black italic uppercase">RIF/CI:</span>
+          <div className="flex items-center gap-4">
+            <div className="flex gap-1.5">
+              <span className="font-black italic uppercase text-slate-900">RIF/CI:</span>
               <span className="font-bold text-slate-800 whitespace-nowrap">{sale.customerIdNumber || 'J-501798788'}</span>
             </div>
             <span className={cn(
-              "font-black italic uppercase",
-              sale.saleType === 'credito' ? "text-red-600" : "text-primary"
+              "font-black italic uppercase px-1.5 py-0.2 rounded text-[9px]",
+              sale.saleType === 'credito' ? "text-red-600 bg-red-50" : "text-emerald-700 bg-emerald-50"
             )}>
               {sale.saleType === 'credito' ? 'Crédito' : 'Contado'}
             </span>
@@ -82,12 +96,12 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
         
         <div className="space-y-0.5">
           <div className="flex gap-2">
-            <span className="font-black italic uppercase">TEL:</span>
+            <span className="font-black italic uppercase text-slate-900">TEL:</span>
             <span className="font-bold text-slate-800">{sale.customerPhone || '584147096535'}</span>
           </div>
           <div className="flex items-start gap-2">
-            <span className="font-black italic uppercase shrink-0">DIRECCIÓN:</span>
-            <span className="font-bold text-slate-700 uppercase leading-tight">{sale.customerAddress || 'av gonzález rincones qta la nena la trinidad caracas'}</span>
+            <span className="font-black italic uppercase text-slate-900 shrink-0">DIRECCIÓN:</span>
+            <span className="font-bold text-slate-700 uppercase leading-tight text-[9.5px]">{sale.customerAddress || 'av gonzález rincones qta la nena la trinidad caracas'}</span>
           </div>
         </div>
       </div>
@@ -98,24 +112,24 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
           {/* Header row */}
           <div className="w-full">
             <div className="w-full border-t border-black"></div>
-            <div className="flex items-center py-0.5 text-[9.5px] font-black italic uppercase select-none">
-              <div className="w-14 text-center">CANT</div>
-              <div className="flex-1 px-3 text-left">DESCRIPCIÓN</div>
+            <div className="flex items-center py-0.5 text-[9px] font-black italic uppercase select-none">
+              <div className="w-12 text-center">CANT</div>
+              <div className="flex-1 px-2 text-left">DESCRIPCIÓN</div>
               <div className="w-20 text-right">P.UNIT</div>
-              <div className="w-28 text-right">TOTAL</div>
+              <div className="w-24 text-right">TOTAL</div>
             </div>
             <div className="w-full border-b border-black"></div>
           </div>
           {/* Table Body */}
-          <div className="text-[10.5px] divide-y divide-slate-50">
+          <div className="text-[10px]">
             {sale.items.map((item: any, i: number) => (
-              <div key={i} className="flex items-center py-0.5 border-b border-slate-50/50">
-                <div className="w-14 text-center font-black">{item.quantity}</div>
-                <div className="flex-1 px-3 font-bold text-slate-800 uppercase leading-none">{item.name}</div>
+              <div key={i} className="flex items-center py-0.5 border-b border-slate-100">
+                <div className="w-12 text-center font-black">{item.quantity}</div>
+                <div className="flex-1 px-2 font-bold text-slate-800 uppercase leading-tight">{item.name}</div>
                 <div className="w-20 text-right text-slate-600 italic whitespace-nowrap">
                   $ {formatCurrency(item.price).replace('$', '')}
                 </div>
-                <div className="w-28 text-right font-black text-slate-900 whitespace-nowrap">
+                <div className="w-24 text-right font-black text-slate-900 whitespace-nowrap">
                   $ {formatCurrency(item.price * item.quantity).replace('$', '')}
                 </div>
               </div>
@@ -132,40 +146,40 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
               <span>SUBTOTAL:</span>
               <span>$ {formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}</span>
             </div>
-            <div className="flex justify-between items-center text-[9px] font-black text-primary uppercase italic leading-none">
+            <div className="flex justify-between items-center text-[9px] font-black text-emerald-700 uppercase italic leading-none">
               <span>{sale.isSample ? 'BONIFICACIÓN (MUESTRA):' : 'DESCUENTO:'}</span>
               <span>- $ {formatCurrency(sale.discount).replace('$', '')}</span>
             </div>
           </>
         )}
         <div className="flex justify-between items-center leading-tight">
-          <h2 className="font-black italic uppercase tracking-tighter text-sm">TOTAL NETO A PAGAR</h2>
-          <span className="text-base font-black tabular-nums tracking-tighter">
+          <h2 className="font-black italic uppercase tracking-tight text-xs text-slate-900">TOTAL NETO A PAGAR</h2>
+          <span className="text-sm font-black tabular-nums tracking-tight text-slate-900">
              $ {formatCurrency(sale.total).replace('$', '')}
           </span>
         </div>
       </div>
 
       {/* Payment Channels */}
-      <div className="grid grid-cols-3 gap-0 border-y border-slate-100 py-0.5 text-[7.5px] mb-1">
-        <div className="pr-2 border-r border-slate-100">
-          <span className="font-black text-slate-400 block mb-0.5">PAGO MÓVIL</span>
-          <p className="font-bold text-slate-800 uppercase">MERCANTIL | 0414-2391131 | V-13493831</p>
+      <div className="grid grid-cols-3 gap-1 border-y border-slate-200 py-1 text-[7.5px] mb-1">
+        <div className="pr-1.5 border-r border-slate-200">
+          <span className="font-black text-slate-500 block mb-0.5">PAGO MÓVIL</span>
+          <p className="font-bold text-slate-800 uppercase leading-tight">MERCANTIL | 0414-2391131 | V-13493831</p>
         </div>
-        <div className="px-2 border-r border-slate-100">
-          <span className="font-black text-slate-400 block mb-0.5">TRANSFERENCIA</span>
-          <p className="font-bold text-slate-800 uppercase">0105-0750-21-1750063115 | Marco T.</p>
+        <div className="px-1.5 border-r border-slate-200">
+          <span className="font-black text-slate-500 block mb-0.5">TRANSFERENCIA</span>
+          <p className="font-bold text-slate-800 uppercase leading-tight">0105-0750-21-1750063115 | Marco T.</p>
         </div>
-        <div className="pl-2 text-right">
-          <span className="font-black text-primary block mb-0.5">ZELLE / BINANCE</span>
-          <p className="font-bold text-slate-800">tramontemarco27@gmail.com</p>
+        <div className="pl-1.5 text-right">
+          <span className="font-black text-teal-700 block mb-0.5">ZELLE / BINANCE</span>
+          <p className="font-bold text-slate-800 leading-tight">tramontemarco27@gmail.com</p>
         </div>
       </div>
 
       {/* Footer */}
-      <div className="text-center">
-        <p className="text-xs font-black italic uppercase tracking-[0.2em] mb-0">¡GRACIAS POR SU CONFIANZA!</p>
-        <p className="text-[8px] font-bold text-slate-400 uppercase">{copyLabel}</p>
+      <div className="text-center leading-none">
+        <p className="text-[11px] font-black italic uppercase tracking-[0.15em] mb-0 text-slate-900">¡GRACIAS POR SU CONFIANZA!</p>
+        <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">{copyLabel}</p>
       </div>
     </div>
   );
@@ -195,16 +209,18 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         existingIframe.remove();
       }
 
-      // Create a hidden print iframe configured for Letter portrait
+      // Create an offscreen, fully visible print iframe for Letter format
       const printIframe = document.createElement('iframe');
       printIframe.id = 'receipt-print-iframe';
       printIframe.style.position = 'fixed';
-      printIframe.style.right = '0';
-      printIframe.style.bottom = '0';
-      printIframe.style.width = '0';
-      printIframe.style.height = '0';
+      printIframe.style.left = '-9999px';
+      printIframe.style.top = '0';
+      printIframe.style.width = '215.9mm';
+      printIframe.style.height = '279.4mm';
       printIframe.style.border = 'none';
-      printIframe.style.visibility = 'hidden';
+      printIframe.style.opacity = '0.01';
+      printIframe.style.pointerEvents = 'none';
+      printIframe.style.zIndex = '-999';
       document.body.appendChild(printIframe);
 
       const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
@@ -240,11 +256,13 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
                 background-color: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+                font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
               }
               #receipt-print {
                 width: 215.9mm !important;
                 height: 279.4mm !important;
                 max-width: 215.9mm !important;
+                max-height: 279.4mm !important;
                 margin: 0 auto !important;
                 padding: 4mm 6mm !important;
                 box-sizing: border-box !important;
@@ -283,12 +301,12 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           printIframe.contentWindow?.focus();
           printIframe.contentWindow?.print();
         } catch (e) {
-          console.warn('Iframe print failed, falling back to window.print():', e);
+          console.warn('Iframe print failed, fallback to window.print():', e);
           window.print();
         } finally {
           setIsPrinting(false);
         }
-      }, 300);
+      }, 350);
     } catch (err) {
       console.error('Error during print preparation:', err);
       window.print();
@@ -438,7 +456,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               }
             }
           } catch (e) {
-            // Cross-origin CSS fails to read cssRules, which is skipped safely
+            // Cross-origin CSS fails safely
           }
         }
       }
@@ -513,7 +531,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         console.warn("Error waiting for fonts:", fontErr);
       }
 
-      // Patch computed styles on both main window & iframe window (must run after iframeDoc.close())
+      // Patch computed styles on both main window & iframe window
       patchWindow(window);
       if (iframe.contentWindow) {
         patchWindow(iframe.contentWindow);
@@ -585,7 +603,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       console.error("Error generating PDF:", error);
       alert('Error al generar PDF: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
-      // Restore dynamic original states
       cleanups.forEach(cleanup => {
         try {
           cleanup();
@@ -594,7 +611,6 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         }
       });
       
-      // 8. Securely clean up the iframe node
       if (iframe && iframe.parentNode) {
         iframe.parentNode.removeChild(iframe);
       }
@@ -607,7 +623,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
       {/* Letter Sheet with 2 identical copies */}
       <div 
         id="receipt-print" 
-        className="bg-white border border-slate-200 shadow-lg rounded-xl p-4 w-full max-w-[215.9mm] mx-auto print:p-0 print:w-full print:m-0 print:shadow-none print:border-none flex flex-col justify-between"
+        className="bg-white border border-slate-200 shadow-lg rounded-xl p-3 w-full max-w-[215.9mm] mx-auto print:p-0 print:w-full print:m-0 print:shadow-none print:border-none flex flex-col justify-between"
         style={{ minHeight: '270mm' }}
       >
         {/* TOP COPY (ORIGINAL) */}
@@ -618,9 +634,9 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
         />
 
         {/* CUT / DIVIDER LINE */}
-        <div className="w-full flex items-center justify-center my-2 select-none print:my-1 opacity-70">
+        <div className="w-full flex items-center justify-center my-1 select-none print:my-0.5 opacity-80">
           <div className="flex-1 border-t border-dashed border-slate-400"></div>
-          <span className="px-3 text-[9px] font-mono text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+          <span className="px-3 text-[9px] font-mono font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
             ✂ CORTAR AQUÍ (ORIGINAL CLIENTE / COPIA ADMINISTRACIÓN) ✂
           </span>
           <div className="flex-1 border-t border-dashed border-slate-400"></div>
@@ -637,31 +653,34 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
           {`
           @media print {
             @page { 
-              margin: 0; 
-              size: letter portrait; 
+              margin: 0 !important; 
+              size: letter portrait !important; 
             }
             
-            body {
-              visibility: hidden !important;
-              background: white !important;
+            html, body {
               margin: 0 !important;
               padding: 0 !important;
-              display: block !important;
+              background-color: #ffffff !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
 
-            #receipt-print-wrapper,
-            #receipt-print-wrapper * {
-              visibility: visible !important;
+            /* Hide everything outside the receipt wrapper during print */
+            aside, nav, header, .print\\:hidden, #mobile-menu {
+              display: none !important;
             }
 
             #receipt-print-wrapper {
               display: block !important;
               width: 215.9mm !important;
               height: 279.4mm !important;
-              margin: 0 auto !important;
+              margin: 0 !important;
               padding: 0 !important;
-              background: white !important;
-              position: relative !important;
+              background: #ffffff !important;
+              position: absolute !important;
+              top: 0 !important;
+              left: 0 !important;
+              z-index: 999999 !important;
             }
 
             #receipt-print {
@@ -671,18 +690,15 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               width: 215.9mm !important;
               height: 279.4mm !important;
               max-width: 215.9mm !important;
-              margin: 0 !important;
+              max-height: 279.4mm !important;
+              margin: 0 auto !important;
               padding: 4mm 6mm !important;
               box-sizing: border-box !important;
               box-shadow: none !important;
               border: none !important;
-              background: white !important;
+              background: #ffffff !important;
               page-break-after: avoid !important;
               page-break-inside: avoid !important;
-            }
-
-            .print\\:hidden { 
-              display: none !important; 
             }
 
             * {
@@ -701,7 +717,7 @@ export const Receipt: React.FC<ReceiptProps> = ({ sale, onSecondaryAction, hideA
               onClick={handlePrint}
               disabled={isPrinting}
               className="w-full bg-slate-900 hover:bg-slate-800 disabled:bg-slate-700 text-white rounded-xl py-4 font-black flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 text-sm cursor-pointer disabled:cursor-not-allowed"
-              title="Imprimir hoja carta con 2 facturas en tu impresora Samsung ML-2165"
+              title="Imprimir hoja carta con 2 facturas"
             >
               {isPrinting ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
