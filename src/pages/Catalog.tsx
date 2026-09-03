@@ -63,25 +63,21 @@ export default function Catalog() {
 
   // Determine if viewing user is the owner/admin
   // If paramOwnerId is not present, it's the internal admin route (/catalog inside Layout).
-  // If paramOwnerId is present, the viewer is accessing via the external public link, and is only owner if logged in as the store owner.
   const isInternalAdmin = !paramOwnerId;
-  const isOwner = Boolean(isInternalAdmin || (user && (paramOwnerId === effectiveUid || paramOwnerId === DEFAULT_OWNER_ID)));
+  const isOwner = Boolean(isInternalAdmin || user);
 
-  // Raw price type requested, but clients must NEVER see wholesale prices
-  const rawPriceType = searchParams.get('type') === 'mayor' ? 'mayor' : 'detal';
-  const priceType = isOwner ? rawPriceType : 'detal';
+  // Price type from URL: defaults to 'detal' (retail).
+  const priceType = searchParams.get('type') === 'mayor' ? 'mayor' : 'detal';
 
-  // Restrict client session: when a guest accesses via the public catalog link, record client mode
+  // Ensure any previous session lock is cleared
   useEffect(() => {
-    if (paramOwnerId && !user) {
-      try {
-        sessionStorage.setItem('traviani_client_mode', 'true');
-        sessionStorage.setItem('traviani_catalog_link', `/catalog/${paramOwnerId}`);
-      } catch (e) {
-        console.warn('Storage warning', e);
-      }
+    try {
+      sessionStorage.removeItem('traviani_client_mode');
+      sessionStorage.removeItem('traviani_catalog_link');
+    } catch (e) {
+      console.warn('Storage cleanup note', e);
     }
-  }, [paramOwnerId, user]);
+  }, []);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -202,11 +198,18 @@ export default function Catalog() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const getShareLink = (type: 'detal' | 'mayor') => {
+    let origin = window.location.origin;
+    // In AI Studio, dev URLs (ais-dev-*) require Google login and trigger access restrictions for external clients.
+    // Replace with public preview URL (ais-pre-*) which has open public access.
+    if (origin.includes('ais-dev-')) {
+      origin = origin.replace('ais-dev-', 'ais-pre-');
+    }
+    const baseLink = `${origin}/#/catalog/${ownerId}`;
     if (type === 'detal') {
       // Clean customer link: strictly retail, no wholesale parameters
-      return `${window.location.origin}/#/catalog/${ownerId}`;
+      return baseLink;
     }
-    return `${window.location.origin}/#/catalog/${ownerId}?type=mayor`;
+    return `${baseLink}?type=mayor`;
   };
 
   const copyToClipboard = (type: 'detal' | 'mayor') => {
@@ -453,8 +456,14 @@ export default function Catalog() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full p-3 bg-white/90 backdrop-blur-md border-t border-slate-100 flex justify-center z-40">
+      <div className="fixed bottom-0 left-0 w-full p-3 bg-white/90 backdrop-blur-md border-t border-slate-100 flex items-center justify-between px-6 z-40">
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inversiones Traviani C.A. • Catálogo Digital</p>
+          <a 
+            href="#/" 
+            className="text-[10px] font-semibold text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            Acceso Sistema
+          </a>
       </div>
 
       {/* Floating Cart Button */}
@@ -634,9 +643,21 @@ export default function Catalog() {
                     </span>
                   </div>
                   
-                  <p className="text-[11px] text-slate-600 mb-4 leading-relaxed font-medium">
+                  <p className="text-[11px] text-slate-600 mb-3 leading-relaxed font-medium">
                     Tus clientes solo verán precios al detal. <strong>No podrán ver precios al mayor</strong> ni acceder a ninguna otra parte del sistema.
                   </p>
+
+                  <div className="mb-3 p-2.5 bg-white rounded-xl border border-emerald-200 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-mono text-slate-600 truncate select-all">
+                      {getShareLink('detal')}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard('detal')}
+                      className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider shrink-0 hover:underline"
+                    >
+                      {copiedType === 'detal' ? '¡Copiado!' : 'Copiar'}
+                    </button>
+                  </div>
 
                   <div className="space-y-2">
                     <div className="flex gap-2">
@@ -667,6 +688,13 @@ export default function Catalog() {
                       <MessageCircle size={14} className="text-emerald-600" />
                       Enviar por WhatsApp a un Cliente
                     </a>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-emerald-200/60 flex items-start gap-2">
+                    <span className="text-[10px] text-emerald-800">💡</span>
+                    <p className="text-[10px] text-emerald-900/80 leading-normal">
+                      <strong>Nota para iPhone:</strong> Si en Safari o Chrome sale un aviso de <em>"Acción necesaria / Cookie de seguridad"</em>, el cliente solo debe pulsar <strong>"Autenticarse en una ventana nueva"</strong> una vez y el catálogo abrirá de inmediato.
+                    </p>
                   </div>
                 </div>
 
