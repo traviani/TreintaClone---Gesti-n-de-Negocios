@@ -109,7 +109,7 @@ export function PromoBanner({
                       </span>
                     )}
 
-                    {priceType === 'detal' && (
+                    {isOwner && priceType === 'detal' && (
                       <span className="inline-flex items-center text-[9px] font-black uppercase tracking-widest text-slate-300 bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-full">
                         Especial Detal
                       </span>

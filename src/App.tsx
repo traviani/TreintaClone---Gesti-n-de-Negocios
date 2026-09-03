@@ -26,6 +26,19 @@ const AccountsReceivable = React.lazy(() => import('./pages/AccountsReceivable')
 const DemandAnalysis = React.lazy(() => import('./pages/DemandAnalysis'));
 const Promotions = React.lazy(() => import('./pages/Promotions'));
 
+function AdminRouteGuard({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  const isClientSession = typeof window !== 'undefined' && sessionStorage.getItem('traviani_client_mode') === 'true';
+
+  // If a client entered through a public catalog link and attempts to open internal administrative routes
+  if (isClientSession && !user) {
+    const catalogPath = sessionStorage.getItem('traviani_catalog_link') || '/catalog/public_traviani';
+    return <Navigate to={catalogPath} replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -39,25 +52,25 @@ export default function App() {
           </div>
         }>
           <Routes>
-            {/* Public Routes - No Layout */}
+            {/* Public Standalone Routes - No Layout & No Admin Navigation */}
             <Route path="/receipt/:id" element={<ReceiptPage />} />
             <Route path="/catalog/:ownerId" element={<Catalog />} />
-            <Route path="/catalog" element={<Layout><Catalog /></Layout>} />
 
-            {/* Direct Routes - No Auth Required */}
-            <Route path="/" element={<Layout><Dashboard /></Layout>} />
-            <Route path="/inventory" element={<Layout><Inventory /></Layout>} />
-            <Route path="/pos" element={<Layout><POS /></Layout>} />
-            <Route path="/expenses" element={<Layout><Expenses /></Layout>} />
-            <Route path="/customers" element={<Layout><Customers /></Layout>} />
-            <Route path="/manufacturing" element={<Layout><Manufacturing /></Layout>} />
-            <Route path="/purchases" element={<Layout><Purchases /></Layout>} />
-            <Route path="/sales" element={<Layout><Sales /></Layout>} />
-            <Route path="/receivable" element={<Layout><AccountsReceivable /></Layout>} />
-            <Route path="/demand" element={<Layout><DemandAnalysis /></Layout>} />
-            <Route path="/promotions" element={<Layout><Promotions /></Layout>} />
+            {/* Internal Admin Routes - Protected with Layout and Access Guard */}
+            <Route path="/catalog" element={<AdminRouteGuard><Layout><Catalog /></Layout></AdminRouteGuard>} />
+            <Route path="/" element={<AdminRouteGuard><Layout><Dashboard /></Layout></AdminRouteGuard>} />
+            <Route path="/inventory" element={<AdminRouteGuard><Layout><Inventory /></Layout></AdminRouteGuard>} />
+            <Route path="/pos" element={<AdminRouteGuard><Layout><POS /></Layout></AdminRouteGuard>} />
+            <Route path="/expenses" element={<AdminRouteGuard><Layout><Expenses /></Layout></AdminRouteGuard>} />
+            <Route path="/customers" element={<AdminRouteGuard><Layout><Customers /></Layout></AdminRouteGuard>} />
+            <Route path="/manufacturing" element={<AdminRouteGuard><Layout><Manufacturing /></Layout></AdminRouteGuard>} />
+            <Route path="/purchases" element={<AdminRouteGuard><Layout><Purchases /></Layout></AdminRouteGuard>} />
+            <Route path="/sales" element={<AdminRouteGuard><Layout><Sales /></Layout></AdminRouteGuard>} />
+            <Route path="/receivable" element={<AdminRouteGuard><Layout><AccountsReceivable /></Layout></AdminRouteGuard>} />
+            <Route path="/demand" element={<AdminRouteGuard><Layout><DemandAnalysis /></Layout></AdminRouteGuard>} />
+            <Route path="/promotions" element={<AdminRouteGuard><Layout><Promotions /></Layout></AdminRouteGuard>} />
             
-            {/* Registration/Login still available if someone wants to use it */}
+            {/* Registration/Login */}
             <Route path="/login" element={<Login />} />
 
             {/* Fallback */}

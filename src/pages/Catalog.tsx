@@ -62,10 +62,26 @@ export default function Catalog() {
   const [isBannerEditorOpen, setIsBannerEditorOpen] = useState(false);
 
   // Determine if viewing user is the owner/admin
-  const isOwner = Boolean(user && (!paramOwnerId || paramOwnerId === effectiveUid || paramOwnerId === DEFAULT_OWNER_ID));
+  // If paramOwnerId is not present, it's the internal admin route (/catalog inside Layout).
+  // If paramOwnerId is present, the viewer is accessing via the external public link, and is only owner if logged in as the store owner.
+  const isInternalAdmin = !paramOwnerId;
+  const isOwner = Boolean(isInternalAdmin || (user && (paramOwnerId === effectiveUid || paramOwnerId === DEFAULT_OWNER_ID)));
 
-  // Get price type from URL: ?type=mayor or ?type=detal (default)
-  const priceType = searchParams.get('type') === 'mayor' ? 'mayor' : 'detal';
+  // Raw price type requested, but clients must NEVER see wholesale prices
+  const rawPriceType = searchParams.get('type') === 'mayor' ? 'mayor' : 'detal';
+  const priceType = isOwner ? rawPriceType : 'detal';
+
+  // Restrict client session: when a guest accesses via the public catalog link, record client mode
+  useEffect(() => {
+    if (paramOwnerId && !user) {
+      try {
+        sessionStorage.setItem('traviani_client_mode', 'true');
+        sessionStorage.setItem('traviani_catalog_link', `/catalog/${paramOwnerId}`);
+      } catch (e) {
+        console.warn('Storage warning', e);
+      }
+    }
+  }, [paramOwnerId, user]);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -186,7 +202,11 @@ export default function Catalog() {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const getShareLink = (type: 'detal' | 'mayor') => {
-    return `${window.location.origin}/#/catalog/${ownerId}?type=${type}`;
+    if (type === 'detal') {
+      // Clean customer link: strictly retail, no wholesale parameters
+      return `${window.location.origin}/#/catalog/${ownerId}`;
+    }
+    return `${window.location.origin}/#/catalog/${ownerId}?type=mayor`;
   };
 
   const copyToClipboard = (type: 'detal' | 'mayor') => {
@@ -210,30 +230,36 @@ export default function Catalog() {
     const stockItems = cart.filter(item => item.isProduction === false);
     const productionItems = cart.filter(item => item.isProduction === true);
 
-    let message = `🚀 *NUEVO PEDIDO - CATÁLOGO*%0A%0A`;
-    message += `Hola! Me gustaría realizar el siguiente pedido:%0A%0A`;
+    let message = `🚀 *NUEVO PEDIDO - CATÁLOGO*\n\n`;
+    message += `¡Hola! Me gustaría realizar el siguiente pedido:\n\n`;
 
     if (stockItems.length > 0) {
-      message += `📦 *PRODUCTOS DISPONIBLES (STOCK):*%0A`;
+      message += `📦 *PRODUCTOS DISPONIBLES (STOCK):*\n`;
       stockItems.forEach(item => {
-        message += `• ${item.quantity}x ${item.name} (${formatCurrency(item.price)})%0A`;
+        message += `• ${item.quantity}x ${item.name} (${formatCurrency(item.price)})\n`;
       });
-      message += `%0A`;
+      message += `\n`;
     }
 
     if (productionItems.length > 0) {
-      message += `🛠️ *PRODUCTOS PARA FABRICAR (BAJO PEDIDO):*%0A`;
+      message += `🛠️ *PRODUCTOS PARA FABRICAR (BAJO PEDIDO):*\n`;
       productionItems.forEach(item => {
-        message += `• ${item.quantity}x ${item.name} (${formatCurrency(item.price)})%0A`;
+        message += `• ${item.quantity}x ${item.name} (${formatCurrency(item.price)})\n`;
       });
-      message += `_(Entiendo que estos productos requieren tiempo de fabricación)_%0A%0A`;
+      message += `_(Entiendo que estos productos requieren tiempo de fabricación)_\n\n`;
     }
 
-    message += `💰 *TOTAL A PAGAR:* ${formatCurrency(cartTotal)}%0A`;
-    message += `🏷️ *TIPO DE PRECIO:* ${priceType === 'detal' ? 'Al Detal' : 'Al Mayor'}%0A%0A`;
-    message += `Quedo atento a tus indicaciones para el pago y envío! 🙏`;
+    message += `💰 *TOTAL A PAGAR:* ${formatCurrency(cartTotal)}\n\n`;
+    if (isOwner && priceType === 'mayor') {
+      message += `🏷️ *TIPO:* Al Mayor\n\n`;
+    }
+    message += `¡Quedo atento(a) a sus indicaciones para coordinar el pago y la entrega! 🙏`;
 
-    window.open(`https://wa.me/?text=${message}`, '_blank');
+    // WhatsApp phone number requested by user: +584226468537
+    const targetPhone = '584226468537';
+    const whatsappUrl = `https://wa.me/${targetPhone}?text=${encodeURIComponent(message)}`;
+
+    window.open(whatsappUrl, '_blank');
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-10 h-10 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div></div>;
@@ -272,7 +298,7 @@ export default function Catalog() {
               <h1 className="text-sm md:text-lg font-black italic serif tracking-tight text-slate-900">Catálogo Digital</h1>
             </div>
             <div className="flex items-center gap-2">
-              {priceType === 'mayor' && (
+              {isOwner && priceType === 'mayor' && (
                 <span className="bg-slate-900 text-white px-2 py-0.5 rounded text-[7px] md:text-[8px] font-black uppercase tracking-widest">
                   Mayorista
                 </span>
@@ -287,13 +313,16 @@ export default function Catalog() {
                   <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest">Propaganda</span>
                 </button>
               )}
-              <button 
-                  onClick={() => setShowShareOptions(true)}
-                  className="bg-white text-slate-900 hover:bg-slate-50 p-1.5 md:p-2 rounded-lg transition-all flex items-center gap-1.5 group border border-slate-200 shadow-sm"
-              >
-                <Share2 size={12} className="group-hover:scale-110 transition-transform" />
-                <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest">Compartir</span>
-              </button>
+              {isOwner && (
+                <button 
+                    onClick={() => setShowShareOptions(true)}
+                    className="bg-white text-slate-900 hover:bg-slate-50 p-1.5 md:p-2 rounded-lg transition-all flex items-center gap-1.5 group border border-slate-200 shadow-sm"
+                    title="Compartir link con clientes"
+                >
+                  <Share2 size={12} className="group-hover:scale-110 transition-transform" />
+                  <span className="text-[8px] md:text-[9px] font-bold uppercase tracking-widest">Compartir</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -373,7 +402,7 @@ export default function Catalog() {
                           {formatCurrency(priceType === 'detal' ? product.price : (product.wholesalePrice || product.price))}
                         </p>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                          Precio al {priceType === 'detal' ? 'Detal' : 'Mayor'}
+                          {isOwner ? (priceType === 'detal' ? 'Precio al Detal' : 'Precio al Mayor') : 'Precio'}
                         </p>
                     </div>
 
@@ -424,8 +453,8 @@ export default function Catalog() {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full p-4 bg-white/80 backdrop-blur-md border-t border-slate-100 flex justify-center z-50">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Potenciado por TreintaClone</p>
+      <div className="fixed bottom-0 left-0 w-full p-3 bg-white/90 backdrop-blur-md border-t border-slate-100 flex justify-center z-40">
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inversiones Traviani C.A. • Catálogo Digital</p>
       </div>
 
       {/* Floating Cart Button */}
@@ -549,8 +578,8 @@ export default function Catalog() {
                   <MessageCircle size={20} />
                   Enviar Pedido por WhatsApp
                 </button>
-                <p className="text-[10px] text-slate-400 text-center font-medium italic">
-                  Te redirigiremos a WhatsApp para finalizar los detalles del pago y envío.
+                <p className="text-[10px] text-slate-400 text-center font-medium">
+                  Tu pedido se enviará automáticamente a nuestro WhatsApp <span className="font-bold text-slate-600">+58 422 646 8537</span> para coordinar el pago y la entrega.
                 </p>
               </div>
             </motion.div>
@@ -582,66 +611,97 @@ export default function Catalog() {
                 <X size={20} className="text-slate-400" />
               </button>
 
-              <h2 className="text-2xl font-black italic serif text-slate-900 mb-2">Compartir Catálogo</h2>
-              <p className="text-slate-500 text-sm mb-8">Elige qué tipo de precios quieres enviar hoy:</p>
+              <h2 className="text-2xl font-black italic serif text-slate-900 mb-1">Compartir Catálogo</h2>
+              <p className="text-slate-500 text-xs mb-6">
+                Los pedidos que envíen tus clientes llegarán directamente a tu WhatsApp <span className="font-bold text-slate-700">+58 422 646 8537</span>.
+              </p>
 
               <div className="space-y-4">
-                <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100 hover:border-blue-200 transition-all group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-sm group-hover:scale-110 transition-transform">
-                        <ShoppingCart size={20} />
+                {/* Customer Link Card (Retail Only - Secure) */}
+                <div className="p-5 bg-gradient-to-br from-emerald-50/70 to-blue-50/70 rounded-3xl border-2 border-emerald-200/80 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 bg-emerald-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-emerald-200">
+                        <ShoppingCart size={18} />
                       </div>
-                      <p className="font-bold text-slate-900">Precios al Detal</p>
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm">Link Seguro para Clientes</p>
+                        <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">Solo Precios al Detal</p>
+                      </div>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase bg-white px-2 py-0.5 rounded-lg shadow-sm">Público</span>
+                    <span className="text-[9px] font-black text-emerald-800 uppercase bg-emerald-100 px-2 py-0.5 rounded-full">
+                      Recomendado
+                    </span>
                   </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => copyToClipboard('detal')}
-                      className="flex-1 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all flex items-center justify-center gap-2"
-                    >
-                      {copiedType === 'detal' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                      {copiedType === 'detal' ? '¡Copiado!' : 'Copiar Link'}
-                    </button>
+                  
+                  <p className="text-[11px] text-slate-600 mb-4 leading-relaxed font-medium">
+                    Tus clientes solo verán precios al detal. <strong>No podrán ver precios al mayor</strong> ni acceder a ninguna otra parte del sistema.
+                  </p>
+
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => copyToClipboard('detal')}
+                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 shadow-md shadow-emerald-100 active:scale-95 cursor-pointer"
+                      >
+                        {copiedType === 'detal' ? <Check size={15} /> : <Copy size={15} />}
+                        {copiedType === 'detal' ? '¡Link Copiado!' : 'Copiar Link para Clientes'}
+                      </button>
+                      <a 
+                        href={getShareLink('detal')}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-600 hover:text-blue-600 hover:border-blue-300 transition-all flex items-center justify-center shadow-sm"
+                        title="Abrir vista previa tal como la verá el cliente"
+                      >
+                        <ExternalLink size={16} />
+                      </a>
+                    </div>
+
                     <a 
-                      href={getShareLink('detal')}
+                      href={`https://wa.me/?text=${encodeURIComponent('¡Hola! Te comparto nuestro catálogo de productos para que armes tu pedido fácilmente:\n' + getShareLink('detal'))}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-blue-600 hover:border-blue-200 transition-all"
-                      title="Abrir vista previa"
+                      className="w-full py-2.5 bg-white border border-emerald-300 hover:bg-emerald-50 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-sm"
                     >
-                      <ExternalLink size={14} />
+                      <MessageCircle size={14} className="text-emerald-600" />
+                      Enviar por WhatsApp a un Cliente
                     </a>
                   </div>
                 </div>
 
-                <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100 hover:border-amber-200 transition-all group">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-amber-600 shadow-sm group-hover:scale-110 transition-transform">
-                        <Package size={20} />
+                {/* Wholesale Link Card (For Trusted Distributors Only) */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 bg-amber-100 text-amber-700 rounded-lg flex items-center justify-center">
+                        <Package size={14} />
                       </div>
-                      <p className="font-bold text-slate-900">Precios al Mayor</p>
+                      <p className="font-bold text-slate-800 text-xs">Acceso para Mayoristas</p>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase bg-white px-2 py-0.5 rounded-lg shadow-sm">Mayoreo</span>
+                    <span className="text-[8px] font-bold text-amber-700 uppercase bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">
+                      Distribuidores
+                    </span>
                   </div>
+                  <p className="text-[10px] text-slate-500 mb-3 leading-snug">
+                    Uso exclusivo para distribuidores de confianza (muestra precios al mayor).
+                  </p>
                   <div className="flex gap-2">
                     <button 
                       onClick={() => copyToClipboard('mayor')}
-                      className="flex-1 py-3 bg-white border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-wider text-slate-700 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all flex items-center justify-center gap-1.5"
                     >
-                      {copiedType === 'mayor' ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                      {copiedType === 'mayor' ? '¡Copiado!' : 'Copiar Link'}
+                      {copiedType === 'mayor' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                      {copiedType === 'mayor' ? '¡Copiado!' : 'Copiar Link Mayor'}
                     </button>
                     <a 
                       href={getShareLink('mayor')}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-3 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:text-amber-600 hover:border-amber-200 transition-all"
-                      title="Abrir vista previa"
+                      className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-amber-600 transition-all"
+                      title="Abrir vista previa mayorista"
                     >
-                      <ExternalLink size={14} />
+                      <ExternalLink size={13} />
                     </a>
                   </div>
                 </div>

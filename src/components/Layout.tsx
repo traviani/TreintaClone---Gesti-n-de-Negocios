@@ -42,6 +42,15 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
+  React.useEffect(() => {
+    // When accessing any Layout-wrapped route (internal admin panel), clear any client mode
+    try {
+      sessionStorage.removeItem('traviani_client_mode');
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
