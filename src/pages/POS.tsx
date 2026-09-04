@@ -13,6 +13,7 @@ import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn, getGoogleDriveDirectLink } from '../lib/utils';
+import { getProductEffectiveCost } from '../lib/recipeUtils';
 import { Receipt, sendSaleWhatsApp } from '../components/Receipt';
 import { 
   Search, 
@@ -37,6 +38,9 @@ interface Product {
   name: string;
   price: number;
   wholesalePrice?: number;
+  cost?: number | string;
+  recipe?: any[];
+  recipeYield?: number | string;
   stock: number;
   unit?: string;
   category: string;
@@ -193,13 +197,17 @@ export default function POS() {
           customerIdNumber: selectedCustomer.idNumber,
           customerPhone: selectedCustomer.phone || '',
           customerAddress: selectedCustomer.address || '',
-          items: cart.map(item => ({
-            productId: item.id,
-            name: item.name,
-            price: priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price,
-            quantity: item.quantity,
-            isBajoPedido: item.stock <= 0 || item.isBajoPedido
-          })),
+          items: cart.map(item => {
+            const productCost = getProductEffectiveCost(item, products);
+            return {
+              productId: item.id,
+              name: item.name,
+              price: priceType === 'mayor' && item.wholesalePrice ? item.wholesalePrice : item.price,
+              cost: productCost,
+              quantity: item.quantity,
+              isBajoPedido: item.stock <= 0 || item.isBajoPedido
+            };
+          }),
           hasBajoPedido: cart.some(item => item.stock <= 0 || item.isBajoPedido),
           subtotal: currentSubtotal,
           discount: isSample ? currentSubtotal : discount,

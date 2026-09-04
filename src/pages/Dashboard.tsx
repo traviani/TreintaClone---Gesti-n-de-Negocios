@@ -10,7 +10,8 @@ import {
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_OWNER_ID } from '../constants';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, cn } from '../lib/utils';
+import { getProductEffectiveCost } from '../lib/recipeUtils';
 import { MigrationTool } from '../components/MigrationTool';
 import { 
   Link
@@ -50,9 +51,11 @@ interface StatCardProps {
   icon: React.ElementType;
   color: 'teal' | 'red' | 'green' | 'amber';
   trend?: { value: number; isUp: boolean };
+  subtitle?: string;
+  linkTo?: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, trend }) => {
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, trend, subtitle, linkTo }) => {
   const iconColors = {
     teal: 'bg-teal-50 text-teal-600 border border-teal-100',
     red: 'bg-rose-50 text-rose-500 border border-rose-100',
@@ -60,10 +63,13 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, tr
     amber: 'bg-amber-50 text-amber-600 border border-amber-100',
   };
 
-  return (
+  const cardContent = (
     <motion.div 
       whileHover={{ y: -3, transition: { duration: 0.15 } }}
-      className="p-5 rounded-[24px] border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[135px]"
+      className={cn(
+        "p-5 rounded-[24px] border border-slate-200/80 bg-white shadow-xs hover:shadow-md transition-all flex flex-col justify-between min-h-[145px]",
+        linkTo && "cursor-pointer hover:border-slate-300"
+      )}
     >
       <div className="flex items-center justify-between mb-3">
         <div className={cn("p-2.5 rounded-xl flex items-center justify-center", iconColors[color])}>
@@ -79,15 +85,19 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, tr
       <div>
         <p className="text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">{title}</p>
         <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">{formatCurrency(value)}</h3>
+        {subtitle && (
+          <p className="text-[10px] text-slate-500 font-semibold mt-1.5 truncate tracking-tight">{subtitle}</p>
+        )}
       </div>
     </motion.div>
   );
-};
 
-// Helper to use cn in this file
-function cn(...inputs: any[]) {
-    return inputs.filter(Boolean).join(' ');
-}
+  if (linkTo) {
+    return <Link to={linkTo} className="block no-underline">{cardContent}</Link>;
+  }
+
+  return cardContent;
+};
 
 export default function Dashboard() {
   const { user, effectiveUid } = useAuth();
@@ -190,24 +200,63 @@ export default function Dashboard() {
 
   const totalSalesAmount = currentMonthSales.reduce((acc, sale) => acc + (Number(sale.total) || 0), 0);
   const totalExpensesAmount = currentMonthExpenses.reduce((acc, expense) => acc + (Number(expense.amount) || 0), 0);
-  const totalDebts = customers.reduce((acc, customer) => acc + (Number(customer.balance) || 0), 0);
+  
+  // 1. Costo de Productos Vendidos (COGS) en ventas del mes
+  const currentMonthSalesCost = currentMonthSales.reduce((totalCost, sale) => {
+    if (!sale.items || !Array.isArray(sale.items)) return totalCost;
+    const saleCost = sale.items.reduce((itemAcc: number, item: any) => {
+      let unitCost = item.cost;
+      if (unitCost === undefined || unitCost === null || isNaN(Number(unitCost)) || Number(unitCost) <= 0) {
+        const prod = products.find(p => p.id === (item.productId || item.id));
+        unitCost = prod ? getProductEffectiveCost(prod, products) : 0;
+      }
+      const validUnitCost = Math.max(0, Number(unitCost) || 0);
+      const qty = Math.max(0, Number(item.quantity) || 0);
+      return itemAcc + (validUnitCost * qty);
+    }, 0);
+    return totalCost + saleCost;
+  }, 0);
+
+  // Utilidad Real del Mes: Ventas - Costo de Productos Vendidos - Gastos Operativos
+  const profit = totalSalesAmount - currentMonthSalesCost - totalExpensesAmount;
+
+  // 2. Cuentas por Cobrar calculadas desde las ventas a crédito pendientes (idéntico a Cuentas por Cobrar)
+  const pendingCreditSales = sales.filter(s => {
+    const isCredit = s.saleType === 'credito';
+    const bal = s.balance !== undefined ? Number(s.balance) : Number(s.total || 0);
+    return isCredit && bal > 0.01;
+  });
+  const totalDebts = pendingCreditSales.reduce((acc, s) => {
+    const bal = s.balance !== undefined ? Number(s.balance) : Number(s.total || 0);
+    return acc + Math.max(0, bal);
+  }, 0);
+
   const lowStockCount = products.filter(p => Number(p.stock || 0) <= (Number(p.lowStockThreshold) || 5)).length;
   
-  // Calculate inventory value at cost, ignoring negative stocks
+  // 3. Inversión en Inventario calculada con costo efectivo (incluye recetas de manufactura y stock disponible)
   const totalInventoryValue = products.reduce((acc, p) => {
     const stock = Math.max(0, Number(p.stock || 0));
-    const cost = Number(p.cost || 0);
+    const cost = getProductEffectiveCost(p, products);
     return acc + (stock * cost);
   }, 0);
 
-  // Calculate estimated sales value based on wholesale price for sellable products only
+  const ingredientsInventoryValue = products
+    .filter(p => p.isIngredient === true || p.isIngredient === 'true')
+    .reduce((acc, p) => {
+      const stock = Math.max(0, Number(p.stock || 0));
+      return acc + (stock * getProductEffectiveCost(p, products));
+    }, 0);
+
+  const finishedInventoryValue = products
+    .filter(p => (p.isFinishedProduct === true || p.isFinishedProduct === 'true') && (p.isIngredient !== true && p.isIngredient !== 'true'))
+    .reduce((acc, p) => {
+      const stock = Math.max(0, Number(p.stock || 0));
+      return acc + (stock * getProductEffectiveCost(p, products));
+    }, 0);
+
+  // Valor estimado de venta para todos los productos comercializables (no insumos puros)
   const totalRetailValue = products
-    .filter(p => {
-      const isFinished = (p as any).isFinishedProduct;
-      const isIngredient = (p as any).isIngredient;
-      return (isFinished === true || isFinished === 'true') && 
-             (isIngredient !== true && isIngredient !== 'true');
-    })
+    .filter(p => p.isIngredient !== true && p.isIngredient !== 'true')
     .reduce((acc, p) => {
       const stock = Math.max(0, Number(p.stock || 0));
       const wholesalePrice = Number(p.wholesalePrice || p.price || 0);
@@ -221,8 +270,6 @@ export default function Dashboard() {
       if (!date || isNaN(date.getTime())) return false;
       return date >= monthStart && p.paymentStatus === 'credito';
     }).reduce((acc, p) => acc + (Number(p.total) || 0), 0);
-
-  const profit = totalSalesAmount - totalExpensesAmount;
   
   // Create daily chart data for the last 15 days
   const last15Days = eachDayOfInterval({
@@ -281,36 +328,47 @@ export default function Dashboard() {
           icon={TrendingUp} 
           color="teal" 
           trend={{ value: 12, isUp: true }}
+          subtitle={`${currentMonthSales.length} venta(s) registradas`}
+          linkTo="/sales"
         />
         <StatCard 
           title="Utilidad del Mes" 
           value={profit} 
           icon={Receipt} 
           color="green" 
+          subtitle={`Ventas: ${formatCurrency(totalSalesAmount)} | Costos: -${formatCurrency(currentMonthSalesCost)} | Gastos: -${formatCurrency(totalExpensesAmount)}`}
         />
         <StatCard 
           title="Cuentas por Cobrar" 
           value={totalDebts} 
           icon={CreditCard} 
           color="teal" 
+          subtitle={`${pendingCreditSales.length} factura(s) por cobrar`}
+          linkTo="/accounts-receivable"
         />
         <StatCard 
           title="Cuentas por Pagar" 
           value={accountsPayable} 
           icon={TrendingDown} 
           color="red" 
+          subtitle="Gastos y compras a crédito pendientes"
+          linkTo="/purchases"
         />
         <StatCard 
           title="Inversión en Inventario" 
           value={totalInventoryValue} 
           icon={Package} 
           color="amber" 
+          subtitle={`Insumos: ${formatCurrency(ingredientsInventoryValue)} | Terminados: ${formatCurrency(finishedInventoryValue)}`}
+          linkTo="/inventory"
         />
         <StatCard 
           title="Valor de Venta Est." 
           value={totalRetailValue} 
           icon={TrendingUp} 
           color="teal" 
+          subtitle="Valor en precio mayor/venta del stock"
+          linkTo="/inventory"
         />
         {lowStockCount > 0 ? (
           <motion.div 

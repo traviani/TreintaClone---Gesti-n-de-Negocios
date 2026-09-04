@@ -21,7 +21,8 @@ import {
   convertQuantity, 
   getDisplayUnitCost, 
   calculateRecipeCostSummary,
-  getAvailableUnitsForIngredient 
+  getAvailableUnitsForIngredient,
+  getProductEffectiveCost
 } from '../lib/recipeUtils';
 import { 
   Plus, 
@@ -377,11 +378,45 @@ export default function Inventory() {
       if (sortBy === 'category') comparison = (a.category || '').localeCompare(b.category || '');
       if (sortBy === 'stock') comparison = (a.stock || 0) - (b.stock || 0);
       if (sortBy === 'price') comparison = (a.price || 0) - (b.price || 0);
+      if (sortBy === 'cost') comparison = getProductEffectiveCost(a, products) - getProductEffectiveCost(b, products);
+      if (sortBy === 'inventoryValue') {
+        const valA = Math.max(0, Number(a.stock || 0)) * getProductEffectiveCost(a, products);
+        const valB = Math.max(0, Number(b.stock || 0)) * getProductEffectiveCost(b, products);
+        comparison = valA - valB;
+      }
       
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
   const categories = Array.from(new Set(products.map(p => p.category))).filter(Boolean).sort();
+
+  // Métricas exactas de inversión en inventario coincidentes con el Tablero
+  const totalInventoryCost = products.reduce((acc, p) => {
+    const stock = Math.max(0, Number(p.stock || 0));
+    return acc + (stock * getProductEffectiveCost(p, products));
+  }, 0);
+
+  const ingredientsCost = products
+    .filter(p => p.isIngredient === true || p.isIngredient === 'true')
+    .reduce((acc, p) => {
+      const stock = Math.max(0, Number(p.stock || 0));
+      return acc + (stock * getProductEffectiveCost(p, products));
+    }, 0);
+
+  const finishedCost = products
+    .filter(p => (p.isFinishedProduct === true || p.isFinishedProduct === 'true') && (p.isIngredient !== true && p.isIngredient !== 'true'))
+    .reduce((acc, p) => {
+      const stock = Math.max(0, Number(p.stock || 0));
+      return acc + (stock * getProductEffectiveCost(p, products));
+    }, 0);
+
+  const totalRetailValue = products
+    .filter(p => p.isIngredient !== true && p.isIngredient !== 'true')
+    .reduce((acc, p) => {
+      const stock = Math.max(0, Number(p.stock || 0));
+      const wholesalePrice = Number(p.wholesalePrice || p.price || 0);
+      return acc + (stock * wholesalePrice);
+    }, 0);
 
   return (
     <div className="space-y-6">
@@ -423,6 +458,30 @@ export default function Inventory() {
       </div>
     </div>
 
+      {/* Resumen Financiero de Inventario */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Inversión Total (Costo)</p>
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(totalInventoryCost)}</h3>
+          <p className="text-[10px] text-slate-500 font-medium mt-1">Existencias valoradas al costo</p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+          <p className="text-[11px] font-bold text-amber-600 uppercase tracking-wider mb-1">Inversión en Insumos</p>
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(ingredientsCost)}</h3>
+          <p className="text-[10px] text-slate-500 font-medium mt-1">Materia prima disponible</p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+          <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider mb-1">Inversión en Terminados</p>
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(finishedCost)}</h3>
+          <p className="text-[10px] text-slate-500 font-medium mt-1">Productos listos para la venta</p>
+        </div>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+          <p className="text-[11px] font-bold text-teal-600 uppercase tracking-wider mb-1">Valor de Venta Est.</p>
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">{formatCurrency(totalRetailValue)}</h3>
+          <p className="text-[10px] text-slate-500 font-medium mt-1">Proyección al precio mayor/detal</p>
+        </div>
+      </div>
+
       <div className="flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -463,6 +522,8 @@ export default function Inventory() {
               <option value="category">Ordenar por Categoría</option>
               <option value="stock">Ordenar por Stock</option>
               <option value="price">Ordenar por Precio</option>
+              <option value="cost">Ordenar por Costo Unitario</option>
+              <option value="inventoryValue">Ordenar por Valor Inventario</option>
             </select>
             <button 
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
@@ -486,93 +547,120 @@ export default function Inventory() {
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Producto</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Categoría</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Stock</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Precio</th>
-                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Costo</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Precio Venta</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Costo Unit.</th>
+                <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif">Valor Inventario</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest italic serif text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-slate-50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center transition-colors overflow-hidden",
-                        product.stock <= (product.lowStockThreshold || 5) 
-                          ? "bg-red-50 text-red-500 shadow-sm shadow-red-100" 
-                          : "bg-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white"
-                      )}>
-                        {product.imageUrl ? (
-                          <img src={getGoogleDriveDirectLink(product.imageUrl)} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <Package size={20} />
-                        )}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-slate-900">{product.name}</span>
-                        {product.stock <= (product.lowStockThreshold || 5) && (
-                          <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter animate-pulse">Stock Crítico</span>
-                        )}
-                      </div>
-                      <span className="text-[10px] font-black bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded italic uppercase">{product.unit || 'unid'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">
-                    <span className="px-2 py-1 bg-slate-100 rounded-lg text-xs font-bold uppercase tracking-wider">{product.category}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "text-sm font-black italic serif",
-                          product.stock <= (product.lowStockThreshold || 5) ? "text-red-600" : "text-slate-900"
+              {filteredProducts.map((product) => {
+                const effectiveCost = getProductEffectiveCost(product, products);
+                const stockQty = Math.max(0, Number(product.stock || 0));
+                const itemInventoryCost = stockQty * effectiveCost;
+                const retailPrice = Number(product.wholesalePrice || product.price || 0);
+                const itemInventoryRetail = stockQty * retailPrice;
+                const hasRecipe = Boolean(product.recipe && product.recipe.length > 0);
+
+                return (
+                  <tr key={product.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors overflow-hidden",
+                          product.stock <= (product.lowStockThreshold || 5) 
+                            ? "bg-red-50 text-red-500 shadow-sm shadow-red-100" 
+                            : "bg-slate-100 text-slate-400 group-hover:bg-slate-900 group-hover:text-white"
                         )}>
-                          {product.stock} <span className="text-[10px] font-medium text-slate-400 uppercase">{product.unit || 'und'}</span>
-                        </span>
-                        {product.stock <= (product.lowStockThreshold || 5) && <AlertCircle size={14} className="text-red-500" />}
+                          {product.imageUrl ? (
+                            <img src={getGoogleDriveDirectLink(product.imageUrl)} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                            <Package size={20} />
+                          )}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-slate-900">{product.name}</span>
+                          {product.stock <= (product.lowStockThreshold || 5) && (
+                            <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter animate-pulse">Stock Crítico</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-black bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded italic uppercase">{product.unit || 'unid'}</span>
                       </div>
-                      <div className="flex items-center gap-1 group/threshold">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase">Avisar en:</span>
-                        <input 
-                          type="number"
-                          className="w-10 bg-transparent border-b border-slate-100 focus:border-blue-300 outline-none text-[10px] font-bold text-slate-500 text-center"
-                          defaultValue={product.lowStockThreshold || 5}
-                          onBlur={async (e) => {
-                            const val = parseFloat(e.target.value);
-                            if (!isNaN(val)) {
-                              await updateDoc(doc(db, 'products', product.id), {
-                                lowStockThreshold: val,
-                                updatedAt: serverTimestamp()
-                              });
-                            }
-                          }}
-                        />
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      <span className="px-2 py-1 bg-slate-100 rounded-lg text-xs font-bold uppercase tracking-wider">{product.category}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className={cn(
+                            "text-sm font-black italic serif",
+                            product.stock <= (product.lowStockThreshold || 5) ? "text-red-600" : "text-slate-900"
+                          )}>
+                            {product.stock} <span className="text-[10px] font-medium text-slate-400 uppercase">{product.unit || 'und'}</span>
+                          </span>
+                          {product.stock <= (product.lowStockThreshold || 5) && <AlertCircle size={14} className="text-red-500" />}
+                        </div>
+                        <div className="flex items-center gap-1 group/threshold">
+                          <span className="text-[8px] font-bold text-slate-400 uppercase">Avisar en:</span>
+                          <input 
+                            type="number"
+                            className="w-10 bg-transparent border-b border-slate-100 focus:border-blue-300 outline-none text-[10px] font-bold text-slate-500 text-center"
+                            defaultValue={product.lowStockThreshold || 5}
+                            onBlur={async (e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val)) {
+                                await updateDoc(doc(db, 'products', product.id), {
+                                  lowStockThreshold: val,
+                                  updatedAt: serverTimestamp()
+                                });
+                              }
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm font-bold text-slate-900">{formatCurrency(product.price)}</td>
-                  <td className="px-6 py-4 text-sm text-slate-500">{formatCurrency(product.cost, 3)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleOpenEditProduct(product)}
-                        className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(product.id)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-slate-900">{formatCurrency(product.price)}</td>
+                    <td className="px-6 py-4 text-sm text-slate-500">
+                      <div>
+                        <span className="font-semibold text-slate-800">{formatCurrency(effectiveCost, 3)}</span>
+                        {hasRecipe && (
+                          <span className="block text-[8px] font-bold text-teal-600 uppercase tracking-tight">Cálculo Receta</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900">{formatCurrency(itemInventoryCost)}</span>
+                        {product.price > 0 && stockQty > 0 && (
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            Venta: {formatCurrency(itemInventoryRetail)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleOpenEditProduct(product)}
+                          className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(product.id)}
+                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
               {filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-20 text-center">
+                  <td colSpan={7} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-2">
                       <Package size={48} className="text-slate-200" />
                       <p className="text-slate-400 font-medium">No se encontraron productos</p>

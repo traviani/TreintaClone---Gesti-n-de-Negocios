@@ -92,7 +92,7 @@ export default function AccountsReceivable() {
             balance: data.balance !== undefined ? data.balance : (data.total || 0)
           } as Sale;
         })
-        .filter(s => s.saleType === 'credito' && (s.balance || 0) > 0.01 && s.customerId) // Ensure customerId exists
+        .filter(s => s.saleType === 'credito' && (Number(s.balance !== undefined ? s.balance : s.total) || 0) > 0.01)
         .sort((a, b) => {
           const timeA = a.createdAt?.toMillis?.() || 0;
           const timeB = b.createdAt?.toMillis?.() || 0;
@@ -108,11 +108,6 @@ export default function AccountsReceivable() {
 
   const handleRegisterPayment = async () => {
     if (!selectedSale || !paymentAmount) return;
-    
-    if (!selectedSale.customerId) {
-      alert('Error: Esta venta no tiene un cliente asociado válido.');
-      return;
-    }
 
     const amount = parseFloat(paymentAmount);
     const discountInput = parseFloat(paymentDiscount || '0');
@@ -143,7 +138,6 @@ export default function AccountsReceivable() {
     try {
       const batch = writeBatch(db);
       const saleRef = doc(db, 'sales', selectedSale.id);
-      const customerRef = doc(db, 'customers', selectedSale.customerId);
 
       const newPayment: any = {
         amount,
@@ -160,10 +154,13 @@ export default function AccountsReceivable() {
         payments: arrayUnion(newPayment)
       });
 
-      // 2. Update Customer overall balance
-      batch.update(customerRef, {
-        balance: increment(-totalReduction)
-      });
+      // 2. Update Customer overall balance if customerId exists
+      if (selectedSale.customerId) {
+        const customerRef = doc(db, 'customers', selectedSale.customerId);
+        batch.update(customerRef, {
+          balance: increment(-totalReduction)
+        });
+      }
 
       await batch.commit();
       

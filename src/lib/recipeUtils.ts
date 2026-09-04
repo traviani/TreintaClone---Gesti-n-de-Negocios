@@ -192,3 +192,39 @@ export function getAvailableUnitsForIngredient(baseUnitRaw?: string): Array<{ va
     { value: bu || 'unid', label: (bu || 'unid').toUpperCase() },
   ];
 }
+
+/**
+ * Obtiene el costo unitario efectivo de un producto.
+ * Si el producto posee fórmula/receta con insumos, calcula dinámicamente el costo unitario real.
+ * Si no tiene receta o no se puede calcular, utiliza su costo directo registrado.
+ */
+export function getProductEffectiveCost(
+  product: { id?: string; cost?: number | string; recipe?: any[]; recipeYield?: number | string; [key: string]: any },
+  allProducts: Array<{ id: string; name?: string; cost?: number | string; unit?: string; stock?: number }> = []
+): number {
+  if (!product) return 0;
+
+  // Si tiene receta/fórmula con insumos, el costo real proviene de sus insumos y rendimiento
+  if (product.recipe && Array.isArray(product.recipe) && product.recipe.length > 0) {
+    try {
+      const summary = calculateRecipeCostSummary(
+        product.recipe,
+        allProducts as any,
+        product.recipeYield || 1
+      );
+      if (summary.unitCost > 0) {
+        return summary.unitCost;
+      }
+    } catch {
+      // Ignorar fallo de cálculo y continuar con costo directo
+    }
+  }
+
+  let directCost = typeof product.cost === 'number' 
+    ? product.cost 
+    : parseFloat(String(product.cost || '0').replace(',', '.'));
+
+  if (isNaN(directCost)) directCost = 0;
+
+  return Math.max(0, directCost);
+}
