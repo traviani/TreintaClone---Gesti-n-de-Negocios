@@ -34,12 +34,22 @@ import {
   CreditCard,
   AlertCircle,
   CheckCircle2,
-  Printer
+  Printer,
+  RefreshCw,
+  Edit3,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { RecipeSheet, RecipeIngredientDetail } from '../components/RecipeSheet';
+import { 
+  normalizeUnit, 
+  convertQuantity, 
+  getDisplayUnitCost, 
+  calculateRecipeCostSummary, 
+  getAvailableUnitsForIngredient 
+} from '../lib/recipeUtils';
 
 interface Product {
   id: string;
@@ -65,7 +75,11 @@ interface ProductionLog {
   productId: string;
   productName: string;
   amount: number;
-  ingredients: { ingredientId: string; quantity: number; name: string; unit: string; cost: number }[];
+  unit?: string;
+  batches?: number;
+  yieldPerBatch?: number;
+  costPerUnit?: number;
+  ingredients: { ingredientId: string; quantity: number; name: string; unit: string; cost: number; subtotal?: number }[];
   totalCost: number;
   createdAt: any;
 }
@@ -92,49 +106,7 @@ export default function Manufacturing() {
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>('');
   const [recipeYield, setRecipeYield] = useState<number>(1);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-
-  const getNormalizedQuantity = (ingredientId: string, quantity: number, targetUnit: string) => {
-    const ingredient = products.find(p => p.id === ingredientId);
-    if (!ingredient) return quantity;
-    
-    const baseUnitRaw = ingredient.unit || 'unid';
-    const tu = targetUnit?.toLowerCase().trim();
-    const bu = baseUnitRaw?.toLowerCase().trim();
-    
-    let effectiveQuantity = Number(quantity);
-    
-    // Normalizar a unidad base (kg, lt, unid)
-    if ((bu === 'kg' || bu === 'kilogramo' || bu === 'kilo') && (tu === 'gr' || tu === 'gramo' || tu === 'g')) {
-      effectiveQuantity = quantity / 1000;
-    } else if ((bu === 'gr' || bu === 'gramo' || bu === 'g') && (tu === 'kg' || tu === 'kilogramo' || tu === 'kilo')) {
-      effectiveQuantity = quantity * 1000;
-    } else if ((bu === 'lt' || bu === 'litro' || bu === 'l') && (tu === 'ml' || tu === 'mililitro')) {
-      effectiveQuantity = quantity / 1000;
-    } else if ((bu === 'ml' || bu === 'mililitro') && (tu === 'lt' || tu === 'litro' || tu === 'l')) {
-      effectiveQuantity = quantity * 1000;
-    }
-    
-    return effectiveQuantity;
-  };
-
-  const getDisplayUnitCost = (baseCost: number, baseUnit: string, targetUnit: string) => {
-    const bu = baseUnit?.toLowerCase().trim();
-    const tu = targetUnit?.toLowerCase().trim();
-
-    if ((bu === 'kg' || bu === 'kilogramo' || bu === 'kilo') && (tu === 'gr' || tu === 'gramo' || tu === 'g')) {
-      return baseCost / 1000;
-    }
-    if ((bu === 'gr' || bu === 'gramo' || bu === 'g') && (tu === 'kg' || tu === 'kilogramo' || tu === 'kilo')) {
-      return baseCost * 1000;
-    }
-    if ((bu === 'lt' || bu === 'litro' || bu === 'l') && (tu === 'ml' || tu === 'mililitro')) {
-      return baseCost / 1000;
-    }
-    if ((bu === 'ml' || bu === 'mililitro') && (tu === 'lt' || tu === 'litro' || tu === 'l')) {
-      return baseCost * 1000;
-    }
-    return baseCost;
-  };
+  const [isSyncingAllCosts, setIsSyncingAllCosts] = useState(false);
 
   useEffect(() => {
     const allowedOwnerIds = [effectiveUid];
@@ -214,35 +186,100 @@ export default function Manufacturing() {
     setRecipeIngredients(recipeIngredients.filter((_, i) => i !== index));
   };
 
+  const handleOpenEditRecipe = (recipe: Recipe) => {
+    setSelectedProduct(recipe.productId);
+    setRecipeYield(recipe.yield || 1);
+    setRecipeIngredients(recipe.ingredients.map(ing => ({
+      ingredientId: ing.ingredientId,
+      quantity: ing.quantity,
+      unit: ing.unit || products.find(p => p.id === ing.ingredientId)?.unit || 'unid'
+    })));
+    setIsModalOpen(true);
+  };
+
+  const handleSyncAllRecipeCosts = async () => {
+    if (!confirm('¿Deseas recalcular y sincronizar automáticamente los costos de todas las fórmulas maestras con los costos actuales de sus materias primas en inventario?')) return;
+
+    setIsSyncingAllCosts(true);
+    try {
+      const batch = writeBatch(db);
+      let updatedCount = 0;
+
+      for (const recipe of recipes) {
+        if (!recipe.productId || !recipe.ingredients || recipe.ingredients.length === 0) continue;
+        const summary = calculateRecipeCostSummary(recipe.ingredients, products, recipe.yield || 1);
+
+        const productRef = doc(db, 'products', recipe.productId);
+        batch.update(productRef, {
+          cost: summary.unitCost,
+          recipeYield: summary.yieldAmount,
+          recipe: recipe.ingredients.map(ing => ({
+            ingredientId: ing.ingredientId,
+            name: products.find(p => p.id === ing.ingredientId)?.name || 'Insumo',
+            unit: ing.unit || products.find(p => p.id === ing.ingredientId)?.unit || 'unid',
+            quantity: ing.quantity,
+            cost: products.find(p => p.id === ing.ingredientId)?.cost || 0
+          })),
+          isFinishedProduct: true,
+          updatedAt: serverTimestamp()
+        });
+
+        const recipeRef = doc(db, 'recipes', recipe.id);
+        batch.update(recipeRef, {
+          yield: summary.yieldAmount,
+          updatedAt: serverTimestamp()
+        });
+
+        updatedCount++;
+      }
+
+      if (updatedCount > 0) {
+        await batch.commit();
+        alert(`¡Costos sincronizados exitosamente!\n\nSe actualizaron y recalcularon ${updatedCount} producto(s) terminado(s) y fórmula(s).`);
+      } else {
+        alert('No se encontraron fórmulas con ingredientes para sincronizar.');
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'recipes');
+    } finally {
+      setIsSyncingAllCosts(false);
+    }
+  };
+
   const handleSaveRecipe = async () => {
     if (!selectedProduct || recipeIngredients.length === 0) return;
 
     try {
+      const yieldVal = Math.max(0.0001, parseFloat(String(recipeYield)) || 1);
+      const summary = calculateRecipeCostSummary(recipeIngredients, products, yieldVal);
+      const targetProduct = products.find(p => p.id === selectedProduct);
+
       const recipeRef = doc(db, 'recipes', `recipe_${selectedProduct}`);
       await setDoc(recipeRef, {
         productId: selectedProduct,
-        yield: recipeYield || 1,
+        yield: summary.yieldAmount,
         ingredients: recipeIngredients.map(ing => ({
           ingredientId: ing.ingredientId,
           unit: ing.unit || products.find(p => p.id === ing.ingredientId)?.unit || 'unid',
-          quantity: ing.quantity
+          quantity: parseFloat(String(ing.quantity)) || 0
         })),
         ownerId: effectiveUid,
         updatedAt: serverTimestamp(),
         createdAt: serverTimestamp()
       }, { merge: true });
 
-      // Calculate cost per unit to update product cost
-      const totalCostRaw = recipeIngredients.reduce((acc, ing) => {
-        const ingProduct = products.find(p => p.id === ing.ingredientId);
-        // CRITICAL: Must use normalized quantity for cost calculation
-        const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity, ing.unit || ingProduct?.unit || 'unid');
-        return acc + (Number(ingProduct?.cost || 0) * normalizedQty);
-      }, 0);
-      const costPerUnit = totalCostRaw / (recipeYield || 1);
-
+      // Update finished product cost and recipe specification
       await updateDoc(doc(db, 'products', selectedProduct), {
-        cost: costPerUnit,
+        cost: summary.unitCost,
+        recipeYield: summary.yieldAmount,
+        recipe: recipeIngredients.map(ing => ({
+          ingredientId: ing.ingredientId,
+          name: products.find(p => p.id === ing.ingredientId)?.name || 'Insumo',
+          unit: ing.unit || products.find(p => p.id === ing.ingredientId)?.unit || 'unid',
+          quantity: parseFloat(String(ing.quantity)) || 0,
+          cost: products.find(p => p.id === ing.ingredientId)?.cost || 0
+        })),
+        isFinishedProduct: true,
         updatedAt: serverTimestamp()
       });
 
@@ -250,82 +287,79 @@ export default function Manufacturing() {
       setRecipeIngredients([]);
       setSelectedProduct('');
       setRecipeYield(1);
+      alert(`¡Fórmula guardada con éxito!\n\nProducto: ${targetProduct?.name || ''}\nRendimiento: ${summary.yieldAmount} ${targetProduct?.unit || 'unid'}\nCosto Insumos (1 tanda): ${formatCurrency(summary.totalBatchCost, 2)}\nCosto Unitario Resultante: ${formatCurrency(summary.unitCost, 4)}`);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'recipes');
     }
   };
 
-  const produceBatch = async (recipe: Recipe, amount: any = 1) => {
-    // If no explicit user, use the effective ID which should be at least the shared ID
+  const produceBatch = async (recipe: Recipe, batchesAmount: any = 1) => {
     const targetUid = effectiveUid || DEFAULT_OWNER_ID;
     setIsProducing(recipe.id);
 
-    const numAmount = Number(amount);
-    const yieldFactor = Number(recipe.yield || 1);
-    
-    if (!numAmount || numAmount <= 0) {
-      alert('Por favor ingrese una cantidad válida a producir.');
-      setIsProducing(null);
-      return;
-    }
+    const batches = Math.max(0.01, parseFloat(String(batchesAmount)) || 1);
+    const yieldPerBatch = Math.max(0.0001, parseFloat(String(recipe.yield)) || 1);
+    const totalUnitsToProduce = batches * yieldPerBatch;
 
     try {
-      // 1. Validate Stock first (Client side check for better UX)
-      const missingItems: string[] = [];
-      recipe.ingredients.forEach(ing => {
-        const ingProduct = products.find(p => p.id === ing.ingredientId);
-        const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity, ing.unit || 'unid');
-        const required = (normalizedQty / yieldFactor) * numAmount;
-        const currentStock = Number(ingProduct?.stock || 0);
-        
-        if (currentStock < required) {
-          const diff = required - currentStock;
-          missingItems.push(`${ingProduct?.name || 'Insumo'}: faltan ${diff.toFixed(2)} ${ingProduct?.unit || 'unid'}`);
+      const summary = calculateRecipeCostSummary(recipe.ingredients, products, yieldPerBatch);
+      const product = products.find(p => p.id === recipe.productId);
+      const productUnit = product?.unit || 'unid';
+
+      // 1. Validate Stock of all ingredients for total batches
+      const missingStockItems: string[] = [];
+
+      summary.items.forEach(item => {
+        const ingProduct = products.find(p => p.id === item.ingredientId);
+        const requiredInBaseUnit = item.normalizedQuantityInBaseUnit * batches;
+        const availableInBaseUnit = Number(ingProduct?.stock || 0);
+
+        if (availableInBaseUnit < requiredInBaseUnit) {
+          const reqDisplay = convertQuantity(requiredInBaseUnit, item.baseUnit, item.recipeUnit);
+          const availDisplay = convertQuantity(availableInBaseUnit, item.baseUnit, item.recipeUnit);
+          missingStockItems.push(
+            `• ${item.name}: Faltan ${(reqDisplay - availDisplay).toFixed(2)} ${item.recipeUnit} (Requieres ${reqDisplay.toFixed(2)} ${item.recipeUnit}, hay ${availDisplay.toFixed(2)} ${item.recipeUnit})`
+          );
         }
       });
 
-      if (missingItems.length > 0) {
-        alert(`No hay stock suficiente para producir este lote.\n\n${missingItems.join('\n')}`);
+      if (missingStockItems.length > 0) {
+        alert(`No hay stock suficiente para fabricar ${batches} tanda(s) (${totalUnitsToProduce.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${productUnit}):\n\n${missingStockItems.join('\n')}`);
         setIsProducing(null);
         return;
       }
 
       const batch = writeBatch(db);
-      const product = products.find(p => p.id === recipe.productId);
-      
       const logIngredients: any[] = [];
-      let totalCostOfIngredientsUsed = 0;
+      const totalCostOfBatch = summary.totalBatchCost * batches;
+      const unitCost = summary.unitCost;
 
       // 2. Deduct ingredients
-      recipe.ingredients.forEach(ing => {
-        const ingProduct = products.find(p => p.id === ing.ingredientId);
-        const ingRef = doc(db, 'products', ing.ingredientId);
-        const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity, ing.unit || 'unid');
-        const qtyToSubtract = (normalizedQty / yieldFactor) * numAmount;
-        
+      summary.items.forEach(item => {
+        const requiredInBaseUnit = item.normalizedQuantityInBaseUnit * batches;
+        const lineTotalCost = item.lineCost * batches;
+
+        const ingRef = doc(db, 'products', item.ingredientId);
         batch.update(ingRef, {
-          stock: increment(-qtyToSubtract),
+          stock: increment(-requiredInBaseUnit),
           updatedAt: serverTimestamp()
         });
 
         logIngredients.push({
-          ingredientId: ing.ingredientId,
-          name: ingProduct?.name || 'Insumo',
-          unit: ingProduct?.unit || 'unid',
-          quantity: qtyToSubtract,
-          cost: Number(ingProduct?.cost || 0)
+          ingredientId: item.ingredientId,
+          name: item.name,
+          unit: item.baseUnit,
+          quantity: requiredInBaseUnit,
+          cost: item.baseCost,
+          subtotal: lineTotalCost
         });
-
-        totalCostOfIngredientsUsed += (Number(ingProduct?.cost || 0)) * qtyToSubtract;
       });
 
-      // 3. Add finished product stock and update cost based on current batch
+      // 3. Add finished product stock and update unit cost
       const productRef = doc(db, 'products', recipe.productId);
-      const costPerUnit = totalCostOfIngredientsUsed / numAmount;
-      
       batch.update(productRef, {
-        stock: increment(numAmount),
-        cost: costPerUnit, // Update cost with actual production cost per unit
+        stock: increment(totalUnitsToProduce),
+        cost: unitCost,
         updatedAt: serverTimestamp()
       });
 
@@ -335,15 +369,19 @@ export default function Manufacturing() {
         ownerId: targetUid,
         productId: recipe.productId,
         productName: product?.name || 'Producto',
-        amount: numAmount,
+        batches,
+        amount: totalUnitsToProduce,
+        unit: productUnit,
+        yieldPerBatch,
         ingredients: logIngredients,
-        totalCost: totalCostOfIngredientsUsed,
+        totalCost: totalCostOfBatch,
+        costPerUnit: unitCost,
         createdAt: serverTimestamp()
       });
 
       await batch.commit();
-      const newStock = (Number(product?.stock || 0) + numAmount).toFixed(2);
-      alert(`¡PRODUCCIÓN EXITOSA!\n\nProducto: ${product?.name}\nCantidad producida: ${numAmount} ${product?.unit || 'unid'}\nNuevo Stock Total: ${newStock} ${product?.unit || 'unid'}\n\nLos insumos han sido descontados.`);
+      const newStock = (Number(product?.stock || 0) + totalUnitsToProduce).toFixed(2);
+      alert(`¡PRODUCCIÓN EXITOSA!\n\nProducto: ${product?.name}\nTandas fabricadas: ${batches}\nUnidades producidas: +${totalUnitsToProduce.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${productUnit}\nCosto Unitario: ${formatCurrency(unitCost, 4)}\nCosto Total Insumos: ${formatCurrency(totalCostOfBatch, 2)}\nNuevo Stock Total: ${newStock} ${productUnit}\n\nLos insumos correspondientes fueron descontados de inventario.`);
     } catch (error) {
       console.error('Error in batch production:', error);
       handleFirestoreError(error, OperationType.WRITE, 'manufacturing');
@@ -353,7 +391,7 @@ export default function Manufacturing() {
   };
 
   const handleDeleteLog = async (log: ProductionLog) => {
-    if (!confirm(`¿Estás seguro de ELIMINAR y REVERTIR este lote de "${log.productName}"?\n\n- Se devolverán los insumos al inventario.\n- Se restará el producto generado del stock.`)) return;
+    if (!confirm(`¿Estás seguro de ELIMINAR y REVERTIR este lote de "${log.productName}"?\n\n- Se devolverán los insumos al inventario.\n- Se restará el producto generado (-${log.amount} ${log.unit || 'unid'}) del stock.`)) return;
 
     try {
       const batch = writeBatch(db);
@@ -378,7 +416,7 @@ export default function Manufacturing() {
       batch.delete(doc(db, 'production_logs', log.id));
 
       await batch.commit();
-      alert('¡Lote eliminado e inventario restablecido!');
+      alert('¡Lote eliminado e inventario restablecido correctamente!');
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, 'production_logs');
     }
@@ -420,6 +458,15 @@ export default function Manufacturing() {
                 )}
               </button>
            </div>
+          <button 
+            onClick={handleSyncAllRecipeCosts}
+            disabled={isSyncingAllCosts || recipes.length === 0}
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-5 py-4 rounded-[2rem] font-black flex items-center gap-2 transition-all active:scale-[0.98] text-xs tracking-wider uppercase cursor-pointer disabled:opacity-50"
+            title="Sincronizar y recalcular costos de todas las recetas con el stock actual de insumos"
+          >
+            <RefreshCw size={16} className={cn("text-blue-600", isSyncingAllCosts && "animate-spin")} />
+            <span className="hidden sm:inline">Sincronizar Costos</span>
+          </button>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="bg-blue-600 text-white px-7 py-4 rounded-[2rem] font-black flex items-center gap-2 shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98] text-sm tracking-widest uppercase"
@@ -563,20 +610,16 @@ export default function Manufacturing() {
                             if (!recipe) return null;
                             const product = products.find(p => p.id === recipe.productId);
                             
-                          const recipeYieldVal = recipe.yield || 1;
-                            const totalRecipeCost = (recipe.ingredients.reduce((acc, ing) => {
-                                const ingProduct = products.find(p => p.id === ing.ingredientId);
-                                const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity || 0, ing.unit || 'unid');
-                                return acc + (Number(ingProduct?.cost || 0) * normalizedQty);
-                            }, 0)) / recipeYieldVal;
+                            const multiplier = Math.max(0.01, batchAmounts[recipe.id] || 1);
+                            const summary = calculateRecipeCostSummary(recipe.ingredients, products, recipe.yield || 1);
                             const salesPrice = product?.price || 0;
                             const wholesalePrice = (product as any)?.wholesalePrice || 0;
                             
-                            const margin = salesPrice - totalRecipeCost;
+                            const margin = salesPrice - summary.unitCost;
                             const marginPercent = salesPrice > 0 ? (margin / salesPrice) * 100 : 0;
                             const isProfitable = margin > 0;
 
-                            const wholesaleMargin = wholesalePrice - totalRecipeCost;
+                            const wholesaleMargin = wholesalePrice - summary.unitCost;
                             const wholesaleMarginPercent = wholesalePrice > 0 ? (wholesaleMargin / wholesalePrice) * 100 : 0;
                             const isWholesaleProfitable = wholesaleMargin > 0;
 
@@ -600,20 +643,26 @@ export default function Manufacturing() {
                                                             {product?.name || 'Receta'}
                                                         </h3>
                                                     </div>
-                                                    {recipe.yield && (
-                                                        <span className="text-[11px] font-bold text-slate-500 italic mt-1">
-                                                            Rendimiento base: {recipe.yield} {product?.unit || 'unid'} por tanda
-                                                        </span>
-                                                    )}
+                                                    <span className="text-[11px] font-bold text-slate-500 italic mt-1">
+                                                        Rendimiento base: {summary.yieldAmount} {product?.unit || 'unid'} por tanda
+                                                    </span>
                                                 </div>
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenEditRecipe(recipe)}
+                                                        className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                                                        title="Editar Fórmula"
+                                                    >
+                                                        <Layers size={14} className="text-blue-600" />
+                                                        <span>Editar</span>
+                                                    </button>
                                                     <button
                                                         onClick={() => setIsPrintModalOpen(true)}
                                                         className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
                                                         title="Imprimir Hoja de Producción y Receta"
                                                     >
                                                         <Printer size={15} />
-                                                        <span>Imprimir Receta</span>
+                                                        <span>Imprimir</span>
                                                     </button>
                                                     <div className="text-right pl-3 border-l border-slate-200">
                                                         <span className="text-[10px] font-black text-slate-400 uppercase italic block">En Inventario</span>
@@ -625,35 +674,34 @@ export default function Manufacturing() {
                                             </div>
 
                                             <div className="space-y-4">
-                                                <div className="grid grid-cols-3 px-4">
-                                                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic">Insumo</span>
+                                                <div className="grid grid-cols-4 px-4">
+                                                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic col-span-1">Insumo</span>
                                                     <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic text-center">Total a Usar</span>
+                                                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic text-center">Costo Lote</span>
                                                     <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest italic text-right">Inventario</span>
                                                 </div>
 
                                                 <div className="space-y-2 bg-slate-50/80 p-6 rounded-[2.5rem] border border-slate-100">
-                                                    {recipe.ingredients.map((ing, idx) => {
-                                                        const ingProduct = products.find(p => p.id === ing.ingredientId);
-                                                        const multiplier = batchAmounts[recipe.id] || 1;
-                                                        const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity || 0, ing.unit || 'unid');
-                                                        const totalNeeded = normalizedQty * multiplier;
-                                                        const hasEnough = (ingProduct?.stock || 0) >= totalNeeded;
-                                                        const lineCost = (ingProduct?.cost || 0) * totalNeeded;
+                                                    {summary.items.map((item, idx) => {
+                                                        const totalNeededInRecipeUnit = item.recipeQuantity * multiplier;
+                                                        const requiredInBaseUnit = item.normalizedQuantityInBaseUnit * multiplier;
+                                                        const hasEnough = item.currentStock >= requiredInBaseUnit;
+                                                        const lineCost = item.lineCost * multiplier;
 
                                                         return (
                                                             <div key={idx} className="grid grid-cols-4 items-center py-2.5 border-b border-slate-200 last:border-0 hover:bg-white rounded-xl px-2 transition-colors">
                                                                 <div className="flex flex-col col-span-1">
-                                                                    <span className="text-base font-bold text-slate-900 truncate leading-tight">{ingProduct?.name || 'Insumo'}</span>
+                                                                    <span className="text-base font-bold text-slate-900 truncate leading-tight">{item.name}</span>
                                                                     <span className="text-[9px] text-blue-600 uppercase font-black">
-                                                                        {formatCurrency(getDisplayUnitCost(ingProduct?.cost || 0, ingProduct?.unit || 'unid', ing.unit || 'unid'), 4)} / {ing.unit || ingProduct?.unit || 'unid'}
+                                                                        {formatCurrency(item.unitCostInRecipeUnit, 4)} / {item.recipeUnit}
                                                                     </span>
                                                                 </div>
                                                                 
                                                                 <div className="flex flex-col items-center">
                                                                     <span className={cn("text-lg font-black italic", hasEnough ? "text-slate-900" : "text-red-600")}>
-                                                                        {((ing.quantity || 0) * multiplier).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
+                                                                        {totalNeededInRecipeUnit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 3 })}
                                                                     </span>
-                                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">{ing.unit || ingProduct?.unit || 'und'}</span>
+                                                                    <span className="text-[10px] font-bold text-slate-500 uppercase">{item.recipeUnit}</span>
                                                                 </div>
 
                                                                 <div className="text-center">
@@ -662,10 +710,10 @@ export default function Manufacturing() {
                                                                 </div>
 
                                                                 <div className="text-right">
-                                                                    <span className={cn("font-black text-lg", (ingProduct?.stock || 0) < totalNeeded ? "text-red-600" : "text-slate-900")}>
-                                                                        {(ingProduct?.stock || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                                                    <span className={cn("font-black text-lg", !hasEnough ? "text-red-600" : "text-slate-900")}>
+                                                                        {item.stockInRecipeUnit.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                                                     </span>
-                                                                    <p className="text-[8px] text-slate-400 font-bold uppercase italic">Stock</p>
+                                                                    <p className="text-[8px] text-slate-400 font-bold uppercase italic">Stock ({item.recipeUnit})</p>
                                                                 </div>
                                                             </div>
                                                         );
@@ -680,21 +728,30 @@ export default function Manufacturing() {
                                     {/* Horizontal Profitability Bar */}
                                     <div className="bg-blue-50/50 p-6 rounded-[3rem] border border-blue-100 space-y-4 shadow-sm mt-6">
                                             {/* Row 1: Prices Indicator (Horizontal) */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                <div className="px-6 py-5 bg-white rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
-                                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-400" />
-                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">COSTO POR {product?.unit || 'UNID'}</span>
-                                                    <p className="text-2xl font-black text-slate-900 italic tracking-tight">{formatCurrency(totalRecipeCost, 3)}</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                                <div className="px-5 py-4 bg-white rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-300" />
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-center">COSTO / TANDA</span>
+                                                    <p className="text-xl font-black text-slate-800 italic tracking-tight">{formatCurrency(summary.totalBatchCost, 2)}</p>
+                                                    <span className="text-[9px] text-slate-400 font-bold">1 tanda = {summary.yieldAmount} {product?.unit || 'unid'}</span>
                                                 </div>
-                                                <div className="px-6 py-5 bg-white rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                                <div className="px-5 py-4 bg-white rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-slate-500" />
+                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">COSTO UNITARIO</span>
+                                                    <p className="text-xl font-black text-slate-900 italic tracking-tight">{formatCurrency(summary.unitCost, 4)}</p>
+                                                    <span className="text-[9px] text-slate-400 font-bold">por {product?.unit || 'unid'}</span>
+                                                </div>
+                                                <div className="px-5 py-4 bg-white rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />
-                                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1 text-center">DETAL / {product?.unit || 'UNID'}</span>
-                                                    <p className="text-2xl font-black text-blue-700 italic tracking-tight">{formatCurrency(salesPrice)}</p>
+                                                    <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1 text-center">DETAL / {product?.unit || 'UNID'}</span>
+                                                    <p className="text-xl font-black text-blue-700 italic tracking-tight">{formatCurrency(salesPrice)}</p>
+                                                    <span className="text-[9px] text-blue-500 font-bold">Margen: {marginPercent.toFixed(1)}%</span>
                                                 </div>
-                                                <div className="px-6 py-5 bg-white rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
+                                                <div className="px-5 py-4 bg-white rounded-3xl border border-blue-100 shadow-sm relative overflow-hidden flex flex-col items-center justify-center text-center">
                                                     <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500" />
-                                                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest mb-1 text-center">MAYOR / {product?.unit || 'UNID'}</span>
-                                                    <p className="text-2xl font-black text-indigo-700 italic tracking-tight">{formatCurrency(wholesalePrice)}</p>
+                                                    <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1 text-center">MAYOR / {product?.unit || 'UNID'}</span>
+                                                    <p className="text-xl font-black text-indigo-700 italic tracking-tight">{formatCurrency(wholesalePrice)}</p>
+                                                    <span className="text-[9px] text-indigo-500 font-bold">Margen: {wholesaleMarginPercent.toFixed(1)}%</span>
                                                 </div>
 
                                             </div>
@@ -705,9 +762,9 @@ export default function Manufacturing() {
                                                         isProfitable ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"
                                                     )}>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">MARGEN DETAL</span>
+                                                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">MARGEN GANANCIA DETAL</span>
                                                             <p className={cn("text-2xl font-black italic tracking-tighter", isProfitable ? "text-emerald-700" : "text-red-700")}>
-                                                                {formatCurrency(margin, 3)}
+                                                                {formatCurrency(margin, 2)}
                                                             </p>
                                                         </div>
                                                         <div className={cn("px-3 py-1 rounded-xl text-sm font-black shadow-sm", isProfitable ? "bg-emerald-600 text-white" : "bg-red-600 text-white")}>
@@ -720,9 +777,9 @@ export default function Manufacturing() {
                                                         isWholesaleProfitable ? "bg-indigo-50 border-indigo-200" : "bg-orange-50 border-orange-200"
                                                     )}>
                                                         <div className="flex flex-col">
-                                                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">MARGEN MAYOR</span>
+                                                            <span className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-1">MARGEN GANANCIA MAYOR</span>
                                                             <p className={cn("text-2xl font-black italic tracking-tighter", isWholesaleProfitable ? "text-indigo-700" : "text-orange-700")}>
-                                                                {formatCurrency(wholesaleMargin, 3)}
+                                                                {formatCurrency(wholesaleMargin, 2)}
                                                             </p>
                                                         </div>
                                                         <div className={cn("px-3 py-1 rounded-xl text-sm font-black shadow-sm", isWholesaleProfitable ? "bg-indigo-600 text-white" : "bg-orange-600 text-white")}>
@@ -734,16 +791,18 @@ export default function Manufacturing() {
                                                 {/* Batch Summary Row */}
                                                 <div className="bg-white p-5 rounded-[2rem] border border-blue-100/50 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
                                                     <div className="flex flex-col items-center sm:items-start text-center sm:text-left transition-all">
-                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic mb-1">Total Lote ({((recipe.yield || 1) * (batchAmounts[recipe.id] || 1)).toLocaleString()} {product?.unit || 'unid'})</span>
+                                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic mb-1">
+                                                            Total Fabricación: {multiplier} tanda{multiplier > 1 ? 's' : ''} ({(summary.yieldAmount * multiplier).toLocaleString()} {product?.unit || 'unid'})
+                                                        </span>
                                                         <div className="flex items-baseline gap-2">
-                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Venta (AL MAYOR):</span>
-                                                            <span className="text-xl font-black text-blue-600 italic">{formatCurrency(wholesalePrice * (recipe.yield || 1) * (batchAmounts[recipe.id] || 1))}</span>
+                                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Venta al Mayor:</span>
+                                                            <span className="text-xl font-black text-blue-600 italic">{formatCurrency(wholesalePrice * summary.yieldAmount * multiplier)}</span>
                                                         </div>
                                                     </div>
                                                     <div className="h-px w-full sm:h-10 sm:w-px bg-slate-100" />
                                                     <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase italic mb-1">Costo Estimado</span>
-                                                        <span className="text-lg font-black text-slate-700 italic">{formatCurrency(totalRecipeCost * (recipe.yield || 1) * (batchAmounts[recipe.id] || 1))}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase italic mb-1">Costo Total Insumos Lote</span>
+                                                        <span className="text-lg font-black text-slate-700 italic">{formatCurrency(summary.totalBatchCost * multiplier)}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -771,7 +830,7 @@ export default function Manufacturing() {
                                                         +
                                                     </button>
                                                 </div>
-                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 block text-center italic">Tandas a Producir</span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5 block text-center italic">Tandas a Fabricar</span>
                                             </div>
 
                                             <button 
@@ -801,7 +860,9 @@ export default function Manufacturing() {
                                                 ) : (
                                                     <>
                                                         <Play size={16} fill="white" strokeWidth={0} className="group-hover/prod:scale-110 transition-transform" /> 
-                                                        <span className="tracking-[0.2em] uppercase text-xs">Producir</span>
+                                                        <span className="tracking-[0.15em] uppercase text-xs">
+                                                            Fabricar {multiplier} Tanda{multiplier > 1 ? 's' : ''} (+{(summary.yieldAmount * multiplier).toLocaleString(undefined, { maximumFractionDigits: 2 })} {product?.unit || 'unid'})
+                                                        </span>
                                                     </>
                                                 )}
                                             </button>
@@ -903,7 +964,19 @@ export default function Manufacturing() {
                             <select 
                                 className="w-full p-5 bg-slate-50 border border-slate-200 rounded-3xl outline-none focus:ring-4 focus:ring-blue-100 font-black text-slate-700 transition-all appearance-none text-lg"
                                 value={selectedProduct}
-                                onChange={(e) => setSelectedProduct(e.target.value)}
+                                onChange={(e) => {
+                                    const prodId = e.target.value;
+                                    setSelectedProduct(prodId);
+                                    const existingRecipe = recipes.find(r => r.productId === prodId);
+                                    if (existingRecipe) {
+                                        setRecipeYield(existingRecipe.yield || 1);
+                                        setRecipeIngredients(existingRecipe.ingredients.map(ing => ({
+                                            ingredientId: ing.ingredientId,
+                                            quantity: ing.quantity,
+                                            unit: ing.unit || products.find(p => p.id === ing.ingredientId)?.unit || 'unid'
+                                        })));
+                                    }
+                                }}
                             >
                                 <option value="">Selecciona qué producto sale...</option>
                                 {finishedProducts.map(p => <option key={p.id} value={p.id}>{p.name} ({p.unit || 'unid'})</option>)}
@@ -920,7 +993,7 @@ export default function Manufacturing() {
                                     onChange={(e) => setRecipeYield(parseFloat(e.target.value) || 1)}
                                 />
                                 <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400 uppercase italic">
-                                    {finishedProducts.find(p => p.id === selectedProduct)?.unit || 'Años'}
+                                    {finishedProducts.find(p => p.id === selectedProduct)?.unit || 'unid'}
                                 </span>
                             </div>
                         </div>
@@ -928,16 +1001,21 @@ export default function Manufacturing() {
 
                     <div className="space-y-4">
                         <label className="text-[10px] font-black text-slate-400 uppercase italic ml-2 block">Insumos Necesarios (Input)</label>
-                        {recipeIngredients.map((item, idx) => (
+                        {recipeIngredients.map((item, idx) => {
+                            const found = ingredientChoices.find(p => p.id === item.ingredientId);
+                            const baseUnit = found?.unit || 'unid';
+                            const availableUnits = getAvailableUnitsForIngredient(baseUnit);
+
+                            return (
                             <div key={idx} className="flex gap-4 bg-slate-50 p-4 rounded-[2rem] border border-slate-100 items-center">
                                 <select 
                                     className="flex-1 bg-transparent border-none outline-none font-black text-slate-800 appearance-none text-base pl-2"
                                     value={item.ingredientId}
                                     onChange={(e) => {
                                         const newIngs = [...recipeIngredients];
-                                        const found = ingredientChoices.find(p => p.id === e.target.value);
+                                        const ingFound = ingredientChoices.find(p => p.id === e.target.value);
                                         newIngs[idx].ingredientId = e.target.value;
-                                        newIngs[idx].unit = found?.unit || 'unid';
+                                        newIngs[idx].unit = ingFound?.unit || 'unid';
                                         setRecipeIngredients(newIngs);
                                     }}
                                 >
@@ -957,42 +1035,30 @@ export default function Manufacturing() {
                                         }}
                                     />
                                     
-                                    {/* Unit Selector matching Inventory.tsx logic */}
-                                    {(item.unit === 'kg' || item.unit === 'gr') ? (
+                                    {availableUnits.length > 1 ? (
                                         <select 
-                                            className="text-[10px] font-bold text-blue-600 bg-white border border-blue-100 px-2 py-3 rounded-xl outline-none"
-                                            value={item.unit}
+                                            className="text-[11px] font-bold text-blue-600 bg-white border border-blue-100 px-2.5 py-3 rounded-xl outline-none cursor-pointer"
+                                            value={item.unit || baseUnit}
                                             onChange={(e) => {
                                                 const newIngs = [...recipeIngredients];
                                                 newIngs[idx].unit = e.target.value;
                                                 setRecipeIngredients(newIngs);
                                             }}
                                         >
-                                            <option value="kg">kg</option>
-                                            <option value="gr">gr</option>
-                                        </select>
-                                    ) : (item.unit === 'lt' || item.unit === 'ml') ? (
-                                        <select 
-                                            className="text-[10px] font-bold text-blue-600 bg-white border border-blue-100 px-2 py-3 rounded-xl outline-none"
-                                            value={item.unit}
-                                            onChange={(e) => {
-                                                const newIngs = [...recipeIngredients];
-                                                newIngs[idx].unit = e.target.value;
-                                                setRecipeIngredients(newIngs);
-                                            }}
-                                        >
-                                            <option value="lt">lt</option>
-                                            <option value="ml">ml</option>
+                                            {availableUnits.map(u => (
+                                                <option key={u} value={u}>{u}</option>
+                                            ))}
                                         </select>
                                     ) : (
-                                        <span className="text-[10px] font-black text-slate-400 uppercase w-10 text-center">{item.unit || 'unid'}</span>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase w-10 text-center">{baseUnit}</span>
                                     )}
                                 </div>
                                 <button onClick={() => removeIngredient(idx)} className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all">
                                     <Trash2 size={24} />
                                 </button>
                             </div>
-                        ))}
+                            );
+                        })}
                         <button 
                             onClick={addIngredientToRecipe}
                             className="w-full py-5 border-4 border-dotted border-slate-100 text-slate-400 rounded-3xl text-xs font-black uppercase tracking-[0.2em] hover:border-blue-200 hover:text-blue-500 hover:bg-blue-50/50 transition-all flex items-center justify-center gap-2"
@@ -1000,6 +1066,50 @@ export default function Manufacturing() {
                             <Plus size={20} /> Agregar Insumo a la Receta
                         </button>
                     </div>
+
+                    {/* Live Recipe Cost Preview */}
+                    {(() => {
+                        if (!selectedProduct || recipeIngredients.length === 0) return null;
+                        const summary = calculateRecipeCostSummary(recipeIngredients, products, recipeYield || 1);
+                        const targetProduct = products.find(p => p.id === selectedProduct);
+                        const prodUnit = targetProduct?.unit || 'unid';
+                        const pvp = targetProduct?.price || 0;
+                        const margin = pvp - summary.unitCost;
+                        const marginPct = pvp > 0 ? (margin / pvp) * 100 : 0;
+
+                        return (
+                            <div className="bg-blue-50/70 p-5 rounded-3xl border border-blue-100 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-black text-blue-900 uppercase tracking-wider">Cálculo en Tiempo Real</span>
+                                    <span className="text-[10px] bg-blue-200 text-blue-800 font-bold px-2 py-0.5 rounded-full">
+                                        {summary.items.length} Insumo(s)
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-blue-100">
+                                    <div className="bg-white p-3 rounded-2xl border border-blue-100/60">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Costo 1 Tanda</span>
+                                        <span className="text-sm font-black text-slate-900">{formatCurrency(summary.totalBatchCost, 2)}</span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-2xl border border-blue-100/60">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Rendimiento</span>
+                                        <span className="text-sm font-black text-blue-700">{summary.yieldAmount} {prodUnit}</span>
+                                    </div>
+                                    <div className="bg-white p-3 rounded-2xl border border-blue-100/60">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase block">Costo Unitario</span>
+                                        <span className="text-sm font-black text-emerald-600">{formatCurrency(summary.unitCost, 4)}</span>
+                                    </div>
+                                </div>
+                                {pvp > 0 && (
+                                    <div className="flex items-center justify-between text-xs px-2 pt-1">
+                                        <span className="text-slate-600">PVP Actual: <b>{formatCurrency(pvp)}</b></span>
+                                        <span className={cn("font-black", margin > 0 ? "text-emerald-700" : "text-red-600")}>
+                                            Margen: {formatCurrency(margin, 2)} ({marginPct.toFixed(1)}%)
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 <button 
@@ -1021,34 +1131,26 @@ export default function Manufacturing() {
         
         if (!currentRecipeObj || !currentProductObj) return null;
 
-        const yieldAmount = currentRecipeObj.yield || 1;
-        const multiplier = batchAmounts[currentRecipeObj.id] || 1;
-        const totalRecipeCost = (currentRecipeObj.ingredients.reduce((acc, ing) => {
-          const ingProduct = products.find(p => p.id === ing.ingredientId);
-          const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity || 0, ing.unit || 'unid');
-          return acc + (Number(ingProduct?.cost || 0) * normalizedQty);
-        }, 0)) / yieldAmount;
+        const multiplier = Math.max(0.01, batchAmounts[currentRecipeObj.id] || 1);
+        const summary = calculateRecipeCostSummary(currentRecipeObj.ingredients, products, currentRecipeObj.yield || 1);
 
-        const ingDetails: RecipeIngredientDetail[] = currentRecipeObj.ingredients.map(ing => {
-          const ingProduct = products.find(p => p.id === ing.ingredientId);
-          const normalizedQty = getNormalizedQuantity(ing.ingredientId, ing.quantity || 0, ing.unit || 'unid');
-          const totalNeeded = normalizedQty * multiplier;
-          const baseUnit = ingProduct?.unit || 'unid';
-          const targetUnit = ing.unit || baseUnit;
-          const unitCost = getDisplayUnitCost(ingProduct?.cost || 0, baseUnit, targetUnit);
-          const lineCost = (ingProduct?.cost || 0) * totalNeeded;
+        const ingDetails: RecipeIngredientDetail[] = summary.items.map(item => {
+          const totalNeededInRecipeUnit = item.recipeQuantity * multiplier;
+          const requiredInBaseUnit = item.normalizedQuantityInBaseUnit * multiplier;
+          const hasEnough = item.currentStock >= requiredInBaseUnit;
+          const lineCost = item.lineCost * multiplier;
 
           return {
-            ingredientId: ing.ingredientId,
-            name: ingProduct?.name || 'Insumo',
-            unit: targetUnit,
-            baseUnit: baseUnit,
-            baseQuantity: ing.quantity || 0,
-            totalQuantity: (ing.quantity || 0) * multiplier,
-            currentStock: ingProduct?.stock || 0,
-            unitCost: unitCost,
+            ingredientId: item.ingredientId,
+            name: item.name,
+            unit: item.recipeUnit,
+            baseUnit: item.baseUnit,
+            baseQuantity: item.recipeQuantity,
+            totalQuantity: totalNeededInRecipeUnit,
+            currentStock: item.stockInRecipeUnit,
+            unitCost: item.unitCostInRecipeUnit,
             totalCost: lineCost,
-            hasEnoughStock: (ingProduct?.stock || 0) >= totalNeeded
+            hasEnoughStock: hasEnough
           };
         });
 
@@ -1060,8 +1162,8 @@ export default function Manufacturing() {
             product={currentProductObj}
             ingredients={ingDetails}
             batchMultiplier={multiplier}
-            totalRecipeCostPerUnit={totalRecipeCost}
-            totalBatchCost={totalRecipeCost * yieldAmount * multiplier}
+            totalRecipeCostPerUnit={summary.unitCost}
+            totalBatchCost={summary.totalBatchCost * multiplier}
           />
         );
       })()}

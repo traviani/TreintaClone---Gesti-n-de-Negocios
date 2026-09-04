@@ -9,12 +9,20 @@ import {
   deleteDoc,
   writeBatch,
   doc,
+  getDoc,
   serverTimestamp
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn, getGoogleDriveDirectLink } from '../lib/utils';
+import { 
+  normalizeUnit, 
+  convertQuantity, 
+  getDisplayUnitCost, 
+  calculateRecipeCostSummary,
+  getAvailableUnitsForIngredient 
+} from '../lib/recipeUtils';
 import { 
   Plus, 
   Search, 
@@ -89,59 +97,6 @@ export default function Inventory() {
 
   const ingredientsOnly = products.filter(p => (p as any).isIngredient);
 
-  const getNormalizedQuantity = (item: RecipeItem) => {
-    const ingredient = products.find(p => p.id === item.ingredientId);
-    if (!ingredient) return item.quantity;
-    
-    const baseUnitRaw = ingredient.unit || 'unid';
-    const tu = item.unit?.toLowerCase().trim();
-    const bu = baseUnitRaw?.toLowerCase().trim();
-    
-    let effectiveQuantity = Number(item.quantity);
-    
-    // Normalizar a unidad base (kg, lt, unid)
-    if ((bu === 'kg' || bu === 'kilogramo' || bu === 'kilo') && (tu === 'gr' || tu === 'gramo' || tu === 'g')) {
-      effectiveQuantity = item.quantity / 1000;
-    } else if ((bu === 'gr' || bu === 'gramo' || bu === 'g') && (tu === 'kg' || tu === 'kilogramo' || tu === 'kilo')) {
-      effectiveQuantity = item.quantity * 1000;
-    } else if ((bu === 'lt' || bu === 'litro' || bu === 'l') && (tu === 'ml' || tu === 'mililitro')) {
-      effectiveQuantity = item.quantity / 1000;
-    } else if ((bu === 'ml' || bu === 'mililitro') && (tu === 'lt' || tu === 'litro' || tu === 'l')) {
-      effectiveQuantity = item.quantity * 1000;
-    }
-    
-    return effectiveQuantity;
-  };
-
-  const getDisplayUnitCost = (baseCost: number, baseUnit: string, targetUnit: string) => {
-    const bu = baseUnit?.toLowerCase().trim();
-    const tu = targetUnit?.toLowerCase().trim();
-
-    if ((bu === 'kg' || bu === 'kilogramo' || bu === 'kilo') && (tu === 'gr' || tu === 'gramo' || tu === 'g')) {
-      return baseCost / 1000;
-    }
-    if ((bu === 'gr' || bu === 'gramo' || bu === 'g') && (tu === 'kg' || tu === 'kilogramo' || tu === 'kilo')) {
-      return baseCost * 1000;
-    }
-    if ((bu === 'lt' || bu === 'litro' || bu === 'l') && (tu === 'ml' || tu === 'mililitro')) {
-      return baseCost / 1000;
-    }
-    if ((bu === 'ml' || bu === 'mililitro') && (tu === 'lt' || tu === 'litro' || tu === 'l')) {
-      return baseCost * 1000;
-    }
-    return baseCost;
-  };
-
-  const calculateRecipeCost = (items: RecipeItem[], yieldAmount: number = 1) => {
-    const totalCost = items.reduce((total, item) => {
-      const ingredient = products.find(p => p.id === item.ingredientId);
-      const currentCost = ingredient ? ingredient.cost : item.cost;
-      const effectiveQuantity = getNormalizedQuantity(item);
-      return total + (currentCost * effectiveQuantity);
-    }, 0);
-    return totalCost / (yieldAmount || 1);
-  };
-
   const addIngredientToRecipe = (ingredientId: string) => {
     const ingredient = ingredientsOnly.find(p => p.id === ingredientId);
     if (!ingredient) return;
@@ -156,14 +111,15 @@ export default function Inventory() {
       name: ingredient.name,
       quantity: 1,
       cost: ingredient.cost,
-      unit: (ingredient as any).unit || 'unid'
+      unit: ingredient.unit || 'unid'
     };
 
     const updatedItems = [...recipeItems, newItem];
     setRecipeItems(updatedItems);
+    const summary = calculateRecipeCostSummary(updatedItems, products, formData.recipeYield);
     setFormData(prev => ({
       ...prev,
-      cost: calculateRecipeCost(updatedItems, parseFloat(prev.recipeYield)).toFixed(4)
+      cost: summary.unitCost.toFixed(4)
     }));
   };
 
@@ -180,19 +136,79 @@ export default function Inventory() {
       return item;
     });
     setRecipeItems(updatedItems);
+    const summary = calculateRecipeCostSummary(updatedItems, products, formData.recipeYield);
     setFormData(prev => ({
       ...prev,
-      cost: calculateRecipeCost(updatedItems, parseFloat(prev.recipeYield) || 1).toFixed(4)
+      cost: summary.unitCost.toFixed(4)
     }));
   };
 
   const removeIngredientFromRecipe = (id: string) => {
     const updatedItems = recipeItems.filter(item => item.ingredientId !== id);
     setRecipeItems(updatedItems);
+    const summary = calculateRecipeCostSummary(updatedItems, products, formData.recipeYield);
     setFormData(prev => ({
       ...prev,
-      cost: calculateRecipeCost(updatedItems, parseFloat(prev.recipeYield)).toFixed(4)
+      cost: updatedItems.length > 0 ? summary.unitCost.toFixed(4) : prev.cost
     }));
+  };
+
+  const handleOpenEditProduct = async (product: Product) => {
+    setEditingProduct(product);
+    let items = product.recipe || [];
+    let yieldVal = (product as any).recipeYield?.toString() || '1';
+
+    // If product has no local recipe items and isn't an ingredient, check recipes collection
+    if (items.length === 0 && !product.isIngredient) {
+      try {
+        const recipeDoc = await getDoc(doc(db, 'recipes', `recipe_${product.id}`));
+        if (recipeDoc.exists()) {
+          const recData = recipeDoc.data();
+          yieldVal = recData.yield?.toString() || '1';
+          items = (recData.ingredients || []).map((ing: any) => {
+            const ingProd = products.find(p => p.id === ing.ingredientId);
+            return {
+              ingredientId: ing.ingredientId,
+              name: ingProd?.name || 'Insumo',
+              quantity: ing.quantity,
+              cost: ingProd?.cost || 0,
+              unit: ing.unit || ingProd?.unit || 'unid'
+            };
+          });
+        }
+      } catch (err) {
+        console.warn('Error fetching recipe for product', err);
+      }
+    }
+
+    setRecipeItems(items);
+
+    const isIngredient = Boolean(product.isIngredient);
+    const isFinished = product.isFinishedProduct !== undefined ? Boolean(product.isFinishedProduct) : !isIngredient;
+    
+    // Ensure cost matches exact current raw ingredients if recipe exists
+    let calculatedCost = product.cost.toString();
+    if (items.length > 0) {
+      const summary = calculateRecipeCostSummary(items, products, yieldVal);
+      calculatedCost = summary.unitCost.toFixed(4);
+    }
+
+    setFormData({
+      name: product.name,
+      price: product.price.toString(),
+      wholesalePrice: product.wholesalePrice?.toString() || '',
+      cost: calculatedCost,
+      stock: product.stock.toString(),
+      unit: product.unit || 'unid',
+      imageUrl: product.imageUrl || '',
+      category: product.category,
+      isIngredient,
+      isFinishedProduct: isFinished,
+      isBajoPedido: product.isBajoPedido || false,
+      recipeYield: yieldVal,
+      recipe: items
+    });
+    setIsModalOpen(true);
   };
 
   useEffect(() => {
@@ -216,13 +232,24 @@ export default function Inventory() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const isFinished = Boolean(formData.isFinishedProduct);
+    const hasRecipe = isFinished && recipeItems.length > 0;
+    const summary = hasRecipe ? calculateRecipeCostSummary(recipeItems, products, formData.recipeYield) : null;
+    const finalCost = hasRecipe && summary ? summary.unitCost : parseFloat(formData.cost || '0');
+
     const data = {
       ...formData,
-      price: parseFloat(formData.price),
+      price: parseFloat(formData.price || '0'),
       wholesalePrice: parseFloat(formData.wholesalePrice || '0'),
-      cost: parseFloat(formData.cost),
-      stock: parseFloat(formData.stock),
-      recipe: formData.isFinishedProduct ? recipeItems : [],
+      cost: finalCost,
+      stock: parseFloat(formData.stock || '0'),
+      recipe: isFinished ? recipeItems.map(item => ({
+        ingredientId: item.ingredientId,
+        name: item.name,
+        quantity: item.quantity,
+        unit: item.unit,
+        cost: products.find(p => p.id === item.ingredientId)?.cost || item.cost
+      })) : [],
       recipeYield: parseFloat(formData.recipeYield || '1'),
       ownerId: effectiveUid,
       updatedAt: serverTimestamp(),
@@ -244,17 +271,7 @@ export default function Inventory() {
       }
 
       // Automatically sync recipe to 'recipes' collection if it's a finished product with ingredients
-      if (formData.isFinishedProduct && recipeItems.length > 0 && targetProductId) {
-        // We look for an existing recipe for this product
-        // Note: In a real-world high-concurrency app, we might query first, 
-        // but for this applet we'll try to find it in the current recipes state if we had it, 
-        // or just use a predictable ID or search. 
-        // A better way is to have a deterministic ID or a query.
-        // Since we don't have the recipe ID here easily without querying, 
-        // I will use a simple query-less approach: check if we can find it by product ID.
-        // Actually, for simplicity and since recipes are per product, 
-        // I'll use the productId as the recipe document ID or a child of it.
-        
+      if (isFinished && recipeItems.length > 0 && targetProductId) {
         const recipeRef = doc(db, 'recipes', `recipe_${targetProductId}`);
         batch.set(recipeRef, {
           productId: targetProductId,
@@ -274,7 +291,7 @@ export default function Inventory() {
       setIsModalOpen(false);
       setEditingProduct(null);
       setRecipeItems([]);
-      setFormData({ name: '', price: '', wholesalePrice: '', cost: '', stock: '', unit: 'unid', imageUrl: '', category: '', isIngredient: false, isFinishedProduct: true });
+      setFormData({ name: '', price: '', wholesalePrice: '', cost: '', stock: '', unit: 'unid', imageUrl: '', category: '', isIngredient: false, isFinishedProduct: true, isBajoPedido: false, recipeYield: '1', recipe: [] });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'products');
     }
@@ -538,25 +555,7 @@ export default function Inventory() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
-                        onClick={() => {
-                          setEditingProduct(product);
-                          setFormData({
-                            name: product.name,
-                            price: product.price.toString(),
-                            wholesalePrice: product.wholesalePrice?.toString() || '',
-                            cost: product.cost.toString(),
-                            stock: product.stock.toString(),
-                            unit: product.unit || 'unid',
-                            imageUrl: product.imageUrl || '',
-                            category: product.category,
-                            isIngredient: product.isIngredient || false,
-                            isFinishedProduct: product.isFinishedProduct || true,
-                            isBajoPedido: product.isBajoPedido || false,
-                            recipeYield: (product as any).recipeYield?.toString() || '1'
-                          });
-                          setRecipeItems(product.recipe || []);
-                          setIsModalOpen(true);
-                        }}
+                        onClick={() => handleOpenEditProduct(product)}
                         className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-50 rounded-lg"
                       >
                         <Edit2 size={18} />
@@ -648,145 +647,149 @@ export default function Inventory() {
                   </div>
                 )}
                 
-                <div className="space-y-1">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 italic serif">Costo Unitario</label>
-                  <input 
-                    required
-                    disabled={formData.isFinishedProduct && recipeItems.length > 0}
-                    type="number" 
-                    step="0.0001"
-                    placeholder="0.00"
-                    className={cn(
-                      "w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold transition-colors",
-                      formData.isFinishedProduct && recipeItems.length > 0 ? "bg-slate-100 text-slate-500 cursor-not-allowed" : "bg-slate-50 text-slate-900"
-                    )}
-                    value={formData.cost}
-                    onChange={(e) => setFormData({...formData, cost: e.target.value})}
-                  />
-                  {formData.isFinishedProduct && recipeItems.length > 0 && (
-                    <div className="mt-1 flex flex-col gap-1">
-                      <p className="text-[10px] text-blue-500 font-bold italic uppercase tracking-tighter">
-                        Costo Total Insumos: {formatCurrency(recipeItems.reduce((acc, item) => {
-                          const ingredient = products.find(p => p.id === item.ingredientId);
-                          return acc + (getDisplayUnitCost(ingredient?.cost || 0, ingredient?.unit || 'unid', item.unit) * item.quantity);
-                        }, 0), 2)}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-medium italic">
-                        Calculado: (Total / {formData.recipeYield || 1} {formData.unit})
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {formData.isFinishedProduct && (
-                  <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black text-blue-900 italic uppercase">Receta / Ingredientes</h3>
-                      <div className="flex items-center gap-3">
-                         <div className="flex flex-col items-end">
-                            <span className="text-[10px] font-bold text-blue-400 uppercase">Produce (Rendimiento)</span>
-                            <div className="flex items-center gap-1">
-                               <input 
-                                 type="number"
-                                 step="0.01"
-                                 className="w-16 bg-white border border-blue-200 rounded px-1.5 py-0.5 text-xs font-black text-blue-700 outline-none focus:ring-2 focus:ring-blue-300 transition-all"
-                                 value={formData.recipeYield}
-                                 onChange={(e) => {
-                                   const newYield = e.target.value;
-                                   setFormData(prev => ({ ...prev, recipeYield: newYield }));
-                                   // Recalculate cost when yield changes
-                                   const val = parseFloat(newYield) || 1;
-                                   setFormData(prev => ({ ...prev, cost: calculateRecipeCost(recipeItems, val).toFixed(4) }));
-                                 }}
-                               />
-                               <span className="text-[10px] font-bold text-blue-400">{formData.unit}</span>
+                {(() => {
+                  const modalSummary = calculateRecipeCostSummary(recipeItems, products, formData.recipeYield);
+                  return (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold uppercase tracking-wider text-slate-400 italic serif">Costo Unitario</label>
+                        <input 
+                          required
+                          disabled={formData.isFinishedProduct && recipeItems.length > 0}
+                          type="number" 
+                          step="0.0001"
+                          placeholder="0.00"
+                          className={cn(
+                            "w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-bold transition-colors",
+                            formData.isFinishedProduct && recipeItems.length > 0 ? "bg-slate-100 text-slate-500 cursor-not-allowed" : "bg-slate-50 text-slate-900"
+                          )}
+                          value={formData.cost}
+                          onChange={(e) => setFormData({...formData, cost: e.target.value})}
+                        />
+                        {formData.isFinishedProduct && recipeItems.length > 0 && (
+                          <div className="mt-1 flex flex-col gap-1 p-2 bg-blue-50/60 rounded-lg border border-blue-100">
+                            <div className="flex justify-between items-center text-[11px] font-bold text-blue-800">
+                              <span>Costo Total Insumos (1 tanda):</span>
+                              <span>{formatCurrency(modalSummary.totalBatchCost, 2)}</span>
                             </div>
-                         </div>
+                            <div className="flex justify-between items-center text-[10px] text-slate-500">
+                              <span>Produce: {modalSummary.yieldAmount} {formData.unit}</span>
+                              <span className="font-semibold text-blue-600">Costo: {formatCurrency(modalSummary.unitCost, 4)} / {formData.unit}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
 
-                    <div className="space-y-2">
-                       <select 
-                         onChange={(e) => {
-                           if (e.target.value) addIngredientToRecipe(e.target.value);
-                           e.target.value = "";
-                         }}
-                         className="w-full px-4 py-2 bg-white border border-blue-200 rounded-xl text-sm font-bold text-blue-600 outline-none"
-                       >
-                         <option value="">+ Añadir ingrediente a receta...</option>
-                         {ingredientsOnly.map(ing => (
-                           <option key={ing.id} value={ing.id}>{ing.name} ({formatCurrency(ing.cost, 3)} / {ing.unit})</option>
-                         ))}
-                       </select>
-
-                       <div className="space-y-2 mt-4">
-                          {recipeItems.map(item => {
-                            const ingredient = products.find(p => p.id === item.ingredientId);
-                            return (
-                              <div key={item.ingredientId} className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-blue-100">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-bold text-slate-900 truncate">{item.name}</p>
-                                  <div className="flex flex-col gap-0.5">
-                                    <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
-                                      Costo Base: <span className="text-slate-600 font-bold">{formatCurrency(ingredient?.cost || 0, 4)}</span> por <span className="text-blue-500 font-black uppercase tracking-tighter">{ingredient?.unit || 'unid'}</span>
-                                    </p>
-                                    <p className="text-[10px] text-blue-500 font-bold italic">
-                                      Equivale a: {formatCurrency(getDisplayUnitCost(ingredient?.cost || 0, ingredient?.unit || 'unid', item.unit), 4)} por {item.unit} 
-                                      <span className="ml-2 text-slate-900 bg-blue-50 px-1 rounded whitespace-nowrap">
-                                        Subtotal: {formatCurrency(getDisplayUnitCost(ingredient?.cost || 0, ingredient?.unit || 'unid', item.unit) * item.quantity)}
-                                      </span>
-                                    </p>
+                      {formData.isFinishedProduct && (
+                        <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100 space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-black text-blue-900 italic uppercase">Receta / Ingredientes</h3>
+                            <div className="flex items-center gap-3">
+                               <div className="flex flex-col items-end">
+                                  <span className="text-[10px] font-bold text-blue-400 uppercase">Produce (Rendimiento)</span>
+                                  <div className="flex items-center gap-1">
+                                     <input 
+                                       type="number"
+                                       step="0.01"
+                                       className="w-16 bg-white border border-blue-200 rounded px-1.5 py-0.5 text-xs font-black text-blue-700 outline-none focus:ring-2 focus:ring-blue-300 transition-all text-center"
+                                       value={formData.recipeYield}
+                                       onChange={(e) => {
+                                         const newYield = e.target.value;
+                                         const val = parseFloat(newYield) || 1;
+                                         const s = calculateRecipeCostSummary(recipeItems, products, val);
+                                         setFormData(prev => ({ 
+                                           ...prev, 
+                                           recipeYield: newYield,
+                                           cost: recipeItems.length > 0 ? s.unitCost.toFixed(4) : prev.cost
+                                         }));
+                                       }}
+                                     />
+                                     <span className="text-[10px] font-bold text-blue-400">{formData.unit}</span>
                                   </div>
-                                </div>
-                               <div className="flex items-center gap-2">
-                                <input 
-                                  type="number" 
-                                  step="0.001"
-                                 className="w-20 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-center"
-                                 value={item.quantity}
-                                 onChange={(e) => updateIngredientQuantity(item.ingredientId, e.target.value)}
-                               />
-                               
-                               {(item.unit === 'kg' || item.unit === 'gr') ? (
-                                 <select 
-                                   className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1 py-1 rounded"
-                                   value={item.unit}
-                                   onChange={(e) => updateIngredientQuantity(item.ingredientId, item.quantity.toString(), e.target.value)}
-                                 >
-                                   <option value="kg">kg</option>
-                                   <option value="gr">gr</option>
-                                 </select>
-                               ) : (item.unit === 'lt' || item.unit === 'ml') ? (
-                                <select 
-                                  className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1 py-1 rounded"
-                                  value={item.unit}
-                                  onChange={(e) => updateIngredientQuantity(item.ingredientId, item.quantity.toString(), e.target.value)}
-                                >
-                                  <option value="lt">lt</option>
-                                  <option value="ml">ml</option>
-                                </select>
-                               ) : (
-                                <span className="text-[10px] font-bold text-slate-400 w-8">{item.unit}</span>
-                               )}
+                               </div>
+                            </div>
+                          </div>
 
-                               <button 
-                                 type="button"
-                                 onClick={() => removeIngredientFromRecipe(item.ingredientId)}
-                                 className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
-                               >
-                                 <Trash2 size={14} />
-                               </button>
+                          <div className="space-y-2">
+                             <select 
+                               onChange={(e) => {
+                                 if (e.target.value) addIngredientToRecipe(e.target.value);
+                                 e.target.value = "";
+                               }}
+                               className="w-full px-4 py-2 bg-white border border-blue-200 rounded-xl text-sm font-bold text-blue-600 outline-none"
+                             >
+                               <option value="">+ Añadir ingrediente a receta...</option>
+                               {ingredientsOnly.map(ing => (
+                                 <option key={ing.id} value={ing.id}>{ing.name} ({formatCurrency(ing.cost, 3)} / {ing.unit})</option>
+                               ))}
+                             </select>
+
+                             <div className="space-y-2 mt-4">
+                                {recipeItems.map(item => {
+                                  const ingredient = products.find(p => p.id === item.ingredientId);
+                                  const itemSummary = modalSummary.items.find(i => i.ingredientId === item.ingredientId);
+                                  const availableUnits = getAvailableUnitsForIngredient(ingredient?.unit);
+
+                                  return (
+                                    <div key={item.ingredientId} className="flex items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-blue-100">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-bold text-slate-900 truncate">{item.name}</p>
+                                        <div className="flex flex-col gap-0.5">
+                                          <p className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
+                                            Costo Base: <span className="text-slate-600 font-bold">{formatCurrency(itemSummary?.baseCost || ingredient?.cost || 0, 4)}</span> por <span className="text-blue-500 font-black uppercase tracking-tighter">{itemSummary?.baseUnit || ingredient?.unit || 'unid'}</span>
+                                          </p>
+                                          <p className="text-[10px] text-blue-500 font-bold italic">
+                                            Equivale a: {formatCurrency(itemSummary?.unitCostInRecipeUnit || 0, 4)} por {item.unit} 
+                                            <span className="ml-2 text-slate-900 bg-blue-50 px-1.5 py-0.5 rounded whitespace-nowrap font-bold">
+                                              Subtotal: {formatCurrency(itemSummary?.lineCost || 0)}
+                                            </span>
+                                          </p>
+                                        </div>
+                                      </div>
+                                     <div className="flex items-center gap-2">
+                                      <input 
+                                        type="number" 
+                                        step="0.001"
+                                       className="w-20 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-black text-center"
+                                       value={item.quantity}
+                                       onChange={(e) => updateIngredientQuantity(item.ingredientId, e.target.value)}
+                                     />
+                                     
+                                     {availableUnits.length > 1 ? (
+                                       <select 
+                                         className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-1 rounded border border-blue-100 outline-none"
+                                         value={item.unit}
+                                         onChange={(e) => updateIngredientQuantity(item.ingredientId, item.quantity.toString(), e.target.value)}
+                                       >
+                                         {availableUnits.map(opt => (
+                                           <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                         ))}
+                                       </select>
+                                     ) : (
+                                       <span className="text-[10px] font-bold text-slate-400 w-8">{item.unit}</span>
+                                     )}
+
+                                     <button 
+                                       type="button"
+                                       onClick={() => removeIngredientFromRecipe(item.ingredientId)}
+                                       className="p-1.5 text-red-400 hover:text-red-500 hover:bg-red-50 rounded-lg"
+                                     >
+                                       <Trash2 size={14} />
+                                     </button>
+                                   </div>
+                                 </div>
+                                );
+                              })}
+                               {recipeItems.length === 0 && (
+                                 <p className="text-center py-4 text-[10px] text-slate-400 font-bold uppercase italic tracking-widest">No hay ingredientes aún</p>
+                               )}
                              </div>
-                           </div>
-                          );
-                        })}
-                         {recipeItems.length === 0 && (
-                           <p className="text-center py-4 text-[10px] text-slate-400 font-bold uppercase italic tracking-widest">No hay ingredientes aún</p>
-                         )}
-                       </div>
-                    </div>
-                  </div>
-                )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
 
                 <div className="flex gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-100">
                   <label className="flex items-center gap-2 cursor-pointer">
