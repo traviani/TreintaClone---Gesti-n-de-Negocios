@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer, Receipt as ReceiptIcon, MessageCircle } from 'lucide-react';
+import { Printer, Receipt as ReceiptIcon, MessageCircle, ArrowLeft, X } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 
 export interface ReceiptProps {
@@ -53,7 +53,7 @@ RIF: J-501798788
 👤 *Cliente:* ${sale.customerName || 'Cliente'}
 🪪 *RIF/CI:* ${sale.customerIdNumber || 'J-501798788'}
 📞 *Teléfono:* ${sale.customerPhone || sale.phone || 'No registrado'}
-${sale.customerAddress || sale.address ? `📍 *Dirección:* ${sale.customerAddress || sale.address}\n` : ''}🏷 *Condición:* ${sale.saleType === 'credito' ? 'CRÉDITO' : 'CONTADO'}
+${sale.customerAddress || sale.address ? `📍 *Dirección:* ${sale.customerAddress || sale.address}\n` : ''}🏷 *Condición:* ${sale.saleType === 'credito' ? 'CRÉDITO' : `CONTADO${sale.paymentMethod ? ` (${sale.paymentMethod}${sale.paymentReference ? ` - Ref: ${sale.paymentReference}` : ''})` : ''}`}${sale.saleType === 'contado' ? '\n✅ *Estado:* PAGADO' : `\n⏳ *Saldo Pendiente:* $${formatCurrency(sale.balance !== undefined ? sale.balance : sale.total).replace('$', '')}`}
 
 📦 *DETALLE DE LA COMPRA:*
 ${itemsText}${discountDetails}
@@ -167,14 +167,23 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
               <span className="font-extrabold uppercase text-slate-950">RIF/CI:</span>
               <span className="font-bold text-slate-900 whitespace-nowrap">{sale.customerIdNumber || 'J-501798788'}</span>
             </div>
-            <span className={cn(
-              "font-extrabold uppercase px-2 py-0.5 rounded text-[10px] border",
-              sale.saleType === 'credito' 
-                ? "text-red-700 bg-red-50 border-red-200" 
-                : "text-emerald-800 bg-emerald-50 border-emerald-200"
-            )}>
-              {sale.saleType === 'credito' ? 'Crédito' : 'Contado'}
-            </span>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className={cn(
+                "font-extrabold uppercase px-2 py-0.5 rounded text-[10px] border",
+                sale.saleType === 'credito' 
+                  ? "text-red-700 bg-red-50 border-red-200" 
+                  : "text-emerald-800 bg-emerald-50 border-emerald-200"
+              )}>
+                {sale.saleType === 'credito' 
+                  ? 'Crédito' 
+                  : `Contado${sale.paymentMethod ? ` • ${sale.paymentMethod}` : ''}`}
+              </span>
+              {sale.saleType === 'contado' && sale.paymentReference && (
+                <span className="text-[9.5px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
+                  Ref: {sale.paymentReference}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         
@@ -343,9 +352,15 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
         <div className="flex justify-between items-center pt-0.5">
           <span className="font-extrabold">CONDICIÓN:</span>
           <span className="font-black uppercase text-[11.5px] border border-black px-1.5 py-0.2 rounded">
-            {sale.saleType === 'credito' ? 'CRÉDITO' : 'CONTADO'}
+            {sale.saleType === 'credito' ? 'CRÉDITO' : `CONTADO${sale.paymentMethod ? ` (${sale.paymentMethod})` : ''}`}
           </span>
         </div>
+        {sale.saleType === 'contado' && sale.paymentReference && (
+          <div className="flex justify-between text-[10.5px] pt-0.5">
+            <span className="font-extrabold">REF. PAGO:</span>
+            <span className="font-bold uppercase">{sale.paymentReference}</span>
+          </div>
+        )}
       </div>
 
       {/* Items Table */}
@@ -544,6 +559,13 @@ export const Receipt: React.FC<ReceiptProps> = ({
           window.print();
         } finally {
           setIsPrintingLetter(false);
+          setTimeout(() => {
+            try {
+              if (document.body.contains(printIframe)) {
+                document.body.removeChild(printIframe);
+              }
+            } catch (_) {}
+          }, 1500);
         }
       }, 350);
     } catch (err) {
@@ -656,6 +678,13 @@ export const Receipt: React.FC<ReceiptProps> = ({
           window.print();
         } finally {
           setIsPrintingTicket(false);
+          setTimeout(() => {
+            try {
+              if (document.body.contains(printIframe)) {
+                document.body.removeChild(printIframe);
+              }
+            } catch (_) {}
+          }, 1500);
         }
       }, 350);
     } catch (err) {
@@ -691,33 +720,46 @@ export const Receipt: React.FC<ReceiptProps> = ({
 
   return (
     <div id="receipt-print-wrapper" className="flex flex-col items-center print:block print:p-0 print:m-0 print:bg-white w-full">
-      {/* Format Selector Tab (Screen Only) */}
+      {/* Format Selector and Sticky Back Navigation Bar (Screen Only) */}
       {!hideActions && (
-        <div className="mb-4 print:hidden flex items-center justify-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-sm">
-          <button
-            onClick={() => setActivePreview('letter')}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 cursor-pointer",
-              activePreview === 'letter'
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-800"
-            )}
-          >
-            <Printer size={15} />
-            VISTA HOJA CARTA (2 COPIAS)
-          </button>
-          <button
-            onClick={() => setActivePreview('ticket')}
-            className={cn(
-              "px-4 py-2 rounded-lg text-xs font-black transition-all flex items-center gap-2 cursor-pointer",
-              activePreview === 'ticket'
-                ? "bg-white text-teal-800 shadow-sm"
-                : "text-slate-500 hover:text-slate-800"
-            )}
-          >
-            <ReceiptIcon size={15} />
-            VISTA TICKET (ACLAS PP7X 80MM)
-          </button>
+        <div className="w-full max-w-[215.9mm] mb-4 print:hidden flex flex-wrap items-center justify-between gap-2 bg-white/95 backdrop-blur px-3 py-2 rounded-2xl border border-slate-200 shadow-sm sticky top-0 z-30">
+          {onSecondaryAction ? (
+            <button
+              type="button"
+              onClick={onSecondaryAction}
+              className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl text-xs font-black flex items-center gap-2 transition-all shadow-sm cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>← Volver a la Hoja de Trabajo</span>
+            </button>
+          ) : <div />}
+
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setActivePreview('letter')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer",
+                activePreview === 'letter'
+                  ? "bg-white text-slate-900 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              )}
+            >
+              <Printer size={14} />
+              CARTA (2 COPIAS)
+            </button>
+            <button
+              onClick={() => setActivePreview('ticket')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer",
+                activePreview === 'ticket'
+                  ? "bg-white text-teal-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              )}
+            >
+              <ReceiptIcon size={14} />
+              TICKET ACLAS
+            </button>
+          </div>
         </div>
       )}
 
