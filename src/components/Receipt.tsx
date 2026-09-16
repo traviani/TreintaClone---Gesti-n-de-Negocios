@@ -764,7 +764,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
       )}
 
       {/* PREVIEW CONTAINER */}
-      <div className="w-full flex justify-center">
+      <div className="w-full flex justify-center overflow-x-auto pb-4">
         {/* Letter Sheet View */}
         <div 
           id="receipt-print" 

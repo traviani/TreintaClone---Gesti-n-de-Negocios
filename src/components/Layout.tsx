@@ -181,7 +181,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 overflow-auto">
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+        <div className="p-2.5 sm:p-4 md:p-8 max-w-7xl mx-auto w-full">
           {children}
         </div>
       </main>

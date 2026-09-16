@@ -27,6 +27,7 @@ import {
   UserPlus,
   CheckCircle2, 
   ArrowLeft,
+  ArrowRight,
   X, 
   Printer, 
   Receipt as ReceiptIcon,
@@ -82,6 +83,11 @@ export default function POS() {
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
   const [autoReceiptTrigger, setAutoReceiptTrigger] = useState<'letter' | 'ticket' | 'whatsapp' | undefined>(undefined);
+
+  // Mobile Responsive State
+  const [mobileTab, setMobileTab] = useState<'products' | 'cart'>('products');
+  const [showConfigMobile, setShowConfigMobile] = useState<boolean>(true);
+  const [copyNotice, setCopyNotice] = useState<string | null>(null);
 
   // Discount and Sample state
   const [discount, setDiscount] = useState<number>(0);
@@ -399,299 +405,368 @@ export default function POS() {
   });
 
   return (
-    <div className="h-[calc(100vh-160px)] flex flex-col lg:flex-row gap-6 print:hidden">
-      {/* Main Content Area: Controls + Products */}
-      <div className="flex-1 flex flex-col gap-6 min-w-0 overflow-hidden">
+    <div className="min-h-[calc(100vh-90px)] lg:h-[calc(100vh-140px)] flex flex-col lg:flex-row gap-4 lg:gap-6 print:hidden relative pb-24 lg:pb-0">
+      
+      {/* Mobile Sticky Segmented Header (< lg screens) */}
+      <div className="lg:hidden sticky top-0 z-30 bg-app-background/95 backdrop-blur-md pt-1 pb-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setMobileTab('products')}
+          className={cn(
+            "flex-1 py-2.5 px-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer border",
+            mobileTab === 'products'
+              ? "bg-slate-900 text-white border-slate-900 shadow-md"
+              : "bg-white text-slate-600 border-slate-200/90 hover:bg-slate-50"
+          )}
+        >
+          <Package size={15} />
+          <span>1. Catálogo ({filteredProducts.length})</span>
+        </button>
         
-        {/* Top Controls Grid: Customer, Tarifa, Condición & Forma de Pago */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          
-          {/* Step 1: Customer Selection */}
-          <div className="md:col-span-5 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">1. Cliente</h3>
-              {selectedCustomer ? (
-                <button 
-                  type="button"
-                  onClick={() => setSelectedCustomer(null)} 
-                  className="text-blue-600 text-xs font-bold hover:underline italic cursor-pointer"
-                >
-                  Cambiar
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => handleOpenNewCustomerModal()}
-                  className="inline-flex items-center gap-1 text-[11px] font-black text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-xl transition-all border border-teal-200/60 cursor-pointer"
-                >
-                  <UserPlus size={13} />
-                  <span>+ Nuevo Cliente</span>
-                </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab('cart')}
+          className={cn(
+            "flex-1 py-2.5 px-3 rounded-2xl text-xs font-black flex items-center justify-center gap-2 transition-all cursor-pointer border relative",
+            mobileTab === 'cart'
+              ? "bg-teal-700 text-white border-teal-700 shadow-md"
+              : "bg-white text-slate-600 border-slate-200/90 hover:bg-slate-50"
+          )}
+        >
+          <ShoppingCart size={15} />
+          <span>2. Carrito</span>
+          <span className={cn(
+            "text-[10px] px-2 py-0.5 rounded-full font-black ml-0.5",
+            mobileTab === 'cart' ? "bg-white/20 text-white" : "bg-teal-100 text-teal-800"
+          )}>
+            {cart.length} {cart.length > 0 ? `· ${formatCurrency(total)}` : ''}
+          </span>
+        </button>
+      </div>
+
+      {/* Main Content Area: Controls + Products */}
+      <div className={cn(
+        "flex-1 flex flex-col gap-4 lg:gap-6 min-w-0 lg:overflow-hidden",
+        mobileTab === 'cart' ? "hidden lg:flex" : "flex"
+      )}>
+        
+        {/* Top Controls: Customer, Tarifa, Condición & Forma de Pago */}
+        <div className="bg-white p-3.5 sm:p-5 rounded-3xl border border-slate-200 shadow-xs space-y-3">
+          {/* Header with Mobile Collapse Toggle */}
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 italic">
+                Configuración de Venta
+              </span>
+              {selectedCustomer && (
+                <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200 truncate max-w-[200px]">
+                  {selectedCustomer.name} · {priceType.toUpperCase()} · {saleType.toUpperCase()}
+                </span>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => setShowConfigMobile(!showConfigMobile)}
+              className="lg:hidden text-[11px] font-bold text-teal-700 hover:text-teal-900 flex items-center gap-1 cursor-pointer bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-200"
+            >
+              <span>{showConfigMobile ? 'Ocultar' : 'Configurar'}</span>
+              <ChevronDown size={14} className={cn("transition-transform duration-200", !showConfigMobile && "-rotate-90")} />
+            </button>
+          </div>
+
+          <div className={cn(
+            "grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 transition-all",
+            !showConfigMobile && "hidden lg:grid"
+          )}>
             
-            {!selectedCustomer ? (
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <div className="relative">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
-                      type="text"
-                      placeholder="Buscar cliente o escribir nombre..."
-                      className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm outline-none focus:ring-2 focus:ring-teal-500/40 cursor-pointer font-medium"
-                      value={searchCustomer}
-                      onFocus={() => setShowCustomerDropdown(true)}
-                      onChange={(e) => {
-                        setSearchCustomer(e.target.value);
-                        setShowCustomerDropdown(true);
-                      }}
-                      onClick={() => setShowCustomerDropdown(true)}
-                    />
-                    <ChevronDown size={16} className={cn("absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-transform", showCustomerDropdown && "rotate-180")} />
-                  </div>
-                  
-                  {showCustomerDropdown && (
-                    <>
-                      <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={() => setShowCustomerDropdown(false)}
+            {/* Step 1: Customer Selection */}
+            <div className="md:col-span-5 bg-slate-50/50 p-3 sm:p-4 rounded-2xl border border-slate-100 space-y-3 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">1. Cliente</h3>
+                {selectedCustomer ? (
+                  <button 
+                    type="button"
+                    onClick={() => setSelectedCustomer(null)} 
+                    className="text-blue-600 text-xs font-bold hover:underline italic cursor-pointer"
+                  >
+                    Cambiar
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleOpenNewCustomerModal()}
+                    className="inline-flex items-center gap-1 text-[11px] font-black text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-xl transition-all border border-teal-200/60 cursor-pointer"
+                  >
+                    <UserPlus size={13} />
+                    <span>+ Nuevo</span>
+                  </button>
+                )}
+              </div>
+              
+              {!selectedCustomer ? (
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input 
+                        type="text"
+                        placeholder="Buscar cliente o escribir nombre..."
+                        className="w-full pl-9 pr-10 py-2.5 bg-white border border-slate-200 rounded-2xl text-xs sm:text-sm outline-none focus:ring-2 focus:ring-teal-500/40 cursor-pointer font-medium"
+                        value={searchCustomer}
+                        onFocus={() => setShowCustomerDropdown(true)}
+                        onChange={(e) => {
+                          setSearchCustomer(e.target.value);
+                          setShowCustomerDropdown(true);
+                        }}
+                        onClick={() => setShowCustomerDropdown(true)}
                       />
-                      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto custom-scrollbar p-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                        {filteredCustomers.length > 0 ? (
-                          filteredCustomers.map(c => (
-                            <button 
-                              key={c.id}
-                              onClick={() => {
-                                setSelectedCustomer(c);
-                                setSearchCustomer('');
-                                setShowCustomerDropdown(false);
-                              }}
-                              className="w-full text-left p-2.5 hover:bg-teal-50 rounded-xl transition-all border border-transparent hover:border-teal-100 group flex items-center justify-between mb-1 last:mb-0 cursor-pointer"
-                            >
-                              <div>
-                                <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-800">{c.name}</p>
-                                <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{c.idNumber || 'Sin C.I/RIF'}</span>
-                                  <span className={cn(
-                                    "text-[9px] font-black px-1.5 py-0.2 rounded uppercase",
-                                    c.priceType === 'mayor' ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
-                                  )}>
-                                    {c.priceType === 'mayor' ? 'Mayor' : 'Detal'}
-                                  </span>
+                      <ChevronDown size={16} className={cn("absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-transform", showCustomerDropdown && "rotate-180")} />
+                    </div>
+                    
+                    {showCustomerDropdown && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setShowCustomerDropdown(false)}
+                        />
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto custom-scrollbar p-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                          {filteredCustomers.length > 0 ? (
+                            filteredCustomers.map(c => (
+                              <button 
+                                key={c.id}
+                                onClick={() => {
+                                  setSelectedCustomer(c);
+                                  setSearchCustomer('');
+                                  setShowCustomerDropdown(false);
+                                }}
+                                className="w-full text-left p-2.5 hover:bg-teal-50 rounded-xl transition-all border border-transparent hover:border-teal-100 group flex items-center justify-between mb-1 last:mb-0 cursor-pointer"
+                              >
+                                <div>
+                                  <p className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-teal-800">{c.name}</p>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{c.idNumber || 'Sin C.I/RIF'}</span>
+                                    <span className={cn(
+                                      "text-[9px] font-black px-1.5 py-0.2 rounded uppercase",
+                                      c.priceType === 'mayor' ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600"
+                                    )}>
+                                      {c.priceType === 'mayor' ? 'Mayor' : 'Detal'}
+                                    </span>
+                                  </div>
                                 </div>
-                              </div>
-                              <ChevronRight size={14} className="text-slate-300 group-hover:text-teal-700 group-hover:translate-x-1 transition-all shrink-0" />
+                                <ChevronRight size={14} className="text-slate-300 group-hover:text-teal-700 group-hover:translate-x-1 transition-all shrink-0" />
+                              </button>
+                            ))
+                          ) : (
+                            <div className="p-3 text-center">
+                              <p className="text-xs text-slate-400">No se encontraron clientes coincidentes</p>
+                            </div>
+                          )}
+
+                          <div className="pt-2 mt-1 border-t border-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenNewCustomerModal(searchCustomer)}
+                              className="w-full text-left p-2.5 bg-teal-50 hover:bg-teal-100/90 rounded-xl text-teal-900 text-xs font-bold flex items-center gap-2 border border-teal-200/70 transition-colors cursor-pointer"
+                            >
+                              <UserPlus size={15} className="text-teal-700 shrink-0" />
+                              <span className="truncate">
+                                {searchCustomer.trim() ? `+ Registrar "${searchCustomer.trim()}" como cliente` : '+ Registrar un nuevo cliente'}
+                              </span>
                             </button>
-                          ))
-                        ) : (
-                          <div className="p-3 text-center">
-                            <p className="text-xs text-slate-400">No se encontraron clientes coincidentes</p>
                           </div>
-                        )}
-
-                        <div className="pt-2 mt-1 border-t border-slate-100">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenNewCustomerModal(searchCustomer)}
-                            className="w-full text-left p-2.5 bg-teal-50 hover:bg-teal-100/90 rounded-xl text-teal-900 text-xs font-bold flex items-center gap-2 border border-teal-200/70 transition-colors cursor-pointer"
-                          >
-                            <UserPlus size={15} className="text-teal-700 shrink-0" />
-                            <span className="truncate">
-                              {searchCustomer.trim() ? `+ Registrar "${searchCustomer.trim()}" como cliente` : '+ Registrar un nuevo cliente'}
-                            </span>
-                          </button>
                         </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                      </>
+                    )}
+                  </div>
 
-                <button
+                  <button
+                    type="button"
+                    onClick={() => handleOpenNewCustomerModal(searchCustomer)}
+                    title="Registrar nuevo cliente"
+                    className="px-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-sm"
+                  >
+                    <UserPlus size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-teal-100/80 rounded-xl flex items-center justify-center text-teal-800 font-bold shrink-0">
+                      <User size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">{selectedCustomer.name}</h4>
+                      <p className="text-[11px] text-slate-500 font-medium truncate">CI/RIF: {selectedCustomer.idNumber || 'No registrado'}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                    <span className={cn(
+                      "text-[10px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider",
+                      priceType === 'mayor' ? "bg-purple-100 text-purple-800 border border-purple-200" : "bg-blue-50 text-blue-800 border border-blue-200"
+                    )}>
+                      Tarifa {priceType}
+                    </span>
+                    {selectedCustomer.phone && (
+                      <span className="text-[10px] font-bold text-slate-500">
+                        {selectedCustomer.phone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Step 2: Tipo de Tarifa (Detal / Mayor) */}
+            <div className="md:col-span-3 bg-slate-50/50 p-3 sm:p-4 rounded-2xl border border-slate-100 space-y-3 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">2. Tarifa</h3>
+                <span className={cn(
+                  "text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border",
+                  priceType === 'mayor' ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-slate-100 text-slate-700 border-slate-200"
+                )}>
+                  {priceType === 'mayor' ? 'Mayorista' : 'Detal'}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 bg-white p-1 rounded-2xl border border-slate-200">
+                <button 
                   type="button"
-                  onClick={() => handleOpenNewCustomerModal(searchCustomer)}
-                  title="Registrar nuevo cliente"
-                  className="px-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-sm"
+                  onClick={() => setPriceType('detal')}
+                  className={cn(
+                    "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                    priceType === 'detal' 
+                      ? "bg-slate-900 text-white shadow-sm font-black" 
+                      : "text-slate-400 hover:text-slate-600"
+                  )}
                 >
-                  <UserPlus size={16} />
+                  Detal
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setPriceType('mayor')}
+                  className={cn(
+                    "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                    priceType === 'mayor' 
+                      ? "bg-purple-700 text-white shadow-sm font-black" 
+                      : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  Mayor
                 </button>
               </div>
-            ) : (
-              <div className="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 bg-teal-100/80 rounded-xl flex items-center justify-center text-teal-800 font-bold shrink-0">
-                    <User size={18} />
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-bold text-slate-900 text-sm leading-tight truncate">{selectedCustomer.name}</h4>
-                    <p className="text-[11px] text-slate-500 font-medium truncate">CI/RIF: {selectedCustomer.idNumber || 'No registrado'}</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
-                  <span className={cn(
-                    "text-[10px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider",
-                    priceType === 'mayor' ? "bg-purple-100 text-purple-800 border border-purple-200" : "bg-blue-50 text-blue-800 border border-blue-200"
-                  )}>
-                    Tarifa {priceType}
-                  </span>
-                  {selectedCustomer.phone && (
-                    <span className="text-[10px] font-bold text-slate-500">
-                      {selectedCustomer.phone}
-                    </span>
+              
+              <p className="text-[10px] font-medium text-slate-400 text-center">
+                {priceType === 'mayor' ? 'Precios de venta al mayor aplicados' : 'Precios de venta al detal (PVP)'}
+              </p>
+            </div>
+
+            {/* Step 3: Condición y Forma de Pago */}
+            <div className="md:col-span-4 bg-slate-50/50 p-3 sm:p-4 rounded-2xl border border-slate-100 space-y-3 flex flex-col justify-between">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">3. Condición y Pago</h3>
+                <span className={cn(
+                  "text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border",
+                  saleType === 'contado' ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"
+                )}>
+                  {saleType === 'contado' ? 'De Contado' : 'A Crédito'}
+                </span>
+              </div>
+
+              {/* Condición toggle: Contado vs Crédito */}
+              <div className="grid grid-cols-2 gap-2 bg-white p-1 rounded-2xl border border-slate-200">
+                <button 
+                  type="button"
+                  onClick={() => setSaleType('contado')}
+                  className={cn(
+                    "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                    saleType === 'contado' 
+                      ? "bg-emerald-600 text-white shadow-sm font-black" 
+                      : "text-slate-400 hover:text-slate-600"
                   )}
-                </div>
+                >
+                  Contado
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setSaleType('credito')}
+                  className={cn(
+                    "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
+                    saleType === 'credito' 
+                      ? "bg-amber-600 text-white shadow-sm font-black" 
+                      : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  Crédito
+                </button>
               </div>
-            )}
-          </div>
 
-          {/* Step 2: Tipo de Tarifa (Detal / Mayor) */}
-          <div className="md:col-span-3 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">2. Tarifa</h3>
-              <span className={cn(
-                "text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border",
-                priceType === 'mayor' ? "bg-purple-50 text-purple-700 border-purple-200" : "bg-slate-100 text-slate-700 border-slate-200"
-              )}>
-                {priceType === 'mayor' ? 'Mayorista' : 'Detal'}
-              </span>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100">
-              <button 
-                type="button"
-                onClick={() => setPriceType('detal')}
-                className={cn(
-                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
-                  priceType === 'detal' 
-                    ? "bg-white text-slate-900 shadow-sm border border-slate-200 font-black" 
-                    : "text-slate-400 hover:text-slate-600"
-                )}
-              >
-                Detal
-              </button>
-              <button 
-                type="button"
-                onClick={() => setPriceType('mayor')}
-                className={cn(
-                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
-                  priceType === 'mayor' 
-                    ? "bg-purple-700 text-white shadow-sm font-black" 
-                    : "text-slate-400 hover:text-slate-600"
-                )}
-              >
-                Mayor
-              </button>
-            </div>
-            
-            <p className="text-[10px] font-medium text-slate-400 text-center">
-              {priceType === 'mayor' ? 'Precios de venta al mayor aplicados' : 'Precios de venta al detal (PVP)'}
-            </p>
-          </div>
-
-          {/* Step 3: Condición y Forma de Pago */}
-          <div className="md:col-span-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest italic serif">3. Condición y Pago</h3>
-              <span className={cn(
-                "text-[10px] font-black uppercase px-2 py-0.5 rounded-lg border",
-                saleType === 'contado' ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-amber-50 text-amber-800 border-amber-200"
-              )}>
-                {saleType === 'contado' ? 'De Contado' : 'A Crédito'}
-              </span>
-            </div>
-
-            {/* Condición toggle: Contado vs Crédito */}
-            <div className="grid grid-cols-2 gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-100">
-              <button 
-                type="button"
-                onClick={() => setSaleType('contado')}
-                className={cn(
-                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
-                  saleType === 'contado' 
-                    ? "bg-emerald-600 text-white shadow-sm font-black" 
-                    : "text-slate-400 hover:text-slate-600"
-                )}
-              >
-                Contado
-              </button>
-              <button 
-                type="button"
-                onClick={() => setSaleType('credito')}
-                className={cn(
-                  "py-2 text-xs font-black rounded-xl transition-all uppercase tracking-wider cursor-pointer",
-                  saleType === 'credito' 
-                    ? "bg-amber-600 text-white shadow-sm font-black" 
-                    : "text-slate-400 hover:text-slate-600"
-                )}
-              >
-                Crédito
-              </button>
-            </div>
-
-            {/* If Contado: Payment Method & Reference */}
-            {saleType === 'contado' ? (
-              <div className="space-y-2 pt-0.5">
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
-                    >
-                      {PAYMENT_METHODS.map(m => (
-                        <option key={m.id} value={m.id}>{m.label}</option>
-                      ))}
-                    </select>
+              {/* If Contado: Payment Method & Reference */}
+              {saleType === 'contado' ? (
+                <div className="space-y-2 pt-0.5">
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500/30 cursor-pointer"
+                      >
+                        {PAYMENT_METHODS.map(m => (
+                          <option key={m.id} value={m.id}>{m.label}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+                  <input 
+                    type="text"
+                    placeholder="Ref. o comprobante (opcional)"
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    className="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-slate-400 font-medium"
+                  />
                 </div>
-                <input 
-                  type="text"
-                  placeholder="Ref. o comprobante (opcional)"
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  className="w-full py-1.5 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/30 placeholder:text-slate-400 font-medium"
-                />
-              </div>
-            ) : (
-              <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-2.5 text-[11px] text-amber-800 font-medium leading-snug">
-                ⚠️ <span className="font-bold">Venta a Crédito:</span> Se registrará como deuda en la cuenta por cobrar del cliente.
-              </div>
-            )}
+              ) : (
+                <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl p-2.5 text-[11px] text-amber-800 font-medium leading-snug">
+                  ⚠️ <span className="font-bold">Venta a Crédito:</span> Se registrará como deuda en la cuenta por cobrar del cliente.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Product Catalog Grid */}
         <div className="flex-1 bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col min-h-0 overflow-hidden">
           {/* Search Header */}
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between gap-4">
-            <div className="relative flex-1 max-w-md">
+          <div className="p-3 sm:p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+            <div className="relative flex-1 max-w-md w-full">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
                 type="text"
-                placeholder="Buscar por nombre de producto terminado..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/50"
+                placeholder="Buscar por nombre de producto..."
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm outline-none focus:ring-2 focus:ring-primary/50"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-              {filteredProducts.length} Productos Disponibles
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0 flex items-center justify-between">
+              <span>{filteredProducts.length} Productos</span>
+              <span className="lg:hidden text-teal-700 font-black">Toca para agregar</span>
             </div>
           </div>
 
           {/* Products Scrollable Area */}
-          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 custom-scrollbar">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
               {filteredProducts.map(p => (
                 <motion.button
                   key={p.id}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={{ scale: 0.97 }}
                   onClick={() => addToCart(p)}
                   disabled={p.stock <= 0 && !p.isBajoPedido}
                   className={cn(
-                    "p-3 rounded-2xl border text-left flex flex-col justify-between transition-all group relative overflow-hidden cursor-pointer",
+                    "p-2.5 sm:p-3 rounded-2xl border text-left flex flex-col justify-between transition-all group relative overflow-hidden cursor-pointer",
                     p.stock <= 0 && !p.isBajoPedido
                       ? "bg-slate-50 border-slate-100 opacity-60 cursor-not-allowed"
-                      : "bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-md"
+                      : "bg-white border-slate-200/80 hover:border-slate-300 hover:shadow-md active:border-teal-500"
                   )}
                 >
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -736,11 +811,26 @@ export default function POS() {
         </div>
       </div>
 
-      {/* Cart Sidebar */}
+      {/* Cart Sidebar / View */}
       <div className={cn(
-        "w-full lg:w-[420px] flex flex-col bg-white rounded-[2.5rem] border border-slate-200 shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden relative transition-all",
-        !selectedCustomer && "opacity-10 pointer-events-none translate-x-10"
+        "w-full lg:w-[420px] flex flex-col bg-white rounded-3xl lg:rounded-[2.5rem] border border-slate-200 shadow-xl lg:shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden relative transition-all",
+        mobileTab === 'products' ? "hidden lg:flex" : "flex",
+        !selectedCustomer && "lg:opacity-30 lg:pointer-events-none"
       )}>
+        {/* Mobile Header to go back to products */}
+        <div className="lg:hidden p-3 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => setMobileTab('products')}
+            className="text-xs font-black text-slate-700 hover:text-slate-900 flex items-center gap-1.5 py-1.5 px-3 bg-white rounded-xl border border-slate-200 shadow-xs cursor-pointer"
+          >
+            <ArrowLeft size={14} />
+            <span>← Seguir Agregando Productos</span>
+          </button>
+          <span className="text-[11px] font-black text-teal-800 bg-teal-50 px-2 py-0.5 rounded-lg border border-teal-200">
+            {cart.length} ítems
+          </span>
+        </div>
         <div className="p-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight italic leading-none">CARRITO</h2>
@@ -859,7 +949,8 @@ export default function POS() {
               onClick={() => {
                 const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=detal`;
                 navigator.clipboard.writeText(url);
-                alert("✅ Enlace DETAL copiado con éxito.");
+                setCopyNotice('✅ Enlace DETAL copiado con éxito');
+                setTimeout(() => setCopyNotice(null), 3000);
               }}
               className="flex-1 py-2 bg-teal-50 text-primary rounded-xl font-black text-[9px] uppercase tracking-widest border border-teal-100 flex items-center justify-center gap-1 hover:bg-teal-100 transition-colors cursor-pointer"
             >
@@ -871,7 +962,8 @@ export default function POS() {
               onClick={() => {
                 const url = `${window.location.origin}/#/catalog/${effectiveUid}?type=mayor`;
                 navigator.clipboard.writeText(url);
-                alert("✅ Enlace MAYORISTA copiado con éxito.");
+                setCopyNotice('✅ Enlace MAYORISTA copiado con éxito');
+                setTimeout(() => setCopyNotice(null), 3000);
               }}
               className="flex-1 py-2 bg-purple-50 text-purple-600 rounded-xl font-black text-[9px] uppercase tracking-widest border border-purple-100 flex items-center justify-center gap-1 hover:bg-purple-100 transition-colors cursor-pointer"
             >
@@ -879,6 +971,12 @@ export default function POS() {
               MAYOR
             </button>
           </div>
+
+          {copyNotice && (
+            <div className="p-2 bg-emerald-50 border border-emerald-200 rounded-xl text-center text-xs font-bold text-emerald-800 animate-in fade-in duration-150">
+              {copyNotice}
+            </div>
+          )}
 
           {/* Current Sale Configuration Summary */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-2.5 text-xs space-y-1.5">
@@ -992,6 +1090,31 @@ export default function POS() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Floating Checkout Pill at Bottom */}
+      {mobileTab === 'products' && cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-3 left-3 right-3 z-30 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <button
+            type="button"
+            onClick={() => setMobileTab('cart')}
+            className="w-full bg-slate-900 hover:bg-slate-800 active:scale-98 text-white p-3 rounded-2xl shadow-2xl flex items-center justify-between font-black text-xs border border-slate-700 cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-teal-500 text-white flex items-center justify-center font-black text-xs shadow-inner">
+                {cart.length}
+              </div>
+              <div className="text-left">
+                <div className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Total en Carrito</div>
+                <div className="text-sm font-black text-emerald-400 tabular-nums">{formatCurrency(total)}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-600 py-2 px-3 rounded-xl text-white font-black text-[11px] uppercase tracking-wider transition-colors shadow-sm">
+              <span>Revisar y Cobrar</span>
+              <ArrowRight size={14} />
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Quick Customer Creation Modal */}
       <AnimatePresence>
