@@ -78,7 +78,7 @@ export default function POS() {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeActionLoading, setActiveActionLoading] = useState<'letter' | 'ticket' | 'whatsapp' | null>(null);
+  const [activeActionLoading, setActiveActionLoading] = useState<'letter' | 'ticket' | 'whatsapp' | 'process_only' | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [lastSale, setLastSale] = useState<any>(null);
@@ -254,7 +254,7 @@ export default function POS() {
 
   const total = isSample ? 0 : Math.max(0, subtotal - discount);
 
-  const handleCheckout = async (actionType: 'letter' | 'ticket' | 'whatsapp') => {
+  const handleCheckout = async (actionType: 'letter' | 'ticket' | 'whatsapp' | 'process_only') => {
     if (cart.length === 0 || !selectedCustomer || isProcessing) return;
     setIsProcessing(true);
     setActiveActionLoading(actionType);
@@ -364,7 +364,12 @@ export default function POS() {
           sendSaleWhatsApp(saleWithId);
         }
 
-        setAutoReceiptTrigger(actionType);
+        if (actionType === 'process_only') {
+          setAutoReceiptTrigger(undefined);
+        } else {
+          setAutoReceiptTrigger(actionType);
+        }
+
         setLastSale(saleWithId);
         setCart([]);
         setDiscount(0);
@@ -1025,8 +1030,40 @@ export default function POS() {
           {/* Direct POS Billing & Action Buttons */}
           <div className="flex flex-col gap-2 pt-1">
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">
-              Facturar y Emitir
+              Acciones de Venta
             </p>
+
+            {/* Main Action: SOLO PROCESAR VENTA (Sin Imprimir) */}
+            <button 
+              type="button"
+              disabled={cart.length === 0 || isProcessing || !selectedCustomer}
+              onClick={() => handleCheckout('process_only')}
+              className={cn(
+                "w-full py-3.5 px-3.5 rounded-2xl font-black text-xs sm:text-sm transition-all transform active:scale-95 flex items-center justify-center gap-2.5 shadow-md cursor-pointer border",
+                cart.length === 0 || !selectedCustomer || isProcessing
+                  ? "bg-slate-200 text-slate-400 border-slate-200 cursor-not-allowed shadow-none" 
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500 shadow-emerald-600/20"
+              )}
+            >
+              {activeActionLoading === 'process_only' ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <CheckCircle2 size={19} className="shrink-0" />
+              )}
+              <div className="flex flex-col items-center leading-tight">
+                <span className="tracking-wide">{activeActionLoading === 'process_only' ? 'PROCESANDO VENTA...' : 'SOLO PROCESAR VENTA'}</span>
+                <span className="text-[9px] font-normal opacity-90 font-sans tracking-normal">
+                  Guarda la venta e inventario sin enviar a impresora
+                </span>
+              </div>
+            </button>
+
+            {/* Divider */}
+            <div className="relative flex py-0.5 items-center">
+              <div className="flex-grow border-t border-slate-200"></div>
+              <span className="flex-shrink mx-2 text-[9px] font-bold text-slate-400 uppercase tracking-wider">o facturar con emisión</span>
+              <div className="flex-grow border-t border-slate-200"></div>
+            </div>
 
             {/* Button 1: Imprimir Hoja Carta (2 Copias) */}
             <button 
@@ -1034,9 +1071,9 @@ export default function POS() {
               disabled={cart.length === 0 || isProcessing || !selectedCustomer}
               onClick={() => handleCheckout('letter')}
               className={cn(
-                "w-full py-3 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-md cursor-pointer",
+                "w-full py-2.5 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm cursor-pointer",
                 cart.length === 0 || !selectedCustomer || isProcessing
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
                   : "bg-slate-900 hover:bg-slate-800 text-white shadow-slate-900/10"
               )}
             >
@@ -1054,9 +1091,9 @@ export default function POS() {
               disabled={cart.length === 0 || isProcessing || !selectedCustomer}
               onClick={() => handleCheckout('ticket')}
               className={cn(
-                "w-full py-3 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-md cursor-pointer",
+                "w-full py-2.5 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm cursor-pointer",
                 cart.length === 0 || !selectedCustomer || isProcessing
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
                   : "bg-teal-700 hover:bg-teal-800 text-white shadow-teal-700/10"
               )}
             >
@@ -1074,9 +1111,9 @@ export default function POS() {
               disabled={cart.length === 0 || isProcessing || !selectedCustomer}
               onClick={() => handleCheckout('whatsapp')}
               className={cn(
-                "w-full py-3 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-md cursor-pointer",
+                "w-full py-2.5 px-3 rounded-xl font-black text-xs transition-all transform active:scale-95 flex items-center justify-center gap-2 shadow-sm cursor-pointer",
                 cart.length === 0 || !selectedCustomer || isProcessing
-                  ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none" 
+                  ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none" 
                   : "bg-[#25D366] hover:bg-[#1EBE5D] text-white shadow-emerald-500/20"
               )}
             >
@@ -1269,7 +1306,7 @@ export default function POS() {
       </AnimatePresence>
 
       {/* Off-screen or Modal Receipt Rendering for Printing and Preview */}
-      {lastSale && (
+      {lastSale && (showReceiptModal || autoReceiptTrigger) && (
         <div 
           className={cn(
             showReceiptModal 
