@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Receipt, sendSaleWhatsApp } from '../components/Receipt';
@@ -10,6 +10,12 @@ export const ReceiptPage: React.FC = () => {
   const [sale, setSale] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const searchString = location.search || (window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '');
+  const searchParams = new URLSearchParams(searchString);
+  const initialFormat = (searchParams.get('format') === 'ticket') ? 'ticket' : 'letter';
+  const autoTrigger = searchParams.get('print') === 'true' ? (initialFormat as 'letter' | 'ticket') : undefined;
 
   useEffect(() => {
     const fetchSale = async () => {
@@ -76,9 +82,16 @@ export const ReceiptPage: React.FC = () => {
               <MessageCircle size={14} /> WhatsApp
             </button>
           </div>
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Modo Impresión Directa</p>
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+            {initialFormat === 'ticket' ? 'Ticket Térmico Aclas (80mm)' : 'Modo Impresión Directa'}
+          </p>
         </div>
-        <Receipt sale={sale} hideActions={false} />
+        <Receipt 
+          sale={sale} 
+          hideActions={false} 
+          initialFormat={initialFormat}
+          autoTrigger={autoTrigger}
+        />
       </div>
     </div>
   );

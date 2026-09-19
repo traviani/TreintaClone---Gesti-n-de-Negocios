@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Printer, Receipt as ReceiptIcon, MessageCircle, ArrowLeft, X } from 'lucide-react';
+import { Printer, Receipt as ReceiptIcon, MessageCircle, ArrowLeft, X, ExternalLink, Copy, Check } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 
 export interface ReceiptProps {
@@ -15,6 +15,65 @@ interface SingleInvoiceHalfProps {
   dateStr: string;
   copyLabel: string;
 }
+
+export const formatSaleTicketPlainText = (sale: any, dateStr?: string) => {
+  if (!sale) return '';
+  const dateFormatted = dateStr || ((typeof sale.createdAt?.toDate === 'function')
+    ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'short' }).format(sale.createdAt.toDate())
+    : 'HOY');
+
+  const invoiceNum = sale.invoiceNumber
+    ? String(sale.invoiceNumber).padStart(6, '0')
+    : (sale.id?.slice(-4).toUpperCase() || '6313');
+
+  const line = '------------------------------------------';
+  const doubleLine = '==========================================';
+
+  let items = '';
+  if (sale.items && sale.items.length > 0) {
+    items = sale.items.map((it: any) => {
+      const cant = String(it.quantity) + 'x';
+      const name = (it.name || '').toUpperCase().slice(0, 24);
+      const total = '$' + formatCurrency(it.price * it.quantity).replace('$', '');
+      return `${cant.padEnd(5)} ${name.padEnd(24)} ${total.padStart(10)}\n      (P.U: $${formatCurrency(it.price).replace('$', '')})`;
+    }).join('\n');
+  } else {
+    items = '  PRODUCTOS DIVERSOS';
+  }
+
+  let discountText = '';
+  if (sale.discount > 0 || sale.isSample) {
+    discountText = `\nSUBTOTAL:                         $${formatCurrency(sale.subtotal || sale.total + (sale.discount || 0)).replace('$', '')}\n${sale.isSample ? 'BONIFICACION (MUESTRA)' : 'DESCUENTO'}:                        -$${formatCurrency(sale.discount).replace('$', '')}`;
+  }
+
+  return `${doubleLine}
+        INVERSIONES TRAVIANI C.A.
+            RIF: J-501798788
+${doubleLine}
+             NOTA DE ENTREGA
+NO. ${invoiceNum}                   FECHA: ${dateFormatted}
+${line}
+CLIENTE: ${(sale.customerName || 'CLIENTE GENERAL').toUpperCase()}
+RIF/CI:  ${sale.customerIdNumber || 'J-501798788'}
+TELEFONO: ${sale.customerPhone || 'NO REGISTRADO'}
+CONDICION: ${sale.saleType === 'credito' ? 'CREDITO' : `CONTADO ${sale.paymentMethod ? `(${sale.paymentMethod})` : ''}`}
+${sale.paymentReference ? `REF. PAGO: ${sale.paymentReference}\n` : ''}${line}
+CANT  DESCRIPCION                     TOTAL
+${line}
+${items}${discountText}
+${doubleLine}
+TOTAL A PAGAR:                    $${formatCurrency(sale.total).replace('$', '')}
+${doubleLine}
+FORMAS DE PAGO:
+PAGO MOVIL: MERCANTIL | 0414-2391131
+            V-13493831
+TRANSFERENCIA: 0105-0750-21-1750063115 | Marco T.
+BINANCE:    tramontemarco27@gmail.com
+${line}
+       ¡GRACIAS POR SU CONFIANZA!
+      NO VALIDO COMO FACTURA FISCAL
+${doubleLine}`;
+};
 
 export const formatSaleWhatsAppMessage = (sale: any, dateStr?: string) => {
   if (!sale) return '';
@@ -445,252 +504,82 @@ export const Receipt: React.FC<ReceiptProps> = ({
   const [isPrintingLetter, setIsPrintingLetter] = useState(false);
   const [isPrintingTicket, setIsPrintingTicket] = useState(false);
   const [activePreview, setActivePreview] = useState<'letter' | 'ticket'>(initialFormat);
+  const [copiedText, setCopiedText] = useState(false);
   const hasAutoTriggeredRef = useRef(false);
 
   const dateStr = (typeof sale.createdAt?.toDate === 'function')
     ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
     : (sale.createdAt ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(new Date(sale.createdAt)) : 'RECIENTE');
 
-  const handlePrintLetter = async () => {
+  const handlePrintLetter = () => {
     try {
       setIsPrintingLetter(true);
-      const receiptElement = document.getElementById('receipt-print');
-      if (!receiptElement) {
-        window.print();
-        setIsPrintingLetter(false);
-        return;
-      }
+      setActivePreview('letter');
 
-      const existingIframe = document.getElementById('receipt-print-iframe');
-      if (existingIframe) {
-        existingIframe.remove();
-      }
-
-      const printIframe = document.createElement('iframe');
-      printIframe.id = 'receipt-print-iframe';
-      printIframe.style.position = 'fixed';
-      printIframe.style.left = '-9999px';
-      printIframe.style.top = '0';
-      printIframe.style.width = '215.9mm';
-      printIframe.style.height = '279.4mm';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0.01';
-      printIframe.style.pointerEvents = 'none';
-      printIframe.style.zIndex = '-999';
-      document.body.appendChild(printIframe);
-
-      const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
-      if (!iframeDoc || !printIframe.contentWindow) {
-        window.print();
-        setIsPrintingLetter(false);
-        return;
-      }
-
-      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-        .map(el => el.outerHTML)
-        .join('\n');
-
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Factura Hoja Carta (2 Copias) - ${sale.id || 'Inversiones Traviani'}</title>
-            ${styles}
-            <style>
-              @page {
-                size: letter portrait;
-                margin: 0;
-              }
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 215.9mm !important;
-                height: 279.4mm !important;
-                background-color: #ffffff !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
-              }
-              #receipt-print {
-                width: 215.9mm !important;
-                height: 279.4mm !important;
-                max-width: 215.9mm !important;
-                max-height: 279.4mm !important;
-                margin: 0 auto !important;
-                padding: 4mm 6mm !important;
-                box-sizing: border-box !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: space-between !important;
-                box-shadow: none !important;
-                border: none !important;
-                background-color: #ffffff !important;
-                page-break-after: avoid !important;
-                page-break-inside: avoid !important;
-              }
-            </style>
-          </head>
-          <body>
-            ${receiptElement.outerHTML}
-          </body>
-        </html>
-      `);
-      iframeDoc.close();
-
-      const images = Array.from(iframeDoc.images);
-      await Promise.all(
-        images.map(img => {
-          if (img.complete) return Promise.resolve();
-          return new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        })
-      );
+      document.body.classList.remove('print-ticket-active');
+      document.body.classList.add('print-letter-active');
 
       setTimeout(() => {
         try {
-          printIframe.contentWindow?.focus();
-          printIframe.contentWindow?.print();
-        } catch (e) {
-          console.warn('Iframe print failed, fallback to window.print():', e);
           window.print();
+        } catch (e) {
+          console.warn('Error during letter print:', e);
         } finally {
           setIsPrintingLetter(false);
           setTimeout(() => {
-            try {
-              if (document.body.contains(printIframe)) {
-                document.body.removeChild(printIframe);
-              }
-            } catch (_) {}
-          }, 1500);
+            document.body.classList.remove('print-letter-active');
+          }, 1200);
         }
-      }, 350);
+      }, 150);
     } catch (err) {
-      console.error('Error during print preparation:', err);
-      window.print();
+      console.error('Error in handlePrintLetter:', err);
       setIsPrintingLetter(false);
+      document.body.classList.remove('print-letter-active');
     }
   };
 
-  const handlePrintTicket = async () => {
+  const handlePrintTicket = () => {
     try {
       setIsPrintingTicket(true);
-      const ticketElement = document.getElementById('receipt-thermal-container');
-      if (!ticketElement) {
-        window.print();
-        setIsPrintingTicket(false);
-        return;
-      }
+      setActivePreview('ticket');
 
-      const existingIframe = document.getElementById('receipt-ticket-print-iframe');
-      if (existingIframe) {
-        existingIframe.remove();
-      }
-
-      const printIframe = document.createElement('iframe');
-      printIframe.id = 'receipt-ticket-print-iframe';
-      printIframe.style.position = 'fixed';
-      printIframe.style.left = '-9999px';
-      printIframe.style.top = '0';
-      printIframe.style.width = '80mm';
-      printIframe.style.height = 'auto';
-      printIframe.style.border = 'none';
-      printIframe.style.opacity = '0.01';
-      printIframe.style.pointerEvents = 'none';
-      printIframe.style.zIndex = '-999';
-      document.body.appendChild(printIframe);
-
-      const iframeDoc = printIframe.contentDocument || printIframe.contentWindow?.document;
-      if (!iframeDoc || !printIframe.contentWindow) {
-        window.print();
-        setIsPrintingTicket(false);
-        return;
-      }
-
-      const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-        .map(el => el.outerHTML)
-        .join('\n');
-
-      iframeDoc.open();
-      iframeDoc.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Ticket Aclas PP7X - ${sale.id || 'Inversiones Traviani'}</title>
-            ${styles}
-            <style>
-              @page {
-                size: 80mm auto;
-                margin: 0;
-              }
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: 80mm !important;
-                background-color: #ffffff !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-                font-smooth: never !important;
-                -webkit-font-smoothing: antialiased !important;
-              }
-              .receipt-thermal-ticket {
-                width: 76mm !important;
-                max-width: 76mm !important;
-                margin: 0 auto !important;
-                padding: 3mm 2mm !important;
-                box-sizing: border-box !important;
-                background-color: #ffffff !important;
-                color: #000000 !important;
-                font-size: 12px !important;
-                line-height: 1.25 !important;
-              }
-            </style>
-          </head>
-          <body>
-            ${ticketElement.innerHTML}
-          </body>
-        </html>
-      `);
-      iframeDoc.close();
-
-      const images = Array.from(iframeDoc.images);
-      await Promise.all(
-        images.map(img => {
-          if (img.complete) return Promise.resolve();
-          return new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = resolve;
-          });
-        })
-      );
+      document.body.classList.remove('print-letter-active');
+      document.body.classList.add('print-ticket-active');
 
       setTimeout(() => {
         try {
-          printIframe.contentWindow?.focus();
-          printIframe.contentWindow?.print();
-        } catch (e) {
-          console.warn('Ticket print failed, fallback to window.print():', e);
           window.print();
+        } catch (e) {
+          console.warn('Error during ticket print:', e);
         } finally {
           setIsPrintingTicket(false);
           setTimeout(() => {
-            try {
-              if (document.body.contains(printIframe)) {
-                document.body.removeChild(printIframe);
-              }
-            } catch (_) {}
-          }, 1500);
+            document.body.classList.remove('print-ticket-active');
+          }, 1200);
         }
-      }, 350);
+      }, 150);
     } catch (err) {
-      console.error('Error during ticket print preparation:', err);
-      window.print();
+      console.error('Error in handlePrintTicket:', err);
       setIsPrintingTicket(false);
+      document.body.classList.remove('print-ticket-active');
+    }
+  };
+
+  const handleOpenTicketNewTab = () => {
+    if (!sale) return;
+    const saleId = sale.id || 'current';
+    const printUrl = `${window.location.origin}/#/receipt/${saleId}?format=ticket&print=true`;
+    window.open(printUrl, '_blank');
+  };
+
+  const handleCopyTicketText = async () => {
+    try {
+      const text = formatSaleTicketPlainText(sale, dateStr);
+      await navigator.clipboard.writeText(text);
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 2500);
+    } catch (err) {
+      console.error('Error copying ticket text:', err);
     }
   };
 
@@ -713,7 +602,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
       } else if (autoTrigger === 'whatsapp') {
         handleSendWhatsApp();
       }
-    }, 250);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [autoTrigger]);
@@ -812,7 +701,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
 
       {/* ACTION BUTTONS */}
       {!hideActions && (
-        <div className="mt-8 text-center print:hidden w-full max-w-[215.9mm] flex flex-col items-center gap-4">
+        <div className="mt-8 text-center print:hidden w-full max-w-[215.9mm] flex flex-col items-center gap-3">
           <div className="w-full max-w-xl grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-in">
             {/* Button 1: Imprimir Hoja Carta */}
             <button 
@@ -841,7 +730,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
               ) : (
                 <ReceiptIcon size={16} />
               )}
-              {isPrintingTicket ? 'IMPRIMIENDO...' : 'TICKET (ACLAS)'}
+              {isPrintingTicket ? 'IMPRIMIENDO...' : 'IMPRIMIR ACLAS'}
             </button>
 
             {/* Button 3: Enviar por WhatsApp */}
@@ -852,6 +741,34 @@ export const Receipt: React.FC<ReceiptProps> = ({
             >
               <MessageCircle size={16} />
               ENVIAR WHATSAPP
+            </button>
+          </div>
+
+          {/* Secondary Quick Utilities for Aclas Thermal Printer */}
+          <div className="w-full max-w-xl flex flex-wrap items-center justify-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleOpenTicketNewTab}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-slate-300"
+              title="Abre el ticket en una pestaña independiente limpia para imprimir directo a la Aclas"
+            >
+              <ExternalLink size={13} />
+              <span>Abrir Ticket en Pestaña Nueva</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleCopyTicketText}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer border",
+                copiedText
+                  ? "bg-teal-50 border-teal-400 text-teal-800"
+                  : "bg-slate-100 hover:bg-slate-200 border-slate-300 text-slate-700"
+              )}
+              title="Copiar el contenido en formato texto para imprimir o pegar"
+            >
+              {copiedText ? <Check size={13} className="text-teal-600" /> : <Copy size={13} />}
+              <span>{copiedText ? '¡Ticket Copiado!' : 'Copiar Texto del Ticket'}</span>
             </button>
           </div>
 
@@ -866,15 +783,14 @@ export const Receipt: React.FC<ReceiptProps> = ({
         </div>
       )}
 
-      {/* Global Print Media Rules */}
+      {/* Dynamic Print Media Rules */}
       <style>
         {`
         @media print {
-          @page { 
-            margin: 0 !important; 
-            size: letter portrait !important; 
+          aside, nav, header, .print\\:hidden, #mobile-menu, [data-print-hidden="true"] {
+            display: none !important;
           }
-          
+
           html, body {
             margin: 0 !important;
             padding: 0 !important;
@@ -883,8 +799,59 @@ export const Receipt: React.FC<ReceiptProps> = ({
             print-color-adjust: exact !important;
           }
 
-          aside, nav, header, .print\\:hidden, #mobile-menu {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          ${activePreview === 'ticket' ? `
+          @page { 
+            size: 80mm auto !important; 
+            margin: 0 !important; 
+          }
+
+          #receipt-print-wrapper {
+            display: block !important;
+            width: 80mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            z-index: 999999 !important;
+          }
+
+          #receipt-print {
             display: none !important;
+          }
+
+          #receipt-thermal-container {
+            display: block !important;
+            width: 76mm !important;
+            max-width: 76mm !important;
+            margin: 0 auto !important;
+            padding: 1.5mm !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+
+          .receipt-thermal-ticket {
+            width: 76mm !important;
+            max-width: 76mm !important;
+            margin: 0 auto !important;
+            padding: 2mm 1mm !important;
+            font-size: 11.5px !important;
+            line-height: 1.25 !important;
+            color: #000000 !important;
+            background-color: #ffffff !important;
+          }
+          ` : `
+          @page { 
+            size: letter portrait !important; 
+            margin: 0 !important; 
           }
 
           #receipt-print-wrapper {
@@ -900,6 +867,10 @@ export const Receipt: React.FC<ReceiptProps> = ({
             z-index: 999999 !important;
           }
 
+          #receipt-thermal-container {
+            display: none !important;
+          }
+
           #receipt-print {
             display: flex !important;
             flex-direction: column !important;
@@ -908,7 +879,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
             height: 279.4mm !important;
             max-width: 215.9mm !important;
             max-height: 279.4mm !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
             padding: 4mm 6mm !important;
             box-sizing: border-box !important;
             box-shadow: none !important;
@@ -917,11 +888,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
             page-break-after: avoid !important;
             page-break-inside: avoid !important;
           }
-
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
+          `}
         }
       `}
       </style>

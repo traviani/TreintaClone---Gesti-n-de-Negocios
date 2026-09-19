@@ -32,6 +32,7 @@ import {
   Printer, 
   Receipt as ReceiptIcon,
   MessageCircle,
+  ExternalLink,
   ChevronDown, 
   Package,
   CreditCard,
@@ -1337,7 +1338,7 @@ export default function POS() {
       {/* High-Clarity Success Dialog Over the Active POS Worksheet */}
       <AnimatePresence>
         {showSuccess && lastSale && !showReceiptModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs print:hidden">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1400,7 +1401,7 @@ export default function POS() {
               </div>
 
               {/* Quick Print/WhatsApp Actions */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="grid grid-cols-3 gap-2 mb-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1435,6 +1436,22 @@ export default function POS() {
                 >
                   <MessageCircle size={16} />
                   <span className="text-[10px] font-black uppercase">WhatsApp</span>
+                </button>
+              </div>
+
+              {/* Direct Aclas External Tab Link (Guaranteed print on physical thermal printer) */}
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const printUrl = `${window.location.origin}/#/receipt/${lastSale.id}?format=ticket&print=true`;
+                    window.open(printUrl, '_blank');
+                  }}
+                  className="w-full py-2 px-3 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-xl text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  title="Abre el ticket en pestaña limpia para imprimir directo a la Aclas sin bloqueos"
+                >
+                  <ExternalLink size={14} />
+                  <span>Abrir e Imprimir Ticket Aclas (80mm)</span>
                 </button>
               </div>
 

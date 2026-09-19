@@ -32,3 +32,78 @@
   }
 }
 
+/* Print Isolation Styles for Aclas Thermal Ticket and Letter Sheet */
+@media print {
+  /* Hide standard page elements during print */
+  header, nav, aside, footer, .print-hidden, [data-print-hidden="true"] {
+    display: none !important;
+  }
+
+  /* When printing thermal ticket on Aclas PP7X */
+  body.print-ticket-active {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    width: 80mm !important;
+  }
+
+  body.print-ticket-active * {
+    visibility: hidden !important;
+  }
+
+  body.print-ticket-active #receipt-thermal-container,
+  body.print-ticket-active #receipt-thermal-container * {
+    visibility: visible !important;
+  }
+
+  body.print-ticket-active #receipt-thermal-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 76mm !important;
+    max-width: 76mm !important;
+    margin: 0 !important;
+    padding: 2mm 1mm !important;
+    display: block !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* When printing letter sheet (2 copies) */
+  body.print-letter-active {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    width: 215.9mm !important;
+  }
+
+  body.print-letter-active * {
+    visibility: hidden !important;
+  }
+
+  body.print-letter-active #receipt-print,
+  body.print-letter-active #receipt-print * {
+    visibility: visible !important;
+  }
+
+  body.print-letter-active #receipt-print {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 215.9mm !important;
+    height: 279.4mm !important;
+    margin: 0 !important;
+    padding: 4mm 6mm !important;
+    display: flex !important;
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  @page {
+    margin: 0;
+  }
+}
+
