@@ -1,4 +1,5 @@
 import { formatCurrency } from './utils';
+import { TRAVIANI_LOGO_DATA_URL } from './logo';
 
 export const generateThermalTicketHtml = (sale: any, dateStr?: string): string => {
   if (!sale) return '';
@@ -163,7 +164,14 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
   <div class="ticket-body">
     <!-- Header -->
     <div class="header-box">
-      <div style="font-weight: 900; font-size: 15px; text-transform: uppercase; letter-spacing: -0.2px;">
+      <div style="text-align: center; margin-bottom: 5px;">
+        <img 
+          src="${TRAVIANI_LOGO_DATA_URL}" 
+          alt="Traviani" 
+          style="max-height: 42px; max-width: 140px; margin: 0 auto; display: block; filter: grayscale(100%) contrast(200%);" 
+        />
+      </div>
+      <div style="font-weight: 900; font-size: 14.5px; text-transform: uppercase; letter-spacing: -0.2px;">
         INVERSIONES TRAVIANI C.A.
       </div>
       <div style="font-weight: 800; font-size: 11px; margin-top: 1px;">

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Printer, Receipt as ReceiptIcon, MessageCircle, ArrowLeft, X, ExternalLink, Copy, Check } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
 import { printThermalTicketDirectly, openTicketInPrintWindow } from '../lib/thermalPrint';
+import { TRAVIANI_LOGO_DATA_URL } from '../lib/logo';
 
 export interface ReceiptProps {
   sale: any;
@@ -171,9 +172,8 @@ const SingleInvoiceHalf: React.FC<SingleInvoiceHalfProps> = ({ sale, dateStr, co
           <div className="w-[125px] h-[36px] flex items-center justify-start overflow-hidden">
             {!imgError ? (
               <img 
-                src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
+                src={TRAVIANI_LOGO_DATA_URL} 
                 alt="Logo Traviani" 
-                referrerPolicy="no-referrer"
                 className="max-h-full max-w-full object-contain object-left"
                 style={{
                   maxWidth: "125px",
@@ -364,11 +364,10 @@ const ThermalTicket: React.FC<ThermalTicketProps> = ({ sale, dateStr }) => {
         {!imgError ? (
           <div className="w-full flex justify-center mb-1.5">
             <img 
-              src="https://lh3.googleusercontent.com/d/1FSxQ25foIjzbMPgY0spsjElr3oRQhMf5" 
+              src={TRAVIANI_LOGO_DATA_URL} 
               alt="Logo Traviani" 
-              referrerPolicy="no-referrer"
               className="h-10 object-contain mx-auto filter grayscale contrast-200"
-              style={{ maxHeight: '40px', maxWidth: '140px' }}
+              style={{ maxHeight: '40px', maxWidth: '140px', display: 'block' }}
               onError={() => setImgError(true)}
             />
           </div>
