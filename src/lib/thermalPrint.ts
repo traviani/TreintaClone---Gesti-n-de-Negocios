@@ -40,32 +40,36 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ticket Aclas - Nota Nº ${invoiceNum}</title>
   <style>
     @page {
       size: 80mm auto;
-      margin: 0;
+      margin: 0mm;
     }
     *, *:before, *:after {
       box-sizing: border-box;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      color-adjust: exact !important;
     }
     html, body {
-      margin: 0;
-      padding: 0;
-      background: #fff;
-      color: #000;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      color: #000000 !important;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       font-size: 12px;
       line-height: 1.25;
-      width: 80mm;
+      width: 100%;
     }
     .ticket-body {
-      width: 76mm;
-      max-width: 76mm;
+      width: 72mm;
+      max-width: 72mm;
       margin: 0 auto;
-      padding: 4mm 2mm 8mm 2mm;
+      padding: 2mm 1mm 6mm 1mm;
+      background: #ffffff;
+      color: #000000;
     }
     .text-center { text-align: center; }
     .text-right { text-align: right; }
@@ -74,29 +78,29 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
     .uppercase { text-transform: uppercase; }
     
     .divider-solid {
-      border-top: 2px solid #000;
+      border-top: 2px solid #000000;
       margin: 4px 0;
     }
     .divider-dashed {
-      border-top: 1px dashed #000;
+      border-top: 1px dashed #000000;
       margin: 4px 0;
     }
     .divider-double {
-      border-top: 3px double #000;
+      border-top: 3px double #000000;
       margin: 5px 0;
     }
 
     .header-box {
-      border-bottom: 2px solid #000;
+      border-bottom: 2px solid #000000;
       padding-bottom: 4px;
       margin-bottom: 6px;
       text-align: center;
     }
     .title-banner {
       margin: 4px 0;
-      padding: 2px 0;
-      background: #000;
-      color: #fff;
+      padding: 3px 0;
+      background: #000000 !important;
+      color: #ffffff !important;
       font-weight: 900;
       font-size: 13px;
       letter-spacing: 1px;
@@ -115,19 +119,21 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
       margin: 4px 0;
     }
     .items-table th {
-      border-bottom: 1.5px solid #000;
+      border-bottom: 1.5px solid #000000;
       font-weight: 900;
       font-size: 11px;
       padding: 2px 0;
       text-transform: uppercase;
+      color: #000000;
     }
     .items-table td {
       padding: 3px 0;
-      border-bottom: 1px dotted #ccc;
+      border-bottom: 1px dotted #888888;
+      color: #000000;
     }
     .total-box {
-      border-top: 2px solid #000;
-      border-bottom: 2px solid #000;
+      border-top: 2px solid #000000;
+      border-bottom: 2px solid #000000;
       padding: 5px 0;
       margin: 6px 0;
       display: flex;
@@ -135,32 +141,21 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
       align-items: center;
       font-size: 16px;
       font-weight: 900;
+      color: #000000;
     }
     .payment-box {
-      border-bottom: 1px dashed #000;
+      border-bottom: 1px dashed #000000;
       padding-bottom: 5px;
       margin-bottom: 6px;
       font-size: 11px;
+      color: #000000;
     }
     .footer {
       text-align: center;
       padding-top: 4px;
       font-size: 11px;
       font-weight: 800;
-    }
-    @media screen {
-      body {
-        background: #f1f5f9;
-        display: flex;
-        justify-content: center;
-        padding: 20px 0;
-      }
-      .ticket-body {
-        background: #fff;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-      }
+      color: #000000;
     }
   </style>
 </head>
@@ -189,7 +184,7 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
     <div style="border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 4px; font-size: 11.5px;">
       <div class="info-row">
         <span class="bold">CLIENTE:</span>
-        <span class="bolder uppercase text-right" style="max-width: 55mm;">${sale.customerName || 'CLIENTE GENERAL'}</span>
+        <span class="bolder uppercase text-right" style="max-width: 52mm;">${sale.customerName || 'CLIENTE GENERAL'}</span>
       </div>
       <div class="info-row">
         <span class="bold">RIF/CI:</span>
@@ -223,9 +218,9 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
     <table class="items-table">
       <thead>
         <tr>
-          <th style="width: 32px; text-align: left;">CANT</th>
+          <th style="width: 30px; text-align: left;">CANT</th>
           <th style="text-align: left; padding: 0 4px;">DESCRIPCIÓN</th>
-          <th style="width: 65px; text-align: right;">TOTAL</th>
+          <th style="width: 60px; text-align: right;">TOTAL</th>
         </tr>
       </thead>
       <tbody>
@@ -259,6 +254,18 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
       <div style="font-size: 9px; letter-spacing: 2px; margin-top: 4px; color: #555;">=================================</div>
     </div>
   </div>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        try {
+          window.focus();
+          window.print();
+        } catch (e) {
+          console.error(e);
+        }
+      }, 250);
+    });
+  </script>
 </body>
 </html>`;
 };
@@ -267,7 +274,7 @@ export const printThermalTicketDirectly = (sale: any, dateStr?: string): boolean
   try {
     const html = generateThermalTicketHtml(sale, dateStr);
     
-    // Create an isolated print iframe
+    // Remove old frame if exists
     const iframeId = '__aclas_thermal_print_frame__';
     let frame = document.getElementById(iframeId) as HTMLIFrameElement;
     if (frame && frame.parentNode) {
@@ -276,35 +283,30 @@ export const printThermalTicketDirectly = (sale: any, dateStr?: string): boolean
 
     frame = document.createElement('iframe');
     frame.id = iframeId;
-    // CRITICAL for Chrome/Edge/Firefox:
-    // Never set visibility: hidden, display: none, width: 0, or height: 0 on an iframe being printed!
-    // That causes the browser's print engine to rasterize a 0x0 or hidden viewport, giving an entirely blank page!
+    
+    // Set explicit geometry so browser print engines calculate dimensions accurately
     frame.style.position = 'fixed';
-    frame.style.left = '-9999px';
-    frame.style.top = '0';
+    frame.style.left = '0';
+    frame.style.bottom = '0';
     frame.style.width = '80mm';
-    frame.style.height = '1200px';
-    frame.style.border = '0';
+    frame.style.height = '600px';
+    frame.style.border = 'none';
     frame.style.opacity = '0.01';
     frame.style.pointerEvents = 'none';
     frame.style.zIndex = '-9999';
-    document.body.appendChild(frame);
-
-    const frameWindow = frame.contentWindow;
-    const frameDoc = frameWindow?.document || frame.contentDocument;
-    if (!frameDoc || !frameWindow) {
-      throw new Error('Unable to create isolated print frame');
-    }
-
-    frameDoc.open();
-    frameDoc.write(html);
-    frameDoc.close();
-
-    // Give the iframe document enough time to complete layout, parse fonts, and compute layout
-    const triggerPrint = () => {
+    
+    let printAttempted = false;
+    const executePrint = () => {
+      if (printAttempted) return;
+      printAttempted = true;
       try {
-        frameWindow.focus();
-        frameWindow.print();
+        const win = frame.contentWindow;
+        if (win) {
+          win.focus();
+          win.print();
+        } else {
+          openTicketInPrintWindow(html);
+        }
       } catch (err) {
         console.warn('Iframe print failed, falling back to popup window', err);
         openTicketInPrintWindow(html);
@@ -313,23 +315,27 @@ export const printThermalTicketDirectly = (sale: any, dateStr?: string): boolean
           if (frame && frame.parentNode) {
             frame.parentNode.removeChild(frame);
           }
-        }, 15000);
+        }, 12000);
       }
     };
 
-    if (frameDoc.readyState === 'complete') {
-      setTimeout(triggerPrint, 350);
-    } else {
-      frame.onload = () => {
-        setTimeout(triggerPrint, 350);
-      };
-      // Fallback timeout in case onload doesn't fire for write()
-      setTimeout(triggerPrint, 500);
-    }
+    frame.onload = () => {
+      setTimeout(executePrint, 350);
+    };
+
+    // Use Blob URL to eliminate cross-origin or document.write sandbox restrictions
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    frame.src = url;
+    document.body.appendChild(frame);
+
+    // Fallback timeout in case onload doesn't trigger
+    setTimeout(executePrint, 600);
 
     return true;
   } catch (err) {
     console.error('Error in printThermalTicketDirectly:', err);
+    openTicketInPrintWindow(sale, dateStr);
     return false;
   }
 };
@@ -346,7 +352,11 @@ export const openTicketInPrintWindow = (htmlOrSale: any, dateStr?: string) => {
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => {
-      printWindow.print();
+      try {
+        printWindow.print();
+      } catch (e) {
+        console.warn('Popup print call:', e);
+      }
     }, 300);
   }
 };
