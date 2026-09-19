@@ -16,6 +16,7 @@ import { DEFAULT_OWNER_ID } from '../constants';
 import { formatCurrency, cn, getGoogleDriveDirectLink } from '../lib/utils';
 import { getProductEffectiveCost } from '../lib/recipeUtils';
 import { Receipt, sendSaleWhatsApp } from '../components/Receipt';
+import { printThermalTicketDirectly, openTicketInPrintWindow } from '../lib/thermalPrint';
 import { 
   Search, 
   ShoppingCart, 
@@ -363,9 +364,12 @@ export default function POS() {
         // If action is WhatsApp, open directly
         if (actionType === 'whatsapp') {
           sendSaleWhatsApp(saleWithId);
+        } else if (actionType === 'ticket') {
+          // Direct print to Aclas 80mm
+          printThermalTicketDirectly(saleWithId);
         }
 
-        if (actionType === 'process_only') {
+        if (actionType === 'process_only' || actionType === 'ticket') {
           setAutoReceiptTrigger(undefined);
         } else {
           setAutoReceiptTrigger(actionType);
@@ -1418,11 +1422,10 @@ export default function POS() {
                 <button
                   type="button"
                   onClick={() => {
-                    setAutoReceiptTrigger('ticket');
-                    setShowReceiptModal(true);
+                    printThermalTicketDirectly(lastSale);
                   }}
                   className="p-2.5 bg-teal-50 hover:bg-teal-100 active:scale-95 text-teal-800 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
-                  title="Reimprimir en Ticket Térmico Aclas PP7X"
+                  title="Imprimir directo en Ticket Térmico Aclas PP7X"
                 >
                   <ReceiptIcon size={16} />
                   <span className="text-[10px] font-black uppercase">Ticket Aclas</span>
@@ -1439,16 +1442,15 @@ export default function POS() {
                 </button>
               </div>
 
-              {/* Direct Aclas External Tab Link (Guaranteed print on physical thermal printer) */}
+              {/* Direct Aclas External Window (Fallback direct print for thermal printer) */}
               <div className="mb-4">
                 <button
                   type="button"
                   onClick={() => {
-                    const printUrl = `${window.location.origin}/#/receipt/${lastSale.id}?format=ticket&print=true`;
-                    window.open(printUrl, '_blank');
+                    openTicketInPrintWindow(lastSale);
                   }}
-                  className="w-full py-2 px-3 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-xl text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
-                  title="Abre el ticket en pestaña limpia para imprimir directo a la Aclas sin bloqueos"
+                  className="w-full py-2.5 px-3 bg-teal-600 hover:bg-teal-700 active:scale-95 text-white rounded-xl text-[11px] font-black uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                  title="Abre ventana limpia formateada a 80mm para imprimir directo a la Aclas"
                 >
                   <ExternalLink size={14} />
                   <span>Abrir e Imprimir Ticket Aclas (80mm)</span>

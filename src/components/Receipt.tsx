@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Printer, Receipt as ReceiptIcon, MessageCircle, ArrowLeft, X, ExternalLink, Copy, Check } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
+import { printThermalTicketDirectly, openTicketInPrintWindow } from '../lib/thermalPrint';
 
 export interface ReceiptProps {
   sale: any;
@@ -543,33 +544,21 @@ export const Receipt: React.FC<ReceiptProps> = ({
       setIsPrintingTicket(true);
       setActivePreview('ticket');
 
-      document.body.classList.remove('print-letter-active');
-      document.body.classList.add('print-ticket-active');
+      // Execute isolated direct thermal print job
+      printThermalTicketDirectly(sale, dateStr);
 
       setTimeout(() => {
-        try {
-          window.print();
-        } catch (e) {
-          console.warn('Error during ticket print:', e);
-        } finally {
-          setIsPrintingTicket(false);
-          setTimeout(() => {
-            document.body.classList.remove('print-ticket-active');
-          }, 1200);
-        }
-      }, 150);
+        setIsPrintingTicket(false);
+      }, 1000);
     } catch (err) {
       console.error('Error in handlePrintTicket:', err);
       setIsPrintingTicket(false);
-      document.body.classList.remove('print-ticket-active');
     }
   };
 
   const handleOpenTicketNewTab = () => {
     if (!sale) return;
-    const saleId = sale.id || 'current';
-    const printUrl = `${window.location.origin}/#/receipt/${saleId}?format=ticket&print=true`;
-    window.open(printUrl, '_blank');
+    openTicketInPrintWindow(sale, dateStr);
   };
 
   const handleCopyTicketText = async () => {
