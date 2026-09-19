@@ -267,26 +267,32 @@ export const printThermalTicketDirectly = (sale: any, dateStr?: string): boolean
   try {
     const html = generateThermalTicketHtml(sale, dateStr);
     
-    // Create an isolated hidden iframe
+    // Create an isolated print iframe
     const iframeId = '__aclas_thermal_print_frame__';
     let frame = document.getElementById(iframeId) as HTMLIFrameElement;
-    if (frame) {
-      document.body.removeChild(frame);
+    if (frame && frame.parentNode) {
+      frame.parentNode.removeChild(frame);
     }
 
     frame = document.createElement('iframe');
     frame.id = iframeId;
+    // CRITICAL for Chrome/Edge/Firefox:
+    // Never set visibility: hidden, display: none, width: 0, or height: 0 on an iframe being printed!
+    // That causes the browser's print engine to rasterize a 0x0 or hidden viewport, giving an entirely blank page!
     frame.style.position = 'fixed';
-    frame.style.right = '0';
-    frame.style.bottom = '0';
+    frame.style.left = '-9999px';
+    frame.style.top = '0';
     frame.style.width = '80mm';
-    frame.style.height = '0';
-    frame.style.border = 'none';
-    frame.style.visibility = 'hidden';
+    frame.style.height = '1200px';
+    frame.style.border = '0';
+    frame.style.opacity = '0.01';
+    frame.style.pointerEvents = 'none';
+    frame.style.zIndex = '-9999';
     document.body.appendChild(frame);
 
-    const frameDoc = frame.contentWindow?.document || frame.contentDocument;
-    if (!frameDoc || !frame.contentWindow) {
+    const frameWindow = frame.contentWindow;
+    const frameDoc = frameWindow?.document || frame.contentDocument;
+    if (!frameDoc || !frameWindow) {
       throw new Error('Unable to create isolated print frame');
     }
 
@@ -294,11 +300,11 @@ export const printThermalTicketDirectly = (sale: any, dateStr?: string): boolean
     frameDoc.write(html);
     frameDoc.close();
 
-    // Trigger print once DOM is ready
-    setTimeout(() => {
+    // Give the iframe document enough time to complete layout, parse fonts, and compute layout
+    const triggerPrint = () => {
       try {
-        frame.contentWindow?.focus();
-        frame.contentWindow?.print();
+        frameWindow.focus();
+        frameWindow.print();
       } catch (err) {
         console.warn('Iframe print failed, falling back to popup window', err);
         openTicketInPrintWindow(html);
@@ -307,9 +313,19 @@ export const printThermalTicketDirectly = (sale: any, dateStr?: string): boolean
           if (frame && frame.parentNode) {
             frame.parentNode.removeChild(frame);
           }
-        }, 5000);
+        }, 15000);
       }
-    }, 250);
+    };
+
+    if (frameDoc.readyState === 'complete') {
+      setTimeout(triggerPrint, 350);
+    } else {
+      frame.onload = () => {
+        setTimeout(triggerPrint, 350);
+      };
+      // Fallback timeout in case onload doesn't fire for write()
+      setTimeout(triggerPrint, 500);
+    }
 
     return true;
   } catch (err) {

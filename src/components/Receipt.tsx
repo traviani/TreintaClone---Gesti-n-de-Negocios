@@ -544,15 +544,20 @@ export const Receipt: React.FC<ReceiptProps> = ({
       setIsPrintingTicket(true);
       setActivePreview('ticket');
 
-      // Execute isolated direct thermal print job
-      printThermalTicketDirectly(sale, dateStr);
+      document.body.classList.remove('print-letter-active');
+      document.body.classList.add('print-ticket-active');
 
+      // 1. First trigger direct isolated thermal print
+      const directSuccess = printThermalTicketDirectly(sale, dateStr);
+
+      // 2. If direct print is not supported or as a guaranteed dual-path, ensure page is ready
       setTimeout(() => {
         setIsPrintingTicket(false);
       }, 1000);
     } catch (err) {
       console.error('Error in handlePrintTicket:', err);
       setIsPrintingTicket(false);
+      document.body.classList.remove('print-ticket-active');
     }
   };
 
