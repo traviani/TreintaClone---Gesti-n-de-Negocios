@@ -1,153 +1,261 @@
-"""Generador de carruseles Il Siciliano Gourmet / Traviani (1080x1350)."""
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-import os
+"""Generador de carruseles Il Siciliano Gourmet / Traviani v2 (1080x1350)."""
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
+import math, random
 
 W, H = 1080, 1350
 FONTS = "/home/claude/fonts"
-FOTOS = "/home/claude/fotos"
-CREMA = (246, 241, 231)
-OSCURO = (38, 24, 20)
-DORADO = (224, 170, 60)
+REC = "/home/claude/fotos/recorte"
+CREMA = (250, 243, 228)
+OSCURO = (24, 14, 12)
+DORADO = (236, 178, 56)
 HANDLE = "@ilsicilianogourmet_"
 
 SABORES = {
-    "FINOCCHIO":    dict(foto="1.jpeg", color=(141, 186, 58)),
-    "TRADIZIONALE": dict(foto="2.jpeg", color=(214, 36, 110)),
-    "PEPERONCINO":  dict(foto="3.jpeg", color=(208, 38, 30)),
-    "PECORINO":     dict(foto="4.jpeg", color=(38, 170, 160)),
-    "PARRILLERA":   dict(foto="5.jpeg", color=(226, 172, 52)),
+    "FINOCCHIO":    dict(foto=1, color=(132, 190, 40), oscuro=(22, 52, 10)),
+    "TRADIZIONALE": dict(foto=2, color=(228, 40, 120), oscuro=(70, 6, 36)),
+    "PEPERONCINO":  dict(foto=3, color=(226, 40, 28), oscuro=(64, 6, 4)),
+    "PECORINO":     dict(foto=4, color=(30, 180, 168), oscuro=(4, 52, 50)),
+    "PARRILLERA":   dict(foto=5, color=(240, 176, 40), oscuro=(84, 42, 4)),
 }
 
 
-def anton(size):
-    return ImageFont.truetype(f"{FONTS}/Anton-Regular.ttf", size)
+def anton(s):
+    return ImageFont.truetype(f"{FONTS}/Anton-Regular.ttf", s)
 
 
-def mont(size, peso="Bold"):
-    f = ImageFont.truetype(f"{FONTS}/Montserrat%5Bwght%5D.ttf", size)
+def mont(s, peso="Bold"):
+    f = ImageFont.truetype(f"{FONTS}/Montserrat%5Bwght%5D.ttf", s)
     f.set_variation_by_name(peso)
     return f
 
 
-def centrar(d, y, texto, fuente, color):
-    w = d.textlength(texto, font=fuente)
-    d.text(((W - w) / 2, y), texto, font=fuente, fill=color)
+# ---------- fondos ----------
+def grano(im, fuerza=18):
+    random.seed(7)
+    n = Image.effect_noise((W, H), fuerza).convert("RGB")
+    return ImageChops.overlay(im, Image.blend(Image.new("RGB", (W, H), (128, 128, 128)), n, 0.5))
 
 
-def envolver(d, texto, fuente, ancho):
-    lineas, actual = [], ""
+def radial(centro_col, borde_col, cx=0.5, cy=0.42, r=0.95):
+    g = Image.radial_gradient("L").resize((int(W * 2 * r), int(W * 2 * r)))
+    m = Image.new("L", (W, H), 255)
+    m.paste(g, (int(W * cx - g.width / 2), int(H * cy - g.height / 2)))
+    return Image.composite(Image.new("RGB", (W, H), borde_col), Image.new("RGB", (W, H), centro_col), m)
+
+
+def espiral(d, cx, cy, rmax, color, ancho=3, vueltas=5):
+    pts = []
+    for i in range(0, 360 * vueltas, 4):
+        t = math.radians(i)
+        r = rmax * i / (360 * vueltas)
+        pts.append((cx + r * math.cos(t), cy + r * math.sin(t)))
+    d.line(pts, fill=color, width=ancho)
+
+
+def capa():
+    return Image.new("RGBA", (W, H), (0, 0, 0, 0))
+
+
+# ---------- producto ----------
+def empaque(n, alto, angulo=0):
+    im = Image.open(f"{REC}/{n}.png").convert("RGBA")
+    a = im.split()[3].point(lambda v: 255 if v > 30 else 0)
+    im = im.crop(a.getbbox())
+    im = im.resize((int(im.width * alto / im.height), alto), Image.LANCZOS)
+    return im.rotate(angulo, expand=True, resample=Image.BICUBIC)
+
+
+def pegar_producto(base, prod, xy, brillo=None):
+    x, y = xy
+    if brillo:
+        g = capa()
+        gd = ImageDraw.Draw(g)
+        cx, cy = x + prod.width / 2, y + prod.height / 2
+        R = max(prod.size) * 0.62
+        gd.ellipse((cx - R, cy - R, cx + R, cy + R), fill=brillo + (120,))
+        base.alpha_composite(g.filter(ImageFilter.GaussianBlur(90)))
+    sh = Image.new("RGBA", prod.size, (0, 0, 0, 0))
+    sh.putalpha(prod.split()[3].point(lambda v: int(v * 0.65)))
+    s = capa()
+    s.paste(sh, (x + 25, y + 45), sh)
+    base.alpha_composite(s.filter(ImageFilter.GaussianBlur(28)))
+    base.alpha_composite(prod, (x, y))
+
+
+# ---------- texto ----------
+def ancho(d, t, f):
+    return d.textlength(t, font=f)
+
+
+def centrar(d, y, t, f, col, x0=0, x1=W):
+    d.text((x0 + (x1 - x0 - ancho(d, t, f)) / 2, y), t, font=f, fill=col)
+
+
+def envolver(d, texto, f, maxw):
+    out, cur = [], ""
     for p in texto.split():
-        prueba = (actual + " " + p).strip()
-        if d.textlength(prueba, font=fuente) <= ancho:
-            actual = prueba
+        q = (cur + " " + p).strip()
+        if ancho(d, q, f) <= maxw:
+            cur = q
         else:
-            lineas.append(actual)
-            actual = p
-    lineas.append(actual)
-    return lineas
+            out.append(cur); cur = p
+    out.append(cur)
+    return out
 
 
-def foto_redondeada(nombre, lado, radio=40):
-    im = Image.open(f"{FOTOS}/{nombre}").convert("RGB").resize((lado, lado), Image.LANCZOS)
-    m = Image.new("L", (lado, lado), 0)
-    ImageDraw.Draw(m).rounded_rectangle((0, 0, lado, lado), radio, fill=255)
-    return im, m
+def texto_gigante(base, t, col, alpha, y, tam=None):
+    f = anton(tam or 400)
+    if tam is None:
+        d0 = ImageDraw.Draw(base)
+        while ancho(d0, t, f) > W * 1.25 and f.size > 120:
+            f = anton(f.size - 10)
+    c = capa()
+    d = ImageDraw.Draw(c)
+    centrar(d, y, t, f, col + (alpha,))
+    base.alpha_composite(c)
 
 
-def pegar_con_sombra(lienzo, im, mascara, xy):
-    sombra = Image.new("RGBA", (im.width + 80, im.height + 80), (0, 0, 0, 0))
-    ImageDraw.Draw(sombra).rounded_rectangle((40, 50, im.width + 40, im.height + 50), 40, fill=(0, 0, 0, 90))
-    sombra = sombra.filter(ImageFilter.GaussianBlur(22))
-    lienzo.paste(sombra, (xy[0] - 40, xy[1] - 40), sombra)
-    lienzo.paste(im, xy, mascara)
+def sticker(base, lineas, cx, cy, r, fondo, tinta, ang=-12):
+    s = Image.new("RGBA", (r * 2 + 20, r * 2 + 20), (0, 0, 0, 0))
+    d = ImageDraw.Draw(s)
+    # borde dentado
+    pts = []
+    for i in range(48):
+        t = math.radians(i * 7.5)
+        rr = r if i % 2 == 0 else r * 0.92
+        pts.append((r + 10 + rr * math.cos(t), r + 10 + rr * math.sin(t)))
+    d.polygon(pts, fill=fondo)
+    d.ellipse((10 + r * 0.16, 10 + r * 0.16, 10 + r * 1.84, 10 + r * 1.84), outline=tinta, width=3)
+    tams = [int(r * 0.30), int(r * 0.42), int(r * 0.24)]
+    total = sum(tams[:len(lineas)]) + 6 * (len(lineas) - 1)
+    y = r + 10 - total / 2 - 4
+    for i, l in enumerate(lineas):
+        f = anton(tams[i]) if i == 1 else mont(tams[i], "ExtraBold")
+        centrar(d, y, l, f, tinta, 0, s.width)
+        y += tams[i] + 6
+    s = s.rotate(ang, expand=True, resample=Image.BICUBIC)
+    base.alpha_composite(s, (int(cx - s.width / 2), int(cy - s.height / 2)))
 
 
-def pie(d, color, n=None, total=None):
-    f = mont(26, "SemiBold")
-    d.text((70, H - 80), HANDLE, font=f, fill=color)
-    if n:
-        t = f"{n}/{total}"
-        d.text((W - 70 - d.textlength(t, font=f), H - 80), t, font=f, fill=color)
+def pastilla(d, x, y, t, f, fondo, tinta, pad=26, centrado=False):
+    w = ancho(d, t, f)
+    if centrado:
+        x = (W - w) / 2 - pad
+    d.rounded_rectangle((x, y, x + w + pad * 2, y + f.size + 30), 60, fill=fondo)
+    d.text((x + pad, y + 12), t, font=f, fill=tinta)
 
 
-def portada(titulo1, titulo2, subtitulo, total):
-    im = Image.new("RGB", (W, H), OSCURO)
-    d = ImageDraw.Draw(im)
-    centrar(d, 120, "TRAVIANI", mont(34, "ExtraBold"), DORADO)
-    centrar(d, 200, titulo1, anton(190), CREMA)
-    centrar(d, 400, titulo2, anton(118), DORADO)
-    lado, sep = 184, 16
-    x0 = (W - (5 * lado + 4 * sep)) // 2
-    for i, s in enumerate(SABORES.values()):
-        f, m = foto_redondeada(s["foto"], lado, 28)
-        pegar_con_sombra(im, f, m, (x0 + i * (lado + sep), 660))
-    fs = mont(40, "Medium")
-    for i, l in enumerate(envolver(d, subtitulo, fs, 860)):
-        centrar(d, 920 + i * 56, l, fs, CREMA)
-    centrar(d, 1130, "DESLIZA  →", mont(34, "ExtraBold"), DORADO)
-    pie(d, (150, 130, 120), 1, total)
-    return im
+def pie(d, col, n, total):
+    f = mont(24, "SemiBold")
+    d.text((60, H - 70), HANDLE, font=f, fill=col)
+    # puntos de progreso
+    x = W - 60 - total * 22
+    for i in range(total):
+        r = 6 if i + 1 == n else 4
+        c = col if i + 1 == n else tuple(int(v * 0.5) for v in col)
+        d.ellipse((x + i * 22 - r, H - 57 - r, x + i * 22 + r, H - 57 + r), fill=c)
 
 
-def lamina_sabor(nombre, descripcion, ideal, n, total):
+def terminar(base):
+    return grano(base.convert("RGB"), 22)
+
+
+# ---------- láminas ----------
+def portada(l1, l2, l3, total):
+    b = radial((70, 28, 18), OSCURO, cy=0.62).convert("RGBA")
+    d = ImageDraw.Draw(b)
+    for k, r in enumerate([520, 420]):
+        espiral(d, W / 2, 900, r, (236, 178, 56, 40), 2, 6)
+    pastilla(d, 0, 90, "TRAVIANI · SALCHICHA SICILIANA", mont(26, "ExtraBold"), DORADO, OSCURO, centrado=True)
+    centrar(d, 170, l1, anton(210), CREMA)
+    centrar(d, 400, l2, anton(150), DORADO)
+    # abanico de empaques
+    angs = [-24, -12, 0, 12, 24]
+    orden = [0, 4, 1, 3, 2]
+    for i in orden:
+        p = empaque(i + 1, 520, -angs[i])
+        cx = W / 2 + (i - 2) * 175
+        cy = 960 + abs(i - 2) * 40
+        pegar_producto(b, p, (int(cx - p.width / 2), int(cy - p.height / 2)),
+                       brillo=(236, 150, 60) if i == 2 else None)
+    d = ImageDraw.Draw(b)
+    pastilla(d, 0, 1195, l3, mont(30, "ExtraBold"), CREMA, OSCURO, centrado=True)
+    sticker(b, ["HECHO", "A MANO", "EN CARACAS"], 935, 660, 100, (226, 40, 28), CREMA, -14)
+    pie(d, CREMA, 1, total)
+    return terminar(b)
+
+
+def lamina_sabor(nombre, n_sabor, descripcion, ideal, n, total):
     s = SABORES[nombre]
-    im = Image.new("RGB", (W, H), CREMA)
-    d = ImageDraw.Draw(im)
-    d.rectangle((0, 0, W, 700), fill=s["color"])
-    f, m = foto_redondeada(s["foto"], 620)
-    pegar_con_sombra(im, f, m, ((W - 620) // 2, 110))
-    centrar(d, 770, nombre, anton(130), OSCURO)
-    fd = mont(40, "Medium")
-    y = 950
-    for l in envolver(d, descripcion, fd, 900):
-        centrar(d, y, l, fd, OSCURO)
-        y += 54
-    y += 30
-    fi = mont(34, "Bold")
-    txt = f"IDEAL PARA: {ideal.upper()}"
-    w = d.textlength(txt, font=fi)
-    d.rounded_rectangle(((W - w) / 2 - 30, y - 14, (W + w) / 2 + 30, y + 58), 36, fill=s["color"])
-    centrar(d, y, txt, fi, (255, 255, 255))
-    pie(d, (120, 100, 90), n, total)
-    return im
+    b = radial(s["color"], s["oscuro"], cy=0.40, r=0.85).convert("RGBA")
+    d = ImageDraw.Draw(b)
+    espiral(d, W / 2, 520, 560, (255, 255, 255, 28), 3, 7)
+    texto_gigante(b, nombre, (255, 255, 255), 55, 170)
+    pastilla(ImageDraw.Draw(b), 60, 70, f"SABOR {n_sabor:02d}/05", mont(26, "ExtraBold"), (255, 255, 255), s["oscuro"])
+    p = empaque(s["foto"], 700, -8)
+    pegar_producto(b, p, ((W - p.width) // 2, 120), brillo=(255, 255, 230))
+    # tarjeta inferior
+    t = capa()
+    td = ImageDraw.Draw(t)
+    td.rounded_rectangle((50, 880, W - 50, H - 110), 44, fill=s["oscuro"] + (235,))
+    b.alpha_composite(t)
+    d = ImageDraw.Draw(b)
+    centrar(d, 905, nombre, anton(118), CREMA)
+    fd = mont(36, "Medium")
+    y = 1062
+    for l in envolver(d, descripcion, fd, 860):
+        centrar(d, y, l, fd, (235, 225, 210)); y += 48
+    pastilla(d, 0, y + 18, "IDEAL PARA  " + ideal.upper(), mont(28, "ExtraBold"), s["color"], (255, 255, 255), centrado=True)
+    pie(d, CREMA, n, total)
+    return terminar(b)
 
 
 def lamina_lista(titulo, items, nota, n, total):
-    im = Image.new("RGB", (W, H), OSCURO)
-    d = ImageDraw.Draw(im)
-    centrar(d, 130, titulo, anton(120), DORADO)
-    fi = mont(48, "Bold")
-    y = 400
-    for it in items:
-        d.ellipse((150, y + 8, 196, y + 54), fill=DORADO)
-        d.line([(161, y + 32), (170, y + 42), (186, y + 21)], fill=OSCURO, width=6, joint="curve")
-        d.text((230, y), it, font=fi, fill=CREMA)
-        y += 120
-    fn = mont(38, "Medium")
-    y += 40
-    for l in envolver(d, nota, fn, 860):
-        centrar(d, y, l, fn, (210, 195, 180))
-        y += 54
-    pie(d, (150, 130, 120), n, total)
-    return im
+    b = radial((58, 30, 20), OSCURO, cy=0.35).convert("RGBA")
+    d = ImageDraw.Draw(b)
+    texto_gigante(b, "LIMPIA", (236, 178, 56), 22, 40, 330)
+    centrar(d, 110, "INGREDIENTES", mont(34, "ExtraBold"), DORADO)
+    centrar(d, 160, titulo, anton(150), CREMA)
+    y = 430
+    for i, it in enumerate(items):
+        x = 90 if i % 2 == 0 else 560
+        yy = y + (i // 2) * 250
+        cl = capa(); ImageDraw.Draw(cl).rounded_rectangle((x, yy, x + 430, yy + 210), 36, fill=(255, 255, 255, 22), outline=DORADO + (255,), width=3)
+        b.alpha_composite(cl); d = ImageDraw.Draw(b)
+        d.ellipse((x + 30, yy + 30, x + 100, yy + 100), fill=DORADO)
+        d.line([(x + 48, yy + 66), (x + 62, yy + 80), (x + 84, yy + 50)], fill=OSCURO, width=8, joint="curve")
+        grande, chico = it
+        d.text((x + 120, yy + 40), chico, font=mont(26, "ExtraBold"), fill=DORADO)
+        d.text((x + 30, yy + 108), grande, font=anton(72), fill=CREMA)
+    p = empaque(3, 330, 10)
+    pegar_producto(b, p, (W - p.width - 30, 950), brillo=(236, 120, 40))
+    d = ImageDraw.Draw(b)
+    fn = mont(36, "SemiBold")
+    yy = 1000
+    for l in envolver(d, nota, fn, 560):
+        d.text((90, yy), l, font=fn, fill=CREMA); yy += 50
+    pie(d, CREMA, n, total)
+    return terminar(b)
 
 
-def lamina_cta(titulo, lineas, boton, n, total):
-    im = Image.new("RGB", (W, H), DORADO)
-    d = ImageDraw.Draw(im)
-    y = 200
+def lamina_cta(titulo, lineas, boton, precio, n, total):
+    b = radial((250, 196, 80), (196, 118, 20), cy=0.55).convert("RGBA")
+    d = ImageDraw.Draw(b)
+    espiral(d, W / 2, 800, 620, (255, 255, 255, 45), 3, 7)
+    y = 90
     for t in titulo:
-        centrar(d, y, t, anton(150), OSCURO)
-        y += 190
-    fl = mont(42, "SemiBold")
-    y += 40
+        centrar(d, y, t, anton(150), OSCURO); y += 170
+    ps = [empaque(k, 430, a) for k, a in [(1, 14), (5, -14), (3, 0)]]
+    pos = [(W / 2 - 250, 760), (W / 2 + 250, 760), (W / 2, 720)]
+    for p, (cx, cy) in zip(ps, pos):
+        pegar_producto(b, p, (int(cx - p.width / 2), int(cy - p.height / 2)), brillo=(255, 240, 200))
+    sticker(b, ["SOLO", precio, "1/2 KG"], 905, 640, 115, (226, 40, 28), CREMA, 12)
+    d = ImageDraw.Draw(b)
+    fb = mont(40, "ExtraBold")
+    pastilla(d, 0, 1000, boton, fb, OSCURO, CREMA, pad=40, centrado=True)
+    fl = mont(32, "Bold")
+    yy = 1110
     for l in lineas:
-        centrar(d, y, l, fl, OSCURO)
-        y += 70
-    fb = mont(46, "ExtraBold")
-    w = d.textlength(boton, font=fb)
-    y += 50
-    d.rounded_rectangle(((W - w) / 2 - 50, y - 20, (W + w) / 2 + 50, y + 80), 50, fill=OSCURO)
-    centrar(d, y, boton, fb, CREMA)
+        centrar(d, yy, l, fl, OSCURO); yy += 46
     pie(d, OSCURO, n, total)
-    return im
+    return terminar(b)
