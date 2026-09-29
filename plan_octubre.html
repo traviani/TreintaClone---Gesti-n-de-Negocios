@@ -1,0 +1,168 @@
+<title>Plan Octubre Traviani</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: encabezado de marca + filtros por pilar + lista de días tipo calendario de producción */
+:root{--bg:#f6f3ee;--card:#ffffff;--fg:#221612;--mut:#6f625c;--line:#e4dcd2;--gold:#b87a0c;
+--display:"Anton",Impact,"Arial Narrow",sans-serif;--body:"Montserrat",system-ui,-apple-system,sans-serif;
+--receta:#c2261c;--tip:#1e9a8f;--uso:#6fa322;--emocional:#d42a72;--viral:#7a4fd0;--efemeride:#d99a16;--mayorista:#2a5fb8;--marca:#5a3a2c}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17100d;--card:#221915;--fg:#f4ece2;--mut:#b3a498;--line:#3a2d26;--gold:#ecb238;--marca:#b58a70;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17100d;--card:#221915;--fg:#f4ece2;--mut:#b3a498;--line:#3a2d26;--gold:#ecb238;--marca:#b58a70;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:880px;margin:0 auto;padding-inline:16px;padding-block:28px 60px;display:grid;gap:22px}
+header{display:grid;gap:8px}
+.eyebrow{font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,8vw,68px);line-height:1;margin:0;text-wrap:balance}
+.sub{color:var(--mut);max-width:62ch;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:600 13px var(--body);display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.chip b{color:var(--mut);font-weight:700}
+.chip[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 1px var(--fg)}
+.chip:focus-visible,summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.dot{width:10px;height:10px;border-radius:50%}
+.lista{display:grid;gap:10px}
+.dia{display:grid;grid-template-columns:92px 1fr;gap:16px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.dia[hidden]{display:none!important}
+.fecha{display:grid;align-content:start;gap:2px}
+.n{font-family:var(--display);font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+.d{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.cuerpo{min-width:0;display:grid;gap:4px}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tag{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#fff;padding:3px 9px;border-radius:6px}
+.listo{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+h3{margin:4px 0 0;font-size:18px;font-weight:800;line-height:1.25;text-wrap:balance}
+.idea{margin:0;color:var(--mut)}
+details{margin-top:4px} summary{cursor:pointer;font-weight:700;font-size:13px;color:var(--gold)}
+ol{margin:8px 0 0;padding-left:20px;display:grid;gap:3px;font-size:14px}
+.p-receta{background:var(--receta)}.p-tip{background:var(--tip)}.p-uso{background:var(--uso)}.p-emocional{background:var(--emocional)}.p-viral{background:var(--viral)}.p-efemeride{background:var(--efemeride)}.p-mayorista{background:var(--mayorista)}.p-marca{background:var(--marca)}
+@media (max-width:520px){.dia{grid-template-columns:1fr;gap:6px}.fecha{grid-auto-flow:column;justify-content:start;align-items:baseline;gap:10px}.n{font-size:30px}}
+</style>
+<div class="wrap">
+<header><span class="eyebrow">Il Siciliano Gourmet · Traviani</span><h1>Plan de carruseles · Octubre</h1>
+<p class="sub">Un carrusel diario del 1 al 30 de octubre para Instagram y TikTok. Toca un pilar para filtrar y abre "láminas" para ver qué va en cada una. Las fechas especiales son reales: feriado del 12 de octubre, Día Mundial de la Alimentación (16) y Día Mundial de la Pasta (25).</p></header>
+<div class="chips" role="group" aria-label="Filtrar por pilar"><button class="chip" data-p="receta" aria-pressed="false"><span class="dot p-receta"></span>Receta <b>6</b></button><button class="chip" data-p="tip" aria-pressed="false"><span class="dot p-tip"></span>Tip de cocina <b>4</b></button><button class="chip" data-p="uso" aria-pressed="false"><span class="dot p-uso"></span>Formas de usarla <b>2</b></button><button class="chip" data-p="emocional" aria-pressed="false"><span class="dot p-emocional"></span>Conexión <b>3</b></button><button class="chip" data-p="viral" aria-pressed="false"><span class="dot p-viral"></span>Formato viral <b>4</b></button><button class="chip" data-p="efemeride" aria-pressed="false"><span class="dot p-efemeride"></span>Fecha especial <b>4</b></button><button class="chip" data-p="mayorista" aria-pressed="false"><span class="dot p-mayorista"></span>Mayoristas Caracas <b>4</b></button><button class="chip" data-p="marca" aria-pressed="false"><span class="dot p-marca"></span>Marca <b>3</b></button></div>
+<section class="lista"><article class="dia" data-p="marca">
+<div class="fecha"><span class="n">01</span><span class="d">jue 1 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-marca">Marca</span><span class="listo">Programado</span></div>
+<h3>5 sabores de Sicilia</h3><p class="idea">Presentación de los 5 sabores, uno por lámina</p>
+<details><summary>4 láminas</summary><ol><li>Portada: 5 sabores de Sicilia</li><li>Una lámina por sabor</li><li>Limpia y natural</li><li>Pide directo con nosotros</li></ol></details></div></article><article class="dia" data-p="emocional">
+<div class="fecha"><span class="n">02</span><span class="d">vie 2 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-emocional">Conexión</span></div>
+<h3>Viernes de desconexión</h3><p class="idea">Semana larga: cervezas, tus panas y la parrilla</p>
+<details><summary>5 láminas</summary><ol><li>¿Cansado de una semana completa de trabajo?</li><li>Este viernes olvídate de todo</li><li>Cervezas frías + tus panas + parrilla</li><li>El sabor para hoy: Parrillera</li><li>Te lo ganaste. Pide directo con nosotros</li></ol></details></div></article><article class="dia" data-p="receta">
+<div class="fecha"><span class="n">03</span><span class="d">sáb 3 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-receta">Receta</span></div>
+<h3>Pasta con Finocchio en 20 minutos</h3><p class="idea">Receta paso a paso de pasta con salsa roja</p>
+<details><summary>7 láminas</summary><ol><li>Portada con el plato terminado</li><li>Ingredientes</li><li>Paso 1: dora la salchicha en trozos</li><li>Paso 2: salsa de tomate</li><li>Paso 3: mezcla con la pasta</li><li>Tip: el hinojo perfuma la salsa</li><li>Pide tu Finocchio</li></ol></details></div></article><article class="dia" data-p="emocional">
+<div class="fecha"><span class="n">04</span><span class="d">dom 4 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-emocional">Conexión</span></div>
+<h3>El domingo no es domingo sin parrilla</h3><p class="idea">Familia reunida, parrilla y pan</p>
+<details><summary>4 láminas</summary><ol><li>El domingo no es domingo sin esto</li><li>La familia, la parrilla y el pan</li><li>Cuántos paquetes para 4, 6 u 8 personas</li><li>Delivery gratis desde 4 paquetes</li></ol></details></div></article><article class="dia" data-p="tip">
+<div class="fecha"><span class="n">05</span><span class="d">lun 5 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-tip">Tip de cocina</span></div>
+<h3>Cómo asar la espiral sin que se desarme</h3><p class="idea">Técnica de los dos pinchos cruzados y fuego medio</p>
+<details><summary>5 láminas</summary><ol><li>El error que desarma tu salchicha</li><li>Clava 2 pinchos en cruz</li><li>Fuego medio, no alto</li><li>Voltea una sola vez</li><li>Resultado: dorada y jugosa</li></ol></details></div></article><article class="dia" data-p="uso">
+<div class="fecha"><span class="n">06</span><span class="d">mar 6 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-uso">Formas de usarla</span></div>
+<h3>5 formas de comerla esta semana</h3><p class="idea">Arepa, pasta, panini, pizza y parrilla</p>
+<details><summary>7 láminas</summary><ol><li>5 formas de comerla esta semana</li><li>Lunes: en arepa</li><li>Martes: en pasta</li><li>Miércoles: en panini</li><li>Jueves: en pizza</li><li>Fin de semana: a la parrilla</li><li>¿Cuál pruebas primero?</li></ol></details></div></article><article class="dia" data-p="mayorista">
+<div class="fecha"><span class="n">07</span><span class="d">mié 7 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-mayorista">Mayoristas Caracas</span></div>
+<h3>Para restaurantes y pizzerías de Caracas</h3><p class="idea">Un ingrediente que diferencia tu carta</p>
+<details><summary>5 láminas</summary><ol><li>¿Tu pizzería quiere algo que nadie más tenga?</li><li>Salchicha siciliana artesanal</li><li>5 sabores para pizza, pasta y antipasto</li><li>Sin nitritos ni conservantes químicos</li><li>Precio al mayor: escríbenos</li></ol></details></div></article><article class="dia" data-p="viral">
+<div class="fecha"><span class="n">08</span><span class="d">jue 8 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-viral">Formato viral</span></div>
+<h3>Mito o realidad: todas las salchichas llevan nitritos</h3><p class="idea">Formato mito vs. realidad</p>
+<details><summary>5 láminas</summary><ol><li>Mito: todas las salchichas llevan nitritos</li><li>Realidad: la nuestra no</li><li>Qué son los nitritos (explicado simple)</li><li>Qué sí lleva: carne, especias y tripa natural</li><li>Comenta otro mito que quieras que aclaremos</li></ol></details></div></article><article class="dia" data-p="receta">
+<div class="fecha"><span class="n">09</span><span class="d">vie 9 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-receta">Receta</span></div>
+<h3>Arepa con Tradizionale</h3><p class="idea">Desayuno venezolano con salchicha siciliana</p>
+<details><summary>6 láminas</summary><ol><li>Desayuno de campeones</li><li>Ingredientes</li><li>Paso 1: asa la salchicha</li><li>Paso 2: córtala en rodajas</li><li>Paso 3: rellena la arepa</li><li>Pide tu Tradizionale</li></ol></details></div></article><article class="dia" data-p="tip">
+<div class="fecha"><span class="n">10</span><span class="d">sáb 10 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-tip">Tip de cocina</span></div>
+<h3>Cómo conservarla bien</h3><p class="idea">Congelado 3 meses, refrigerado 3 días a 4 °C</p>
+<details><summary>5 láminas</summary><ol><li>¿La compraste y no la vas a usar hoy?</li><li>Congelada: hasta 3 meses</li><li>Refrigerada: máximo 3 días a 4 °C</li><li>Cómo descongelar sin perder sabor</li><li>Guarda este post</li></ol></details></div></article><article class="dia" data-p="efemeride">
+<div class="fecha"><span class="n">11</span><span class="d">dom 11 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-efemeride">Fecha especial</span></div>
+<h3>Se viene el puente: arma tu parrilla</h3><p class="idea">Previa del feriado del lunes 12 de octubre</p>
+<details><summary>4 láminas</summary><ol><li>Mañana es feriado</li><li>Lista de compras para la parrilla</li><li>Qué sabores llevar</li><li>Pide hoy para tenerla a tiempo</li></ol></details></div></article><article class="dia" data-p="efemeride">
+<div class="fecha"><span class="n">12</span><span class="d">lun 12 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-efemeride">Fecha especial</span></div>
+<h3>Lunes feriado en casa</h3><p class="idea">Día de la Resistencia Indígena: plan tranquilo en casa</p>
+<details><summary>4 láminas</summary><ol><li>Lunes feriado: nada de apuro</li><li>Una comida sin complicaciones</li><li>Idea: salchicha con papas al horno</li><li>¿Qué vas a cocinar hoy? Comenta</li></ol></details></div></article><article class="dia" data-p="viral">
+<div class="fecha"><span class="n">13</span><span class="d">mar 13 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-viral">Formato viral</span></div>
+<h3>Supermercado vs. artesanal</h3><p class="idea">Comparación de ingredientes lado a lado</p>
+<details><summary>5 láminas</summary><ol><li>¿Sabes lo que comes?</li><li>Salchicha industrial: qué suele llevar</li><li>Salchicha Traviani: qué lleva</li><li>La diferencia se nota en la parrilla</li><li>Haz la prueba tú mismo</li></ol></details></div></article><article class="dia" data-p="mayorista">
+<div class="fecha"><span class="n">14</span><span class="d">mié 14 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-mayorista">Mayoristas Caracas</span></div>
+<h3>Bodegones y charcuterías de Caracas</h3><p class="idea">Producto listo para tu nevera</p>
+<details><summary>5 láminas</summary><ol><li>¿Tienes un bodegón en Caracas?</li><li>Empaque al vacío de 500 g</li><li>Código de barras listo para tu caja</li><li>5 sabores que rotan</li><li>Escríbenos para precio al mayor</li></ol></details></div></article><article class="dia" data-p="receta">
+<div class="fecha"><span class="n">15</span><span class="d">jue 15 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-receta">Receta</span></div>
+<h3>Panini con Peperoncino</h3><p class="idea">Almuerzo rápido y picante</p>
+<details><summary>6 láminas</summary><ol><li>Almuerzo en 10 minutos</li><li>Ingredientes</li><li>Paso 1: asa y abre la salchicha</li><li>Paso 2: arma el pan</li><li>Paso 3: plancha</li><li>Pide tu Peperoncino</li></ol></details></div></article><article class="dia" data-p="efemeride">
+<div class="fecha"><span class="n">16</span><span class="d">vie 16 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-efemeride">Fecha especial</span></div>
+<h3>Día Mundial de la Alimentación</h3><p class="idea">Comer rico también es comer limpio</p>
+<details><summary>5 láminas</summary><ol><li>16 de octubre: Día Mundial de la Alimentación</li><li>Lee la etiqueta de lo que comes</li><li>Lo que no lleva la nuestra</li><li>Lo que sí lleva</li><li>Comer rico y limpio sí se puede</li></ol></details></div></article><article class="dia" data-p="viral">
+<div class="fecha"><span class="n">17</span><span class="d">sáb 17 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-viral">Formato viral</span></div>
+<h3>Adivina el sabor</h3><p class="idea">Juego: pista por pista</p>
+<details><summary>6 láminas</summary><ol><li>¿Cuánto sabes de nuestros sabores?</li><li>Pista 1: lleva hinojo</li><li>Pista 2: pica</li><li>Pista 3: lleva queso</li><li>Respuestas en la última lámina</li><li>Comenta cuántas acertaste</li></ol></details></div></article><article class="dia" data-p="receta">
+<div class="fecha"><span class="n">18</span><span class="d">dom 18 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-receta">Receta</span></div>
+<h3>Pizza casera con Pecorino</h3><p class="idea">Domingo de pizza en familia</p>
+<details><summary>6 láminas</summary><ol><li>Pizza de domingo</li><li>Ingredientes</li><li>Paso 1: masa y salsa</li><li>Paso 2: salchicha en rodajas</li><li>Paso 3: horno</li><li>Pide tu Pecorino</li></ol></details></div></article><article class="dia" data-p="tip">
+<div class="fecha"><span class="n">19</span><span class="d">lun 19 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-tip">Tip de cocina</span></div>
+<h3>3 errores al asar salchichas</h3><p class="idea">Lo que casi todos hacemos mal</p>
+<details><summary>5 láminas</summary><ol><li>3 errores que arruinan tu salchicha</li><li>Error 1: fuego muy alto</li><li>Error 2: pincharla</li><li>Error 3: servirla sin reposar</li><li>Así queda perfecta</li></ol></details></div></article><article class="dia" data-p="marca">
+<div class="fecha"><span class="n">20</span><span class="d">mar 20 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-marca">Marca</span></div>
+<h3>Así la hacemos</h3><p class="idea">Proceso real: corte, molienda, aderezo y embutido</p>
+<details><summary>6 láminas</summary><ol><li>¿Cómo se hace una salchicha siciliana?</li><li>1. Corte de la carne</li><li>2. Molienda al tamaño justo</li><li>3. Aderezo con especias</li><li>4. Embutido en espiral</li><li>Hecha a mano en Caracas</li></ol></details></div></article><article class="dia" data-p="mayorista">
+<div class="fecha"><span class="n">21</span><span class="d">mié 21 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-mayorista">Mayoristas Caracas</span></div>
+<h3>Parrilleras de Caracas: algo distinto en tu menú</h3><p class="idea">La espiral como plato estrella</p>
+<details><summary>5 láminas</summary><ol><li>¿Tu parrillera tiene lo mismo que todas?</li><li>Una espiral siciliana en el plato</li><li>Se ve distinta, sabe distinta</li><li>Sabor Parrillera: pensada para el carbón</li><li>Escríbenos para precio al mayor</li></ol></details></div></article><article class="dia" data-p="uso">
+<div class="fecha"><span class="n">22</span><span class="d">jue 22 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-uso">Formas de usarla</span></div>
+<h3>¿Qué sabor para cada ocasión?</h3><p class="idea">Guía rápida para elegir</p>
+<details><summary>6 láminas</summary><ol><li>¿No sabes cuál pedir?</li><li>Para pasta: Finocchio o Pecorino</li><li>Para desayuno: Tradizionale</li><li>Para los que les gusta el picante: Peperoncino</li><li>Para la parrilla: Parrillera</li><li>Guarda esta guía</li></ol></details></div></article><article class="dia" data-p="emocional">
+<div class="fecha"><span class="n">23</span><span class="d">vie 23 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-emocional">Conexión</span></div>
+<h3>POV: llegaste cansado y la cena está en 15 min</h3><p class="idea">Viernes sin complicaciones</p>
+<details><summary>5 láminas</summary><ol><li>POV: llegaste cansado del trabajo</li><li>No quieres cocinar nada complicado</li><li>15 minutos y lista</li><li>La cena resuelta, sin estrés</li><li>Pide para el fin de semana</li></ol></details></div></article><article class="dia" data-p="receta">
+<div class="fecha"><span class="n">24</span><span class="d">sáb 24 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-receta">Receta</span></div>
+<h3>Salsa roja con Pecorino</h3><p class="idea">Previa del Día Mundial de la Pasta</p>
+<details><summary>5 láminas</summary><ol><li>Mañana es el Día Mundial de la Pasta</li><li>La salsa que necesitas</li><li>Ingredientes</li><li>Paso a paso</li><li>Pide hoy, cocina mañana</li></ol></details></div></article><article class="dia" data-p="efemeride">
+<div class="fecha"><span class="n">25</span><span class="d">dom 25 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-efemeride">Fecha especial</span></div>
+<h3>Día Mundial de la Pasta</h3><p class="idea">3 pastas con salchicha siciliana</p>
+<details><summary>5 láminas</summary><ol><li>25 de octubre: Día Mundial de la Pasta</li><li>Pasta 1: Finocchio y tomate</li><li>Pasta 2: Pecorino y perejil</li><li>Pasta 3: Peperoncino picante</li><li>¿Cuál preparas hoy?</li></ol></details></div></article><article class="dia" data-p="tip">
+<div class="fecha"><span class="n">26</span><span class="d">lun 26 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-tip">Tip de cocina</span></div>
+<h3>Cómo cortarla para servir</h3><p class="idea">Rodajas, trozos o desmenuzada</p>
+<details><summary>5 láminas</summary><ol><li>¿Cómo la cortas?</li><li>En rodajas: para arepa y pizza</li><li>En trozos: para pasta</li><li>Desmenuzada: para salsas</li><li>Guarda este post</li></ol></details></div></article><article class="dia" data-p="viral">
+<div class="fecha"><span class="n">27</span><span class="d">mar 27 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-viral">Formato viral</span></div>
+<h3>Ranking: ¿cuál es tu favorito?</h3><p class="idea">Encuesta de sabores</p>
+<details><summary>4 láminas</summary><ol><li>Vota tu sabor favorito</li><li>Los 5 sabores, uno por lámina</li><li>Comenta el número de tu favorito</li><li>Resultado en nuestras historias</li></ol></details></div></article><article class="dia" data-p="mayorista">
+<div class="fecha"><span class="n">28</span><span class="d">mié 28 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-mayorista">Mayoristas Caracas</span></div>
+<h3>Cómo vendernos al mayor en Caracas</h3><p class="idea">Pasos para empezar a trabajar juntos</p>
+<details><summary>6 láminas</summary><ol><li>¿Quieres Traviani en tu negocio?</li><li>1. Escríbenos por WhatsApp</li><li>2. Te llevamos una muestra</li><li>3. Haces tu primer pedido</li><li>4. Despachamos en Caracas</li><li>Escríbenos hoy</li></ol></details></div></article><article class="dia" data-p="receta">
+<div class="fecha"><span class="n">29</span><span class="d">jue 29 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-receta">Receta</span></div>
+<h3>Salchicha con papas doradas</h3><p class="idea">Plato completo al horno</p>
+<details><summary>6 láminas</summary><ol><li>Un plato, cero complicaciones</li><li>Ingredientes</li><li>Paso 1: papas al horno</li><li>Paso 2: salchicha encima</li><li>Paso 3: sirve con limón</li><li>Pide tu sabor favorito</li></ol></details></div></article><article class="dia" data-p="marca">
+<div class="fecha"><span class="n">30</span><span class="d">vie 30 oct</span></div>
+<div class="cuerpo"><div class="meta"><span class="tag p-marca">Marca</span></div>
+<h3>Cierre de mes: ¿ya probaste los 5?</h3><p class="idea">Resumen y llamado a pedir para el fin de semana</p>
+<details><summary>4 láminas</summary><ol><li>Un mes de recetas y tips</li><li>¿Ya probaste los 5?</li><li>Delivery gratis desde 4 paquetes</li><li>Pide directo con nosotros</li></ol></details></div></article></section>
+</div>
+<script>
+const chips=[...document.querySelectorAll('.chip')],dias=[...document.querySelectorAll('.dia')];
+chips.forEach(c=>c.addEventListener('click',()=>{const on=c.getAttribute('aria-pressed')!=='true';chips.forEach(x=>x.setAttribute('aria-pressed','false'));if(on)c.setAttribute('aria-pressed','true');const p=on?c.dataset.p:null;dias.forEach(d=>d.hidden=!!p&&d.dataset.p!==p)}));
+</script>

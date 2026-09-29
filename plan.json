@@ -1,0 +1,458 @@
+[
+ {
+  "dia": 1,
+  "fecha": "2026-10-01",
+  "pilar": "marca",
+  "titulo": "5 sabores de Sicilia",
+  "idea": "Presentación de los 5 sabores, uno por lámina",
+  "laminas": [
+   "Portada: 5 sabores de Sicilia",
+   "Una lámina por sabor",
+   "Limpia y natural",
+   "Pide directo con nosotros"
+  ],
+  "estado": "LISTO"
+ },
+ {
+  "dia": 2,
+  "fecha": "2026-10-02",
+  "pilar": "emocional",
+  "titulo": "Viernes de desconexión",
+  "idea": "Semana larga: cervezas, tus panas y la parrilla",
+  "laminas": [
+   "¿Cansado de una semana completa de trabajo?",
+   "Este viernes olvídate de todo",
+   "Cervezas frías + tus panas + parrilla",
+   "El sabor para hoy: Parrillera",
+   "Te lo ganaste. Pide directo con nosotros"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 3,
+  "fecha": "2026-10-03",
+  "pilar": "receta",
+  "titulo": "Pasta con Finocchio en 20 minutos",
+  "idea": "Receta paso a paso de pasta con salsa roja",
+  "laminas": [
+   "Portada con el plato terminado",
+   "Ingredientes",
+   "Paso 1: dora la salchicha en trozos",
+   "Paso 2: salsa de tomate",
+   "Paso 3: mezcla con la pasta",
+   "Tip: el hinojo perfuma la salsa",
+   "Pide tu Finocchio"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 4,
+  "fecha": "2026-10-04",
+  "pilar": "emocional",
+  "titulo": "El domingo no es domingo sin parrilla",
+  "idea": "Familia reunida, parrilla y pan",
+  "laminas": [
+   "El domingo no es domingo sin esto",
+   "La familia, la parrilla y el pan",
+   "Cuántos paquetes para 4, 6 u 8 personas",
+   "Delivery gratis desde 4 paquetes"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 5,
+  "fecha": "2026-10-05",
+  "pilar": "tip",
+  "titulo": "Cómo asar la espiral sin que se desarme",
+  "idea": "Técnica de los dos pinchos cruzados y fuego medio",
+  "laminas": [
+   "El error que desarma tu salchicha",
+   "Clava 2 pinchos en cruz",
+   "Fuego medio, no alto",
+   "Voltea una sola vez",
+   "Resultado: dorada y jugosa"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 6,
+  "fecha": "2026-10-06",
+  "pilar": "uso",
+  "titulo": "5 formas de comerla esta semana",
+  "idea": "Arepa, pasta, panini, pizza y parrilla",
+  "laminas": [
+   "5 formas de comerla esta semana",
+   "Lunes: en arepa",
+   "Martes: en pasta",
+   "Miércoles: en panini",
+   "Jueves: en pizza",
+   "Fin de semana: a la parrilla",
+   "¿Cuál pruebas primero?"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 7,
+  "fecha": "2026-10-07",
+  "pilar": "mayorista",
+  "titulo": "Para restaurantes y pizzerías de Caracas",
+  "idea": "Un ingrediente que diferencia tu carta",
+  "laminas": [
+   "¿Tu pizzería quiere algo que nadie más tenga?",
+   "Salchicha siciliana artesanal",
+   "5 sabores para pizza, pasta y antipasto",
+   "Sin nitritos ni conservantes químicos",
+   "Precio al mayor: escríbenos"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 8,
+  "fecha": "2026-10-08",
+  "pilar": "viral",
+  "titulo": "Mito o realidad: todas las salchichas llevan nitritos",
+  "idea": "Formato mito vs. realidad",
+  "laminas": [
+   "Mito: todas las salchichas llevan nitritos",
+   "Realidad: la nuestra no",
+   "Qué son los nitritos (explicado simple)",
+   "Qué sí lleva: carne, especias y tripa natural",
+   "Comenta otro mito que quieras que aclaremos"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 9,
+  "fecha": "2026-10-09",
+  "pilar": "receta",
+  "titulo": "Arepa con Tradizionale",
+  "idea": "Desayuno venezolano con salchicha siciliana",
+  "laminas": [
+   "Desayuno de campeones",
+   "Ingredientes",
+   "Paso 1: asa la salchicha",
+   "Paso 2: córtala en rodajas",
+   "Paso 3: rellena la arepa",
+   "Pide tu Tradizionale"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 10,
+  "fecha": "2026-10-10",
+  "pilar": "tip",
+  "titulo": "Cómo conservarla bien",
+  "idea": "Congelado 3 meses, refrigerado 3 días a 4 °C",
+  "laminas": [
+   "¿La compraste y no la vas a usar hoy?",
+   "Congelada: hasta 3 meses",
+   "Refrigerada: máximo 3 días a 4 °C",
+   "Cómo descongelar sin perder sabor",
+   "Guarda este post"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 11,
+  "fecha": "2026-10-11",
+  "pilar": "efemeride",
+  "titulo": "Se viene el puente: arma tu parrilla",
+  "idea": "Previa del feriado del lunes 12 de octubre",
+  "laminas": [
+   "Mañana es feriado",
+   "Lista de compras para la parrilla",
+   "Qué sabores llevar",
+   "Pide hoy para tenerla a tiempo"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 12,
+  "fecha": "2026-10-12",
+  "pilar": "efemeride",
+  "titulo": "Lunes feriado en casa",
+  "idea": "Día de la Resistencia Indígena: plan tranquilo en casa",
+  "laminas": [
+   "Lunes feriado: nada de apuro",
+   "Una comida sin complicaciones",
+   "Idea: salchicha con papas al horno",
+   "¿Qué vas a cocinar hoy? Comenta"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 13,
+  "fecha": "2026-10-13",
+  "pilar": "viral",
+  "titulo": "Supermercado vs. artesanal",
+  "idea": "Comparación de ingredientes lado a lado",
+  "laminas": [
+   "¿Sabes lo que comes?",
+   "Salchicha industrial: qué suele llevar",
+   "Salchicha Traviani: qué lleva",
+   "La diferencia se nota en la parrilla",
+   "Haz la prueba tú mismo"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 14,
+  "fecha": "2026-10-14",
+  "pilar": "mayorista",
+  "titulo": "Bodegones y charcuterías de Caracas",
+  "idea": "Producto listo para tu nevera",
+  "laminas": [
+   "¿Tienes un bodegón en Caracas?",
+   "Empaque al vacío de 500 g",
+   "Código de barras listo para tu caja",
+   "5 sabores que rotan",
+   "Escríbenos para precio al mayor"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 15,
+  "fecha": "2026-10-15",
+  "pilar": "receta",
+  "titulo": "Panini con Peperoncino",
+  "idea": "Almuerzo rápido y picante",
+  "laminas": [
+   "Almuerzo en 10 minutos",
+   "Ingredientes",
+   "Paso 1: asa y abre la salchicha",
+   "Paso 2: arma el pan",
+   "Paso 3: plancha",
+   "Pide tu Peperoncino"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 16,
+  "fecha": "2026-10-16",
+  "pilar": "efemeride",
+  "titulo": "Día Mundial de la Alimentación",
+  "idea": "Comer rico también es comer limpio",
+  "laminas": [
+   "16 de octubre: Día Mundial de la Alimentación",
+   "Lee la etiqueta de lo que comes",
+   "Lo que no lleva la nuestra",
+   "Lo que sí lleva",
+   "Comer rico y limpio sí se puede"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 17,
+  "fecha": "2026-10-17",
+  "pilar": "viral",
+  "titulo": "Adivina el sabor",
+  "idea": "Juego: pista por pista",
+  "laminas": [
+   "¿Cuánto sabes de nuestros sabores?",
+   "Pista 1: lleva hinojo",
+   "Pista 2: pica",
+   "Pista 3: lleva queso",
+   "Respuestas en la última lámina",
+   "Comenta cuántas acertaste"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 18,
+  "fecha": "2026-10-18",
+  "pilar": "receta",
+  "titulo": "Pizza casera con Pecorino",
+  "idea": "Domingo de pizza en familia",
+  "laminas": [
+   "Pizza de domingo",
+   "Ingredientes",
+   "Paso 1: masa y salsa",
+   "Paso 2: salchicha en rodajas",
+   "Paso 3: horno",
+   "Pide tu Pecorino"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 19,
+  "fecha": "2026-10-19",
+  "pilar": "tip",
+  "titulo": "3 errores al asar salchichas",
+  "idea": "Lo que casi todos hacemos mal",
+  "laminas": [
+   "3 errores que arruinan tu salchicha",
+   "Error 1: fuego muy alto",
+   "Error 2: pincharla",
+   "Error 3: servirla sin reposar",
+   "Así queda perfecta"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 20,
+  "fecha": "2026-10-20",
+  "pilar": "marca",
+  "titulo": "Así la hacemos",
+  "idea": "Proceso real: corte, molienda, aderezo y embutido",
+  "laminas": [
+   "¿Cómo se hace una salchicha siciliana?",
+   "1. Corte de la carne",
+   "2. Molienda al tamaño justo",
+   "3. Aderezo con especias",
+   "4. Embutido en espiral",
+   "Hecha a mano en Caracas"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 21,
+  "fecha": "2026-10-21",
+  "pilar": "mayorista",
+  "titulo": "Parrilleras de Caracas: algo distinto en tu menú",
+  "idea": "La espiral como plato estrella",
+  "laminas": [
+   "¿Tu parrillera tiene lo mismo que todas?",
+   "Una espiral siciliana en el plato",
+   "Se ve distinta, sabe distinta",
+   "Sabor Parrillera: pensada para el carbón",
+   "Escríbenos para precio al mayor"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 22,
+  "fecha": "2026-10-22",
+  "pilar": "uso",
+  "titulo": "¿Qué sabor para cada ocasión?",
+  "idea": "Guía rápida para elegir",
+  "laminas": [
+   "¿No sabes cuál pedir?",
+   "Para pasta: Finocchio o Pecorino",
+   "Para desayuno: Tradizionale",
+   "Para los que les gusta el picante: Peperoncino",
+   "Para la parrilla: Parrillera",
+   "Guarda esta guía"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 23,
+  "fecha": "2026-10-23",
+  "pilar": "emocional",
+  "titulo": "POV: llegaste cansado y la cena está en 15 min",
+  "idea": "Viernes sin complicaciones",
+  "laminas": [
+   "POV: llegaste cansado del trabajo",
+   "No quieres cocinar nada complicado",
+   "15 minutos y lista",
+   "La cena resuelta, sin estrés",
+   "Pide para el fin de semana"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 24,
+  "fecha": "2026-10-24",
+  "pilar": "receta",
+  "titulo": "Salsa roja con Pecorino",
+  "idea": "Previa del Día Mundial de la Pasta",
+  "laminas": [
+   "Mañana es el Día Mundial de la Pasta",
+   "La salsa que necesitas",
+   "Ingredientes",
+   "Paso a paso",
+   "Pide hoy, cocina mañana"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 25,
+  "fecha": "2026-10-25",
+  "pilar": "efemeride",
+  "titulo": "Día Mundial de la Pasta",
+  "idea": "3 pastas con salchicha siciliana",
+  "laminas": [
+   "25 de octubre: Día Mundial de la Pasta",
+   "Pasta 1: Finocchio y tomate",
+   "Pasta 2: Pecorino y perejil",
+   "Pasta 3: Peperoncino picante",
+   "¿Cuál preparas hoy?"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 26,
+  "fecha": "2026-10-26",
+  "pilar": "tip",
+  "titulo": "Cómo cortarla para servir",
+  "idea": "Rodajas, trozos o desmenuzada",
+  "laminas": [
+   "¿Cómo la cortas?",
+   "En rodajas: para arepa y pizza",
+   "En trozos: para pasta",
+   "Desmenuzada: para salsas",
+   "Guarda este post"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 27,
+  "fecha": "2026-10-27",
+  "pilar": "viral",
+  "titulo": "Ranking: ¿cuál es tu favorito?",
+  "idea": "Encuesta de sabores",
+  "laminas": [
+   "Vota tu sabor favorito",
+   "Los 5 sabores, uno por lámina",
+   "Comenta el número de tu favorito",
+   "Resultado en nuestras historias"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 28,
+  "fecha": "2026-10-28",
+  "pilar": "mayorista",
+  "titulo": "Cómo vendernos al mayor en Caracas",
+  "idea": "Pasos para empezar a trabajar juntos",
+  "laminas": [
+   "¿Quieres Traviani en tu negocio?",
+   "1. Escríbenos por WhatsApp",
+   "2. Te llevamos una muestra",
+   "3. Haces tu primer pedido",
+   "4. Despachamos en Caracas",
+   "Escríbenos hoy"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 29,
+  "fecha": "2026-10-29",
+  "pilar": "receta",
+  "titulo": "Salchicha con papas doradas",
+  "idea": "Plato completo al horno",
+  "laminas": [
+   "Un plato, cero complicaciones",
+   "Ingredientes",
+   "Paso 1: papas al horno",
+   "Paso 2: salchicha encima",
+   "Paso 3: sirve con limón",
+   "Pide tu sabor favorito"
+  ],
+  "estado": ""
+ },
+ {
+  "dia": 30,
+  "fecha": "2026-10-30",
+  "pilar": "marca",
+  "titulo": "Cierre de mes: ¿ya probaste los 5?",
+  "idea": "Resumen y llamado a pedir para el fin de semana",
+  "laminas": [
+   "Un mes de recetas y tips",
+   "¿Ya probaste los 5?",
+   "Delivery gratis desde 4 paquetes",
+   "Pide directo con nosotros"
+  ],
+  "estado": ""
+ }
+]
