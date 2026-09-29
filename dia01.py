@@ -1,5 +1,5 @@
 import sys, generador
-generador.FORMATO = sys.argv[1] if len(sys.argv)>1 else 'ig'
+generador.usar_formato(sys.argv[1] if len(sys.argv)>1 else 'ig')
 from generador import *
 CARP = 'dia01' if generador.FORMATO=='ig' else 'dia01_tt'
 import os; os.makedirs(CARP, exist_ok=True)
