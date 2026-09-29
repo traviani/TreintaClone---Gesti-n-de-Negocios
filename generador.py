@@ -30,17 +30,34 @@ def mont(s, peso="Bold"):
 
 
 # ---------- fondos ----------
+# FORMATO: "ig" = 1080x1350 (Instagram 4:5) | "tt" = 1080x1920 (TikTok 9:16)
+FORMATO = "ig"
+TT_H, TT_OY = 1920, 150   # en TikTok el diseño baja 150 px (zona segura superior)
+_fondo = {}
+
+
 def grano(im, fuerza=18):
+    w, h = im.size
     random.seed(7)
-    n = Image.effect_noise((W, H), fuerza).convert("RGB")
-    return ImageChops.overlay(im, Image.blend(Image.new("RGB", (W, H), (128, 128, 128)), n, 0.5))
+    n = Image.effect_noise((w, h), fuerza).convert("RGB")
+    return ImageChops.overlay(im, Image.blend(Image.new("RGB", (w, h), (128, 128, 128)), n, 0.5))
+
+
+def _radial(centro_col, borde_col, cx, cy_px, r, h):
+    import numpy as np
+    yy, xx = np.mgrid[0:h, 0:W]
+    dist = np.sqrt((xx - W * cx) ** 2 + (yy - cy_px) ** 2) / (W * r)
+    m = Image.fromarray((np.clip(dist, 0, 1) * 255).astype("uint8"), "L")
+    return Image.composite(Image.new("RGB", (W, h), borde_col), Image.new("RGB", (W, h), centro_col), m)
 
 
 def radial(centro_col, borde_col, cx=0.5, cy=0.42, r=0.95):
-    g = Image.radial_gradient("L").resize((int(W * 2 * r), int(W * 2 * r)))
-    m = Image.new("L", (W, H), 255)
-    m.paste(g, (int(W * cx - g.width / 2), int(H * cy - g.height / 2)))
-    return Image.composite(Image.new("RGB", (W, H), borde_col), Image.new("RGB", (W, H), centro_col), m)
+    """Devuelve el lienzo de trabajo 1080x1350. En TikTok es transparente y el fondo
+    se pinta a pantalla completa en terminar()."""
+    _fondo.update(args=(centro_col, borde_col, cx, cy, r))
+    if FORMATO == "tt":
+        return Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    return _radial(centro_col, borde_col, cx, H * cy, r, H)
 
 
 def espiral(d, cx, cy, rmax, color, ancho=3, vueltas=5):
@@ -157,6 +174,21 @@ def pie(d, col, n, total):
 
 
 def terminar(base):
+    if FORMATO == "tt":
+        c, b, cx, cy, r = _fondo["args"]
+        fondo = _radial(c, b, cx, TT_OY + H * cy, r * 1.15, TT_H).convert("RGBA")
+        # difuminar bordes superior/inferior del lienzo para que no se vean cortes
+        a = base.split()[3]
+        fade = Image.new("L", (W, H), 255)
+        fd = ImageDraw.Draw(fade)
+        F = 90
+        for i in range(F):
+            v = int(255 * (i / F) ** 1.6)
+            fd.line([(0, i), (W, i)], fill=v)
+            fd.line([(0, H - 1 - i), (W, H - 1 - i)], fill=v)
+        base.putalpha(ImageChops.multiply(a, fade))
+        fondo.alpha_composite(base, (0, TT_OY))
+        return grano(fondo.convert("RGB"), 22)
     return grano(base.convert("RGB"), 22)
 
 
