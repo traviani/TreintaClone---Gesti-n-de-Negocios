@@ -16,6 +16,26 @@ def rojo_bg(h):
     return D._fondo(h, "receta", 0)
 
 
+def emoji(ch, lado):
+    from PIL import ImageFont
+    f = ImageFont.truetype("/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf", 109)
+    im = Image.new("RGBA", (136, 128), (0, 0, 0, 0))
+    ImageDraw.Draw(im).text((0, 0), ch, font=f, embedded_color=True)
+    im = im.crop(im.getbbox())
+    esc = lado / max(im.size)
+    return im.resize((int(im.width * esc), int(im.height * esc)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(2, 80, 3))
+
+
+def medalla(b, ch, cx, cy, dia, col):
+    sh = capa(); ImageDraw.Draw(sh).ellipse((cx - dia // 2, cy - dia // 2 + 16, cx + dia // 2, cy + dia // 2 + 16), fill=(0, 0, 0, 130))
+    b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(16)))
+    dd = ImageDraw.Draw(b)
+    dd.ellipse((cx - dia // 2 - 12, cy - dia // 2 - 12, cx + dia // 2 + 12, cy + dia // 2 + 12), fill=CREMA)
+    dd.ellipse((cx - dia // 2, cy - dia // 2, cx + dia // 2, cy + dia // 2), fill=col)
+    e = emoji(ch, int(dia * 0.62))
+    b.alpha_composite(e, (cx - e.width // 2, cy - e.height // 2 + 4))
+
+
 def vs():
     T, h, o = g.tt(), D.H(), D.oy()
     b = Image.new("RGBA", (W, h), ROJO + (255,))
@@ -49,13 +69,12 @@ def vs():
     bloque(y1, "MITO", DORADO, OSCURO, ["Todas las salchichas llevan nitritos", "Sin conservantes se daña enseguida"], "x")
     y2 = mid + 150 + (60 if T else 0)
     bloque(y2, "REALIDAD", CREMA, VERDE, ["La nuestra no lleva nitritos", "Congelada dura hasta 3 meses"], "ok")
-    alto = 680 if T else 620
-    p = empaque(3, alto, 9)
-    pegar_producto(b, p, (W - p.width + 40, mid - p.height // 2 + 10), brillo=(255, 215, 160))
+    dia = 330 if T else 290
+    medalla(b, "\U0001F44E", W - dia // 2 - 70, y1 + (250 if T else 230), dia, (150, 26, 14))
+    medalla(b, "\U0001F44D", W - dia // 2 - 70, y2 + (250 if T else 230), dia, (20, 92, 66))
     d = ImageDraw.Draw(b)
-    sticker_txt = ["VS"]
-    d.ellipse((W // 2 - 50 - 140, mid - 62, W // 2 + 50 - 140, mid + 38), fill=DORADO)
-    centrar(d, mid - 54, "VS", anton(64), OSCURO, W // 2 - 190, W // 2 - 90)
+    d.ellipse((W // 2 - 50, mid - 50, W // 2 + 50, mid + 50), fill=DORADO)
+    centrar(d, mid - 44, "VS", anton(64), OSCURO, W // 2 - 50, W // 2 + 50)
     if not T:
         pie(d, CREMA, 2, 5)
     return terminar(b)
