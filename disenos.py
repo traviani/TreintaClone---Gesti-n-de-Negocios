@@ -733,7 +733,7 @@ def portada_formas(total, fotos):
     xs2 = [W // 2 - dia // 2 - 20, W // 2 + dia // 2 + 20]
     items = [("LUN", ("emp", 2, (236, 190, 50))), ("MAR", ("img", fotos["pasta"].crop((150, 360, 690, 830)))),
              ("MIÉ", ("img", fotos["panini"].crop((110, 0, 430, 330)))),
-             ("JUE", ("emp", 3, (226, 110, 30))), ("FIN", ("img", fotos["parrilla"]))]
+             ("JUE", ("img", fotos["pizza"].crop((120, 40, 1180, 900)))), ("FIN", ("img", fotos["parrilla"]))]
     pos = [(xs3[0], y1), (xs3[1], y1), (xs3[2], y1), (xs2[0], y2), (xs2[1], y2)]
     for (et, (tipo, *a)), (cx, cy) in zip(items, pos):
         if tipo == "img":
@@ -778,6 +778,19 @@ def lamina_dia(dia_txt, forma, texto, modo, col, n, total, foto=None, caja=None,
         sh.paste((0, 0, 0, 140), (px + 14, py + 26, px + marco.width - 6, py + marco.height + 16))
         b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(24)))
         b.alpha_composite(marco, (px, py))
+    elif modo == "recorte":
+        pz = foto
+        ancho_px = min(W - 60, int((disp - 60) * pz.width / pz.height))
+        pz = pz.resize((ancho_px, int(pz.height * ancho_px / pz.width)), Image.LANCZOS).rotate(-3, expand=True, resample=Image.BICUBIC)
+        gh = Image.new("RGBA", (W, h), (0, 0, 0, 0))
+        fg = anton(520 if T else 420)
+        ImageDraw.Draw(gh).text((-20, y_fin + (60 if T else 20)), ghost or forma.split()[-1], font=fg, fill=(255, 255, 255, 38))
+        b.alpha_composite(gh)
+        py = int(y_fin + 20 + (disp - pz.height) / 2) - (90 if empaque_n else 0)
+        pegar_producto(b, pz, ((W - pz.width) // 2, py), brillo=(255, 200, 120))
+        if empaque_n:
+            pk = empaque(empaque_n, int(disp * 0.42), 8)
+            pegar_producto(b, pk, (W - pk.width - 40, py + pz.height - int(pk.height * 0.62)))
     else:  # grafico
         gh = Image.new("RGBA", (W, h), (0, 0, 0, 0))
         fg = anton(520 if T else 420)

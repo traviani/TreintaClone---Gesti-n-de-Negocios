@@ -10,7 +10,9 @@ ROJO = (196, 44, 26)
 
 def laminas():
     pasta, panini, esp = D.cargar("pasta.png"), D.cargar("panini.png").crop((0, 242, 452, 650)), D.cargar("espiral.png")
-    fotos = dict(pasta=pasta, panini=panini, parrilla=esp)
+    pizza = Image.open(f"{D.FOT}/pizza_recorte.png").convert("RGBA")
+    pizza_ft = D.cargar("pizza.png")
+    fotos = dict(pasta=pasta, panini=panini, parrilla=esp, pizza=pizza_ft)
     total = 7
     return [
         lambda: D.portada_formas(total, fotos),
@@ -20,8 +22,8 @@ def laminas():
                              "circulo", ROJO, 3, total, foto=pasta, caja=(150, 360, 690, 830)),
         lambda: D.lamina_dia("MIÉRCOLES", "EN PANINI", "Con pimentones asados y pan crujiente. El almuerzo rápido que sí llena.",
                              "polaroid", (30, 120, 92), 4, total, foto=panini, caja=(0, 0, 452, 408)),
-        lambda: D.lamina_dia("JUEVES", "EN PIZZA", "En rodajas sobre la masa, con queso y salsa. La pizza de jueves sube de nivel.",
-                             "grafico", (226, 112, 30), 5, total, empaque_n=3, ghost="PIZZA"),
+        lambda: D.lamina_dia("JUEVES", "EN PIZZA", "Sobre la masa, con queso y salsa. La pizza de jueves sube de nivel.",
+                             "recorte", (200, 84, 22), 5, total, foto=pizza, ghost="PIZZA", empaque_n=3),
         lambda: D.lamina_foto_completa(esp, 0.5, 0.45, None, "A LA PARRILLA",
                                        "Entera, en espiral y con los panas. La forma clásica de comerla.", 6, total, ROJO, "FIN DE SEMANA"),
         lambda: D.lamina_cierre_parrilla("¿CUÁL PRUEBAS\nPRIMERO?", ENTREGA + [WA], "PIDE DIRECTO CON NOSOTROS", total,
