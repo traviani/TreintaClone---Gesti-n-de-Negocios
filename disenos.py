@@ -341,6 +341,10 @@ def teal_bg(h):
 
 
 def _fondo(h, fondo, seed):
+    if fondo == "ambar":
+        b = g._radial((214, 120, 24), (74, 34, 4), 0.5, h * 0.42, 1.1, h).convert("RGBA")
+        espiral(ImageDraw.Draw(b), W / 2, h * 0.45, 720, (255, 255, 255, 30), 3, 7)
+        return b
     if fondo == "teal":
         return teal_bg(h)
     if fondo == "mesa":
@@ -563,6 +567,14 @@ def _cuerpo_abajo(b, cuerpo, n, total, col=CREMA):
     return fondo - len(lin) * int(fc.size * 1.4)
 
 
+def _top_cuerpo(cuerpo):
+    T, h = g.tt(), H()
+    d = ImageDraw.Draw(Image.new("RGB", (10, 10)))
+    fc = mont(44 if T else 40, "SemiBold")
+    n = len(g._lineas(d, cuerpo, fc, W - 160))
+    return (1490 if T else h - 120) - n * int(fc.size * 1.4)
+
+
 def _pincho(b, p1, p2, grosor=18):
     """Pincho de acero con brillo y sombra."""
     k = 3
@@ -679,4 +691,100 @@ def lamina_giro(num, titulo, cuerpo, n, total):
     d = ImageDraw.Draw(b)
     ytop = _cuerpo_abajo(b, cuerpo, n, total)
     pastilla(d, 0, min(int(cy + R + 50), ytop - 110), "UNA SOLA VEZ", mont(40 if T else 36, "ExtraBold"), CREMA, OSCURO, pad=40, centrado=True)
+    return terminar(b)
+
+
+# ---------- día 6: formas de comerla ----------
+def _circulo(b, im, cx, cy, dia, borde=(250, 243, 228), grosor=14):
+    ph = llenar(im, dia, dia, 0.5, 0.5).convert("RGBA")
+    m = Image.new("L", (dia, dia), 0); ImageDraw.Draw(m).ellipse((0, 0, dia - 1, dia - 1), fill=255)
+    ph.putalpha(m)
+    sh = capa(); ImageDraw.Draw(sh).ellipse((cx - dia // 2, cy - dia // 2 + 18, cx + dia // 2, cy + dia // 2 + 18), fill=(0, 0, 0, 120))
+    b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(18)))
+    ImageDraw.Draw(b).ellipse((cx - dia // 2 - grosor, cy - dia // 2 - grosor, cx + dia // 2 + grosor, cy + dia // 2 + grosor), fill=borde)
+    b.alpha_composite(ph, (cx - dia // 2, cy - dia // 2))
+
+
+def _disco_empaque(b, n_emp, cx, cy, dia, col):
+    sh = capa(); ImageDraw.Draw(sh).ellipse((cx - dia // 2, cy - dia // 2 + 18, cx + dia // 2, cy + dia // 2 + 18), fill=(0, 0, 0, 120))
+    b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(18)))
+    ImageDraw.Draw(b).ellipse((cx - dia // 2 - 14, cy - dia // 2 - 14, cx + dia // 2 + 14, cy + dia // 2 + 14), fill=CREMA)
+    ImageDraw.Draw(b).ellipse((cx - dia // 2, cy - dia // 2, cx + dia // 2, cy + dia // 2), fill=col)
+    p = empaque(n_emp, int(dia * 0.98), -10)
+    pegar_producto(b, p, (cx - p.width // 2, cy - p.height // 2 + 6))
+
+
+def portada_formas(total, fotos):
+    """Portada con cinco círculos, uno por forma de comerla. fotos = dict(pasta, panini, parrilla) de PIL."""
+    T, h, o = g.tt(), H(), oy()
+    b = _fondo(h, "ambar", 0)
+    d = ImageDraw.Draw(b)
+    pastilla(d, 0, o + (28 if T else 50), "ESTA SEMANA", mont(30 if T else 27, "ExtraBold"), DORADO, OSCURO, centrado=True)
+    tam = 300 if T else 235
+    while ancho(d, "5 FORMAS", anton(tam)) > W - 90:
+        tam -= 6
+    centrar(d, o + (100 if T else 105), "5 FORMAS", anton(tam), CREMA)
+    t2 = int(tam * 0.62)
+    centrar(d, o + (100 if T else 105) + int(tam * 1.13), "DE COMERLA", anton(t2), DORADO)
+    dia = 310
+    y1 = (975 if T else 720)
+    y2 = y1 + dia + (90 if T else 75)
+    xs3 = [W // 2 - dia - 40, W // 2, W // 2 + dia + 40]
+    xs2 = [W // 2 - dia // 2 - 20, W // 2 + dia // 2 + 20]
+    items = [("LUN", ("emp", 2, (236, 190, 50))), ("MAR", ("img", fotos["pasta"].crop((150, 360, 690, 830)))),
+             ("MIÉ", ("img", fotos["panini"].crop((110, 0, 430, 330)))),
+             ("JUE", ("emp", 3, (226, 110, 30))), ("FIN", ("img", fotos["parrilla"]))]
+    pos = [(xs3[0], y1), (xs3[1], y1), (xs3[2], y1), (xs2[0], y2), (xs2[1], y2)]
+    for (et, (tipo, *a)), (cx, cy) in zip(items, pos):
+        if tipo == "img":
+            _circulo(b, a[0], cx, cy, dia)
+        else:
+            _disco_empaque(b, a[0], cx, cy, dia, a[1])
+        d = ImageDraw.Draw(b)
+        pastilla(d, cx - 70, cy + dia // 2 - 34, et, mont(26, "ExtraBold"), OSCURO, CREMA, pad=20, centrado=False)
+    d = ImageDraw.Draw(b)
+    if not T:
+        pastilla(d, 0, h - 112, "DESLIZA  →", mont(28, "ExtraBold"), CREMA, OSCURO, centrado=True)
+        pie(d, CREMA, 1, total)
+    return terminar(b)
+
+
+def lamina_dia(dia_txt, forma, texto, modo, col, n, total, foto=None, caja=None, empaque_n=None, claro=False, ghost=None):
+    """Una forma de comerla: chip del día, título grande y una imagen en círculo, polaroid o gráfico con empaque."""
+    T, h, o = g.tt(), H(), oy()
+    oscuro = tuple(int(v * 0.32) for v in col)
+    b = g._radial(col, oscuro, 0.3, h * 0.3, 1.15, h).convert("RGBA")
+    tinta = OSCURO if claro else CREMA
+    d = ImageDraw.Draw(b)
+    espiral(d, W, 0, 760, (255, 255, 255, 26) if not claro else (0, 0, 0, 22), 3, 7)
+    pastilla(d, 70, o + 56, dia_txt, mont(32 if T else 30, "ExtraBold"), OSCURO if not claro else CREMA, DORADO if not claro else OSCURO)
+    ft = anton(170 if T else 150)
+    y = o + (150 if T else 140)
+    d.text((66, y), forma, font=ft, fill=tinta)
+    y_fin = y + int(ft.size * 1.15)
+    disp = _top_cuerpo(texto) - 40 - y_fin
+    if modo == "circulo":
+        dia = min(820 if T else 700, disp - 50, W - 140)
+        _circulo(b, foto.crop(caja) if caja else foto, W // 2, int(y_fin + 40 + dia / 2), dia, borde=tinta if claro else CREMA)
+    elif modo == "polaroid":
+        ph = foto.crop(caja) if caja else foto
+        pw = min(860 if T else 780, int((disp - 150) * ph.width / ph.height))
+        ph = ph.resize((pw, int(ph.height * pw / ph.width)), Image.LANCZOS).filter(ImageFilter.UnsharpMask(2, 60, 3))
+        marco = Image.new("RGBA", (pw + 56, ph.height + 56 + 70), (250, 246, 238, 255))
+        marco.paste(ph, (28, 28))
+        marco = marco.rotate(-4, expand=True, resample=Image.BICUBIC)
+        sh = Image.new("RGBA", b.size, (0, 0, 0, 0))
+        px, py = (W - marco.width) // 2, int(y_fin + 30)
+        sh.paste((0, 0, 0, 140), (px + 14, py + 26, px + marco.width - 6, py + marco.height + 16))
+        b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(24)))
+        b.alpha_composite(marco, (px, py))
+    else:  # grafico
+        gh = Image.new("RGBA", (W, h), (0, 0, 0, 0))
+        fg = anton(520 if T else 420)
+        ImageDraw.Draw(gh).text((-20, y_fin + (60 if T else 20)), ghost or forma.split()[-1], font=fg, fill=(255, 255, 255, 38) if not claro else (0, 0, 0, 30))
+        b.alpha_composite(gh)
+        alto = min(880 if T else 700, disp - 70)
+        p = empaque(empaque_n, alto, -10)
+        pegar_producto(b, p, (W // 2 - p.width // 2 + 60, int(y_fin + 30)), brillo=(255, 230, 190))
+    _cuerpo_abajo(b, texto, n, total, tinta)
     return terminar(b)
