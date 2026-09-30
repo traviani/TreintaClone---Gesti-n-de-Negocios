@@ -12,18 +12,48 @@ ROJO = (196, 44, 26)
 CRE, DOR = g.CREMA, g.DORADO
 
 
+def ingredientes():
+    from PIL import ImageDraw, ImageFilter
+    from generador import W, anton, mont, pastilla, pie, terminar, CREMA, OSCURO, DORADO
+    T, h, o = g.tt(), D.H(), D.oy()
+    foto = Image.open(f"{D.FOT}/d09_ingredientes.png").convert("RGB")
+    b = D.llenar(foto, W, h, 0.5, 0.40 if not T else 0.5).convert("RGBA")
+    b.alpha_composite(D.degradado_v(W, h, 0, int(h * 0.26), (10, 6, 5), 215, 0))
+    b.alpha_composite(D.degradado_v(W, h, int(h * (0.44 if T else 0.50)), h, (10, 6, 5), 0, 248))
+    d = ImageDraw.Draw(b)
+    ft = anton(150 if T else 140)
+    d.text((66, o + (80 if T else 40)), "INGREDIENTES", font=ft, fill=CRE, stroke_width=3, stroke_fill=(20, 10, 8))
+    fb = mont(44 if T else 40, "SemiBold")
+    bloques = [("PARA LA AREPA", "Harina de maíz, sal y agua."),
+               ("PARA RELLENAR", "Queso mozzarella, tomate y salchicha siciliana Traviani.")]
+    alto = 0
+    for et, tx in bloques:
+        alto += 90 + len(g._lineas(d, tx, fb, W - 160)) * int(fb.size * 1.36) + 26
+    y = (1490 if T else h - 110) - alto
+    for et, tx in bloques:
+        pastilla(d, 70, y, et, mont(30, "ExtraBold"), DOR, OSCURO)
+        y += 92
+        for l in g._lineas(d, tx, fb, W - 160):
+            d.text((76, y), l, font=fb, fill=(250, 240, 226)); y += int(fb.size * 1.36)
+        y += 26
+    if not T:
+        pie(d, CRE, 2, 5)
+    return terminar(b)
+
+
 def laminas():
-    arepa = D.cargar("arepa_limpia.png")
     total = 5
     return [
-        lambda: foto_titulo("arepa_limpia.png", [("AREPA CON", CRE), ("TRADIZIONALE", DOR)],
-                            "El desayuno venezolano con acento siciliano.", 1, total, cy=0.12, cx=0.3, chip="DESAYUNO · 10 MIN"),
-        lambda: lista_con_empaque("INGREDIENTES", ["1 Tradizionale", "2 arepas recién hechas", "Queso blanco rallado",
-                                                   "Aguacate (opcional)"], 2, total, 2, dy_tt=90),
-        lambda: D.lamina_dia("PASO 1", "ASÁLA", "En sartén o plancha a fuego medio, 12 a 15 minutos volteando, hasta que esté bien cocida.",
-                             "grafico", (196, 44, 26), 3, total, empaque_n=2, ghost="12 MIN"),
-        lambda: D.lamina_dia("PASO 2", "RELLENA", "Rodajas finas dentro de la arepa abierta, con queso blanco y aguacate si quieres.",
-                             "circulo", (30, 120, 92), 4, total, foto=arepa, caja=(90, 400, 470, 700)),
+        lambda: foto_titulo("arepa_limpia.png", [("SALCHICHA", CRE), ("SICILIANA", DOR)],
+                            "Arepa con Tradizionale: el desayuno venezolano con acento siciliano.", 1, total,
+                            cy=0.12, cx=0.3, chip="AREPA · 10 MIN"),
+        ingredientes,
+        lambda: foto_titulo("d09_arepas_asando.png", [("PASO 1", DOR), ("A LA SARTÉN", CRE)],
+                            "Arepas en el budare o sartén a fuego medio. La salchicha, 12 a 15 minutos volteando, hasta que esté bien cocida.",
+                            3, total, modo="ancho", tam_ig=140, tam_tt=160),
+        lambda: foto_titulo("arepa_limpia.png", [("PASO 2", DOR), ("RELLENA", CRE)],
+                            "Rodajas finas dentro de la arepa abierta, con queso blanco y aguacate si quieres.",
+                            4, total, cy=0.5, cx=0.3),
         lambda: D.lamina_cierre_parrilla("PIDE TU\nTRADIZIONALE", ENTREGA + [WA], "PIDE DIRECTO CON NOSOTROS", total,
                                          fotos=(2, 5, 1), fondo="ambar"),
     ]
