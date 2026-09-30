@@ -1,0 +1,319 @@
+<title>Revisión Octubre Traviani</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@400;600;700&display=swap">
+<style>
+/* Concepto: mesa de revisión, cada día es una fila con sus dos tiras de láminas (Instagram y TikTok) lado a lado */
+:root{--bg:#f6f3ee;--fg:#22190f;--mut:#6d6255;--line:#ddd5c8;--card:#fffdf9;--acc:#b3341c;
+--receta:#b3341c;--tip:#2f6b4f;--uso:#a4700f;--emocional:#8a3f6b;--viral:#2b5aa0;--efemeride:#7a4b1e;--mayorista:#3a3a3a;--marca:#5d3fa0;
+--fd:"Anton","Impact",sans-serif;--fb:"Montserrat","Helvetica Neue",Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17120d;--fg:#f1eadf;--mut:#a89c8c;--line:#3a3128;--card:#211a13;--acc:#ec7a5f;
+--receta:#ec7a5f;--tip:#6cc39a;--uso:#e0b04d;--emocional:#d78bb8;--viral:#7eaaf0;--efemeride:#d4a26b;--mayorista:#c2c2c2;--marca:#b39cf0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17120d;--fg:#f1eadf;--mut:#a89c8c;--line:#3a3128;--card:#211a13;--acc:#ec7a5f;
+--receta:#ec7a5f;--tip:#6cc39a;--uso:#e0b04d;--emocional:#d78bb8;--viral:#7eaaf0;--efemeride:#d4a26b;--mayorista:#c2c2c2;--marca:#b39cf0;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--fb);padding-inline:16px}
+.wrap{max-width:1180px;margin:0 auto;padding-block:24px 64px}
+h1{font-family:var(--fd);font-weight:400;font-size:clamp(2rem,6vw,3.2rem);letter-spacing:.01em;text-transform:uppercase;margin:0;line-height:1.05;text-wrap:balance}
+.lead{color:var(--mut);max-width:65ch;line-height:1.55;margin:.6rem 0 1.2rem}
+.tools{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.nav{display:flex;flex-wrap:wrap;gap:4px}
+.nav a{min-width:30px;text-align:center;padding:4px 0;border:1px solid var(--line);border-radius:4px;font-size:12px;font-weight:700;text-decoration:none;color:var(--fg);font-variant-numeric:tabular-nums}
+.nav a:hover,.nav a:focus-visible{outline:2px solid var(--acc)}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 11px var(--fb);letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:99px;border:1px solid currentColor;background:none}
+button.chip{cursor:pointer;opacity:.55} button.chip[aria-pressed="true"]{opacity:1;background:color-mix(in srgb,currentColor 14%,transparent)}
+.c-receta{color:var(--receta)}.c-tip{color:var(--tip)}.c-uso{color:var(--uso)}.c-emocional{color:var(--emocional)}.c-viral{color:var(--viral)}.c-efemeride{color:var(--efemeride)}.c-mayorista{color:var(--mayorista)}.c-marca{color:var(--marca)}
+.nav a[class^="c-"]{color:var(--fg)}
+section{margin-top:36px;padding-top:20px;border-top:2px solid var(--fg);scroll-margin-top:110px}
+section[hidden]{display:none}
+section>header{display:flex;gap:14px;align-items:baseline}
+.dnum{font-family:var(--fd);font-size:2.6rem;line-height:1;color:var(--acc);font-variant-numeric:tabular-nums}
+h2{font-size:1.15rem;margin:0;text-wrap:balance;line-height:1.25}
+.meta{margin:6px 0 0;color:var(--mut);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.posts{display:grid;grid-template-columns:1fr;gap:20px;margin-top:14px}
+@media(min-width:900px){.posts{grid-template-columns:1.25fr 1fr}}
+.post{min-width:0}
+.plabel{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px} .plabel span{color:var(--mut)}
+.strip{overflow-x:auto;background:#141414;border-radius:6px;padding:8px}
+.strip img{display:block;height:340px;width:auto;max-width:none}
+.strip.tt img{height:400px}
+details{margin-top:8px;font-size:13px} summary{cursor:pointer;color:var(--mut)}
+pre{white-space:pre-wrap;word-break:break-word;font:13px/1.5 var(--fb);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:10px 12px;margin:6px 0 0}
+</style>
+<div class="wrap">
+<h1>Revisión de octubre</h1>
+<p class="lead">Las 60 publicaciones programadas para Il Siciliano Gourmet, tal como salen en Metricool a las 18:00. Cada día muestra las láminas de Instagram (4:5) y de TikTok (9:16) con su texto. Desliza cada tira hacia los lados para ver todas las láminas.</p>
+<div class="tools"><div class="nav"><a href="#d1" class="c-marca" title="5 sabores de Sicilia">1</a><a href="#d2" class="c-emocional" title="Viernes de desconexión">2</a><a href="#d3" class="c-receta" title="Pasta con Finocchio en 20 minutos">3</a><a href="#d4" class="c-emocional" title="El domingo no es domingo sin parrilla">4</a><a href="#d5" class="c-tip" title="Cómo asar la espiral sin que se desarme">5</a><a href="#d6" class="c-uso" title="5 formas de comerla esta semana">6</a><a href="#d7" class="c-mayorista" title="Para restaurantes y pizzerías de Caracas">7</a><a href="#d8" class="c-viral" title="Mito o realidad: todas las salchichas llevan nitritos">8</a><a href="#d9" class="c-receta" title="Arepa con Tradizionale">9</a><a href="#d10" class="c-tip" title="Cómo conservarla bien">10</a><a href="#d11" class="c-efemeride" title="Se viene el puente: arma tu parrilla">11</a><a href="#d12" class="c-efemeride" title="Lunes feriado en casa">12</a><a href="#d13" class="c-viral" title="Supermercado vs. artesanal">13</a><a href="#d14" class="c-mayorista" title="Bodegones y charcuterías de Caracas">14</a><a href="#d15" class="c-receta" title="Panini con Peperoncino">15</a><a href="#d16" class="c-efemeride" title="Día Mundial de la Alimentación">16</a><a href="#d17" class="c-viral" title="Adivina el sabor">17</a><a href="#d18" class="c-receta" title="Pizza casera con Pecorino">18</a><a href="#d19" class="c-tip" title="3 errores al asar salchichas">19</a><a href="#d20" class="c-marca" title="Así la hacemos">20</a><a href="#d21" class="c-mayorista" title="Parrilleras de Caracas: algo distinto en tu menú">21</a><a href="#d22" class="c-uso" title="¿Qué sabor para cada ocasión?">22</a><a href="#d23" class="c-emocional" title="POV: llegaste cansado y la cena está en 15 min">23</a><a href="#d24" class="c-receta" title="Salsa roja con Pecorino">24</a><a href="#d25" class="c-efemeride" title="Día Mundial de la Pasta">25</a><a href="#d26" class="c-tip" title="Cómo cortarla para servir">26</a><a href="#d27" class="c-viral" title="Ranking: ¿cuál es tu favorito?">27</a><a href="#d28" class="c-mayorista" title="Cómo vendernos al mayor en Caracas">28</a><a href="#d29" class="c-receta" title="Salchicha con papas doradas">29</a><a href="#d30" class="c-marca" title="Cierre de mes: ¿ya probaste los 5?">30</a></div><div class="filters"><button class="chip c-receta" data-f="receta">Receta</button><button class="chip c-tip" data-f="tip">Tip de cocina</button><button class="chip c-uso" data-f="uso">Formas de usarla</button><button class="chip c-emocional" data-f="emocional">Conexión</button><button class="chip c-viral" data-f="viral">Formato viral</button><button class="chip c-efemeride" data-f="efemeride">Fecha especial</button><button class="chip c-mayorista" data-f="mayorista">Mayoristas Caracas</button><button class="chip c-marca" data-f="marca">Marca</button></div></div>
+<section id="d1" data-p="marca"><header><span class="dnum">01</span><div><h2>5 sabores de Sicilia</h2><p class="meta"><span class="chip c-marca">Marca</span> jue 1 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>8 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig01.jpg" alt="Instagram día 1"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Ya conoces los 5 sabores de nuestra salchicha siciliana? 🇮🇹
+
+Finocchio, Tradizionale, Peperoncino, Pecorino y Parrillera. Enrollada en espiral, delgada y hecha a mano en Caracas. Sin nitritos, sin conservantes químicos y sin gluten.
+
+¿Cuál te provoca probar primero? Déjalo en los comentarios 👇
+
+📲 Pide directo con nosotros por WhatsApp: +58 422 646 8537
+🚚 Delivery gratis desde 4 paquetes (solo Caracas)
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #parrilla #hechoamano #emprendimientovenezolano #recetasfaciles</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>8 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt01.jpg" alt="TikTok día 1"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Cuál de los 5 sabores te provoca primero? 🇮🇹👇 Salchicha siciliana en espiral, hecha a mano en Caracas. Pide por WhatsApp +58 422 646 8537 #salchichasiciliana #traviani #caracas #comidaitaliana #parrilla #emprendimientovenezolano #fyp</pre></details></div></div></section><section id="d2" data-p="emocional"><header><span class="dnum">02</span><div><h2>Viernes de desconexión</h2><p class="meta"><span class="chip c-emocional">Conexión</span> vie 2 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig02.jpg" alt="Instagram día 2"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Cansado de toda la semana? 🍻 Este viernes el plan es simple: tus panas, unas cervezas frías y la Parrillera en la parrilla. Te lo ganaste.
+
+📲 Pide directo con nosotros: +58 422 646 8537
+🚚 Delivery gratis desde 4 paquetes (solo Caracas)
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt02.jpg" alt="TikTok día 2"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Cansado de toda la semana? 🍻 Este viernes el plan es simple: tus panas, unas cervezas frías y la Parrillera en la parrilla. Te lo ganaste. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d3" data-p="receta"><header><span class="dnum">03</span><div><h2>Pasta con Finocchio en 20 minutos</h2><p class="meta"><span class="chip c-receta">Receta</span> sáb 3 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>7 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig03.jpg" alt="Instagram día 3"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Pasta con Finocchio en 20 minutos 🍝 Guarda esta receta para el fin de semana.
+
+El hinojo del Finocchio perfuma la salsa sin agregar nada más.
+
+📲 Pide por WhatsApp: +58 422 646 8537
+🚚 Delivery gratis desde 4 paquetes (solo Caracas)
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>7 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt03.jpg" alt="TikTok día 3"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Pasta con Finocchio en 20 minutos 🍝 Guarda esta receta para el fin de semana. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d4" data-p="emocional"><header><span class="dnum">04</span><div><h2>El domingo no es domingo sin parrilla</h2><p class="meta"><span class="chip c-emocional">Conexión</span> dom 4 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>4 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig04.jpg" alt="Instagram día 4"></div>
+<details><summary>Ver texto de la publicación</summary><pre>El domingo no es domingo sin la familia alrededor de la parrilla 🔥
+
+¿Cuánto pedir? 4 personas: 2 paquetes · 6 personas: 3 · 8 personas: 4 (y el delivery es gratis).
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>4 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt04.jpg" alt="TikTok día 4"></div>
+<details><summary>Ver texto de la publicación</summary><pre>El domingo no es domingo sin la familia alrededor de la parrilla 🔥 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d5" data-p="tip"><header><span class="dnum">05</span><div><h2>Cómo asar la espiral sin que se desarme</h2><p class="meta"><span class="chip c-tip">Tip de cocina</span> lun 5 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig05.jpg" alt="Instagram día 5"></div>
+<details><summary>Ver texto de la publicación</summary><pre>El error que desarma tu salchicha en la parrilla 😱 Dos pinchos en cruz, fuego medio y voltear una sola vez. Guarda este tip.
+
+📲 Pide la tuya: +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt05.jpg" alt="TikTok día 5"></div>
+<details><summary>Ver texto de la publicación</summary><pre>El error que desarma tu salchicha en la parrilla 😱 Dos pinchos en cruz, fuego medio y voltear una sola vez. Guarda este tip. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d6" data-p="uso"><header><span class="dnum">06</span><div><h2>5 formas de comerla esta semana</h2><p class="meta"><span class="chip c-uso">Formas de usarla</span> mar 6 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>7 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig06.jpg" alt="Instagram día 6"></div>
+<details><summary>Ver texto de la publicación</summary><pre>5 formas de comer salchicha siciliana esta semana 🗓️ Arepa, pasta, panini, pizza y parrilla. ¿Cuál pruebas primero? Comenta 👇
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>7 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt06.jpg" alt="TikTok día 6"></div>
+<details><summary>Ver texto de la publicación</summary><pre>5 formas de comer salchicha siciliana esta semana 🗓️ Arepa, pasta, panini, pizza y parrilla. ¿Cuál pruebas primero? Comenta 👇 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d7" data-p="mayorista"><header><span class="dnum">07</span><div><h2>Para restaurantes y pizzerías de Caracas</h2><p class="meta"><span class="chip c-mayorista">Mayoristas Caracas</span> mié 7 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig07.jpg" alt="Instagram día 7"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Tienes una pizzería o un restaurante en Caracas? 🍕 Salchicha siciliana artesanal en 5 sabores, sin nitritos ni conservantes químicos. Un ingrediente que tu competencia no tiene.
+
+Escríbenos para precio al mayor: +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt07.jpg" alt="TikTok día 7"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Tienes una pizzería o un restaurante en Caracas? 🍕 Salchicha siciliana artesanal en 5 sabores, sin nitritos ni conservantes químicos. Un ingrediente que tu competencia no tiene. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d8" data-p="viral"><header><span class="dnum">08</span><div><h2>Mito o realidad: todas las salchichas llevan nitritos</h2><p class="meta"><span class="chip c-viral">Formato viral</span> jue 8 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig08.jpg" alt="Instagram día 8"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Mito: todas las salchichas llevan nitritos ❌ Realidad: la nuestra no. Desliza 👉
+
+¿Qué otro mito quieres que aclaremos? Comenta 👇
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt08.jpg" alt="TikTok día 8"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Mito: todas las salchichas llevan nitritos ❌ Realidad: la nuestra no. Desliza 👉 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d9" data-p="receta"><header><span class="dnum">09</span><div><h2>Arepa con Tradizionale</h2><p class="meta"><span class="chip c-receta">Receta</span> vie 9 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig09.jpg" alt="Instagram día 9"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Arepa con Tradizionale 🫓 El desayuno venezolano con acento siciliano. Sabor suave, sin hinojo, que le gusta a toda la familia.
+
+📲 +58 422 646 8537
+🚚 Delivery gratis desde 4 paquetes
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt09.jpg" alt="TikTok día 9"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Arepa con Tradizionale 🫓 El desayuno venezolano con acento siciliano. Sabor suave, sin hinojo, que le gusta a toda la familia. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d10" data-p="tip"><header><span class="dnum">10</span><div><h2>Cómo conservarla bien</h2><p class="meta"><span class="chip c-tip">Tip de cocina</span> sáb 10 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig10.jpg" alt="Instagram día 10"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿La compraste y no la vas a usar hoy? ❄️ Congelada dura hasta 3 meses; refrigerada a 4 °C, máximo 3 días. Descongela en la nevera la noche anterior.
+
+Guarda este post 📌
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt10.jpg" alt="TikTok día 10"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿La compraste y no la vas a usar hoy? ❄️ Congelada dura hasta 3 meses; refrigerada a 4 °C, máximo 3 días. Descongela en la nevera la noche anterior. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d11" data-p="efemeride"><header><span class="dnum">11</span><div><h2>Se viene el puente: arma tu parrilla</h2><p class="meta"><span class="chip c-efemeride">Fecha especial</span> dom 11 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>4 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig11.jpg" alt="Instagram día 11"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Se viene el puente 🔥 El lunes 12 es feriado. Arma tu parrilla: Parrillera para los clásicos, Peperoncino para los del picante y Tradizionale para los niños.
+
+Pide hoy: +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>4 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt11.jpg" alt="TikTok día 11"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Se viene el puente 🔥 El lunes 12 es feriado. Arma tu parrilla: Parrillera para los clásicos, Peperoncino para los del picante y Tradizionale para los niños. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d12" data-p="efemeride"><header><span class="dnum">12</span><div><h2>Lunes feriado en casa</h2><p class="meta"><span class="chip c-efemeride">Fecha especial</span> lun 12 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>4 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig12.jpg" alt="Instagram día 12"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Lunes feriado 😌 Hoy no hay apuro. Idea fácil: salchicha con papas doradas al horno. ¿Qué vas a cocinar hoy? Comenta 👇
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>4 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt12.jpg" alt="TikTok día 12"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Lunes feriado 😌 Hoy no hay apuro. Idea fácil: salchicha con papas doradas al horno. ¿Qué vas a cocinar hoy? Comenta 👇 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d13" data-p="viral"><header><span class="dnum">13</span><div><h2>Supermercado vs. artesanal</h2><p class="meta"><span class="chip c-viral">Formato viral</span> mar 13 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>4 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig13.jpg" alt="Instagram día 13"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Industrial vs. artesanal 🔍 Lee la etiqueta de lo que comes. La nuestra: sin nitritos, sin conservantes químicos y sin gluten.
+
+Haz la prueba: +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>4 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt13.jpg" alt="TikTok día 13"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Industrial vs. artesanal 🔍 Lee la etiqueta de lo que comes. La nuestra: sin nitritos, sin conservantes químicos y sin gluten. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d14" data-p="mayorista"><header><span class="dnum">14</span><div><h2>Bodegones y charcuterías de Caracas</h2><p class="meta"><span class="chip c-mayorista">Mayoristas Caracas</span> mié 14 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig14.jpg" alt="Instagram día 14"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Tienes un bodegón o charcutería en Caracas? 🛒 Salchicha siciliana artesanal en empaque al vacío de 500 g, con código de barras y 5 sabores.
+
+Precio al mayor: +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt14.jpg" alt="TikTok día 14"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Tienes un bodegón o charcutería en Caracas? 🛒 Salchicha siciliana artesanal en empaque al vacío de 500 g, con código de barras y 5 sabores. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d15" data-p="receta"><header><span class="dnum">15</span><div><h2>Panini con Peperoncino</h2><p class="meta"><span class="chip c-receta">Receta</span> jue 15 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig15.jpg" alt="Instagram día 15"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Panini con Peperoncino 🌶️ Almuerzo picante en 20 minutos. Guarda la receta.
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt15.jpg" alt="TikTok día 15"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Panini con Peperoncino 🌶️ Almuerzo picante en 20 minutos. Guarda la receta. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d16" data-p="efemeride"><header><span class="dnum">16</span><div><h2>Día Mundial de la Alimentación</h2><p class="meta"><span class="chip c-efemeride">Fecha especial</span> vie 16 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>4 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig16.jpg" alt="Instagram día 16"></div>
+<details><summary>Ver texto de la publicación</summary><pre>16 de octubre, Día Mundial de la Alimentación 🌎 Comer rico también es comer limpio: sin nitritos, sin conservantes químicos y sin gluten.
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>4 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt16.jpg" alt="TikTok día 16"></div>
+<details><summary>Ver texto de la publicación</summary><pre>16 de octubre, Día Mundial de la Alimentación 🌎 Comer rico también es comer limpio: sin nitritos, sin conservantes químicos y sin gluten. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d17" data-p="viral"><header><span class="dnum">17</span><div><h2>Adivina el sabor</h2><p class="meta"><span class="chip c-viral">Formato viral</span> sáb 17 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig17.jpg" alt="Instagram día 17"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Adivina el sabor 🤔 3 pistas, respuestas en la última lámina. Comenta cuántas acertaste 👇
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt17.jpg" alt="TikTok día 17"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Adivina el sabor 🤔 3 pistas, respuestas en la última lámina. Comenta cuántas acertaste 👇 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d18" data-p="receta"><header><span class="dnum">18</span><div><h2>Pizza casera con Pecorino</h2><p class="meta"><span class="chip c-receta">Receta</span> dom 18 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig18.jpg" alt="Instagram día 18"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Pizza casera con Pecorino 🍕 Queso, perejil y tomate dentro de la salchicha. Plan perfecto de domingo.
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt18.jpg" alt="TikTok día 18"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Pizza casera con Pecorino 🍕 Queso, perejil y tomate dentro de la salchicha. Plan perfecto de domingo. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d19" data-p="tip"><header><span class="dnum">19</span><div><h2>3 errores al asar salchichas</h2><p class="meta"><span class="chip c-tip">Tip de cocina</span> lun 19 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig19.jpg" alt="Instagram día 19"></div>
+<details><summary>Ver texto de la publicación</summary><pre>3 errores al asar salchichas 🔥 Fuego muy alto, pincharla y servirla sin reposar. Guarda este post 📌
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt19.jpg" alt="TikTok día 19"></div>
+<details><summary>Ver texto de la publicación</summary><pre>3 errores al asar salchichas 🔥 Fuego muy alto, pincharla y servirla sin reposar. Guarda este post 📌 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d20" data-p="marca"><header><span class="dnum">20</span><div><h2>Así la hacemos</h2><p class="meta"><span class="chip c-marca">Marca</span> mar 20 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig20.jpg" alt="Instagram día 20"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Así hacemos nuestra salchicha siciliana 🇮🇹 Corte, molienda, aderezo y embutido en espiral. Hecha a mano en Caracas.
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt20.jpg" alt="TikTok día 20"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Así hacemos nuestra salchicha siciliana 🇮🇹 Corte, molienda, aderezo y embutido en espiral. Hecha a mano en Caracas. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d21" data-p="mayorista"><header><span class="dnum">21</span><div><h2>Parrilleras de Caracas: algo distinto en tu menú</h2><p class="meta"><span class="chip c-mayorista">Mayoristas Caracas</span> mié 21 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig21.jpg" alt="Instagram día 21"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Tienes una parrillera en Caracas? 🔥 Pon una espiral siciliana en tu menú. Se ve distinta, sabe distinta.
+
+Precio al mayor: +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt21.jpg" alt="TikTok día 21"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Tienes una parrillera en Caracas? 🔥 Pon una espiral siciliana en tu menú. Se ve distinta, sabe distinta. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d22" data-p="uso"><header><span class="dnum">22</span><div><h2>¿Qué sabor para cada ocasión?</h2><p class="meta"><span class="chip c-uso">Formas de usarla</span> jue 22 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>7 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig22.jpg" alt="Instagram día 22"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿No sabes cuál pedir? 🤔 Guía rápida: pasta → Finocchio · desayuno → Tradizionale · picante → Peperoncino · horno → Pecorino · parrilla → Parrillera. Guárdala 📌
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>7 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt22.jpg" alt="TikTok día 22"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿No sabes cuál pedir? 🤔 Guía rápida: pasta → Finocchio · desayuno → Tradizionale · picante → Peperoncino · horno → Pecorino · parrilla → Parrillera. Guárdala 📌 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d23" data-p="emocional"><header><span class="dnum">23</span><div><h2>POV: llegaste cansado y la cena está en 15 min</h2><p class="meta"><span class="chip c-emocional">Conexión</span> vie 23 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig23.jpg" alt="Instagram día 23"></div>
+<details><summary>Ver texto de la publicación</summary><pre>POV: llegaste cansado del trabajo 😮‍💨 15 minutos y la cena está lista. Pide para el fin de semana 👇
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt23.jpg" alt="TikTok día 23"></div>
+<details><summary>Ver texto de la publicación</summary><pre>POV: llegaste cansado del trabajo 😮‍💨 15 minutos y la cena está lista. Pide para el fin de semana 👇 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d24" data-p="receta"><header><span class="dnum">24</span><div><h2>Salsa roja con Pecorino</h2><p class="meta"><span class="chip c-receta">Receta</span> sáb 24 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig24.jpg" alt="Instagram día 24"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Mañana es el Día Mundial de la Pasta 🍝 Adelántate con esta salsa roja con Pecorino. Pide hoy y cocina mañana.
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt24.jpg" alt="TikTok día 24"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Mañana es el Día Mundial de la Pasta 🍝 Adelántate con esta salsa roja con Pecorino. Pide hoy y cocina mañana. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d25" data-p="efemeride"><header><span class="dnum">25</span><div><h2>Día Mundial de la Pasta</h2><p class="meta"><span class="chip c-efemeride">Fecha especial</span> dom 25 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig25.jpg" alt="Instagram día 25"></div>
+<details><summary>Ver texto de la publicación</summary><pre>25 de octubre, Día Mundial de la Pasta 🍝🇮🇹 3 ideas con salchicha siciliana. ¿Cuál preparas hoy? Comenta 👇
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt25.jpg" alt="TikTok día 25"></div>
+<details><summary>Ver texto de la publicación</summary><pre>25 de octubre, Día Mundial de la Pasta 🍝🇮🇹 3 ideas con salchicha siciliana. ¿Cuál preparas hoy? Comenta 👇 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d26" data-p="tip"><header><span class="dnum">26</span><div><h2>Cómo cortarla para servir</h2><p class="meta"><span class="chip c-tip">Tip de cocina</span> lun 26 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>5 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig26.jpg" alt="Instagram día 26"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Cómo cortas tu salchicha? 🔪 Rodajas para arepa y pizza, trozos para pasta y desmenuzada para salsas. Guarda este post 📌
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>5 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt26.jpg" alt="TikTok día 26"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Cómo cortas tu salchicha? 🔪 Rodajas para arepa y pizza, trozos para pasta y desmenuzada para salsas. Guarda este post 📌 #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d27" data-p="viral"><header><span class="dnum">27</span><div><h2>Ranking: ¿cuál es tu favorito?</h2><p class="meta"><span class="chip c-viral">Formato viral</span> mar 27 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>7 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig27.jpg" alt="Instagram día 27"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Ranking de sabores 🏆 Comenta el número de tu favorito (1 al 5). Te contamos el resultado en nuestras historias.
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>7 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt27.jpg" alt="TikTok día 27"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Ranking de sabores 🏆 Comenta el número de tu favorito (1 al 5). Te contamos el resultado en nuestras historias. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d28" data-p="mayorista"><header><span class="dnum">28</span><div><h2>Cómo vendernos al mayor en Caracas</h2><p class="meta"><span class="chip c-mayorista">Mayoristas Caracas</span> mié 28 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig28.jpg" alt="Instagram día 28"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Quieres Traviani en tu negocio? 🤝 Restaurantes, pizzerías, bodegones y parrilleras de Caracas: escríbenos y te pasamos precios al mayor.
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt28.jpg" alt="TikTok día 28"></div>
+<details><summary>Ver texto de la publicación</summary><pre>¿Quieres Traviani en tu negocio? 🤝 Restaurantes, pizzerías, bodegones y parrilleras de Caracas: escríbenos y te pasamos precios al mayor. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d29" data-p="receta"><header><span class="dnum">29</span><div><h2>Salchicha con papas doradas</h2><p class="meta"><span class="chip c-receta">Receta</span> jue 29 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>6 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig29.jpg" alt="Instagram día 29"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Salchicha con papas doradas al horno 🥔 Un plato, cero complicaciones. Guarda la receta.
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>6 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt29.jpg" alt="TikTok día 29"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Salchicha con papas doradas al horno 🥔 Un plato, cero complicaciones. Guarda la receta. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section><section id="d30" data-p="marca"><header><span class="dnum">30</span><div><h2>Cierre de mes: ¿ya probaste los 5?</h2><p class="meta"><span class="chip c-marca">Marca</span> vie 30 oct</p></div></header>
+<div class="posts"><div class="post"><div class="plabel"><b>Instagram</b><span>4 láminas · 18:00</span></div>
+<div class="strip ig"><img loading="lazy" src="ig30.jpg" alt="Instagram día 30"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Un mes de recetas, tips y sabor siciliano 🇮🇹 ¿Ya probaste los 5? Arma tu combinación con delivery gratis desde 4 paquetes.
+
+📲 +58 422 646 8537
+
+#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano</pre></details></div><div class="post"><div class="plabel"><b>TikTok</b><span>4 láminas · 18:00</span></div>
+<div class="strip tt"><img loading="lazy" src="tt30.jpg" alt="TikTok día 30"></div>
+<details><summary>Ver texto de la publicación</summary><pre>Un mes de recetas, tips y sabor siciliano 🇮🇹 ¿Ya probaste los 5? Arma tu combinación con delivery gratis desde 4 paquetes. #salchichasiciliana #traviani #caracas #recetasfaciles #fyp</pre></details></div></div></section>
+</div>
+<script>
+var act=null;
+document.querySelectorAll('button[data-f]').forEach(function(b){b.setAttribute('aria-pressed','false');b.addEventListener('click',function(){
+ act=(act===b.dataset.f)?null:b.dataset.f;
+ document.querySelectorAll('button[data-f]').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.f===act))});
+ document.querySelectorAll('section').forEach(function(s){s.hidden=!!act&&s.dataset.p!==act});
+})});
+</script>
