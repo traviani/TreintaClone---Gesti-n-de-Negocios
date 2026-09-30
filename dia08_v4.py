@@ -126,7 +126,7 @@ def portada_avatar():
 def foto_titulo(archivo, lineas, cuerpo, n, total, cy=0.0, modo=None, tam_ig=150, tam_tt=180, cx=0.5, chip=None):
     """Foto a pantalla completa con titulo multilinea arriba y texto abajo."""
     T, h, o = g.tt(), D.H(), D.oy()
-    foto = Image.open(f"{D.FOT}/{archivo}").convert("RGB")
+    foto = Image.open(archivo if archivo.startswith("/") else f"{D.FOT}/{archivo}").convert("RGB")
     esc = W / foto.width
     hs = int(foto.height * esc)
     ph = foto.resize((W, hs), Image.LANCZOS).filter(ImageFilter.UnsharpMask(2, 60, 3)).convert("RGBA")
