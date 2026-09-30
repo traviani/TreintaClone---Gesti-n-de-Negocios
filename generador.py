@@ -304,10 +304,11 @@ def lamina_cta(titulo, lineas, boton, precio, n, total):
     pos = [(W / 2 - dx, cyl), (W / 2 + dx, cyl), (W / 2, cyc)]
     for p, (cx, cy) in zip(ps, pos):
         pegar_producto(b, p, (int(cx - p.width / 2), int(cy - p.height / 2)), brillo=(255, 240, 200))
-    if T:
-        sticker(b, ["SOLO", precio, "1/2 KG"], 870, 700, 120, (226, 40, 28), CREMA, 12)
-    else:
-        sticker(b, ["SOLO", precio, "1/2 KG"], 905, 640, 115, (226, 40, 28), CREMA, 12)
+    if precio:
+        if T:
+            sticker(b, ["SOLO", precio, "1/2 KG"], 870, 700, 120, (226, 40, 28), CREMA, 12)
+        else:
+            sticker(b, ["SOLO", precio, "1/2 KG"], 905, 640, 115, (226, 40, 28), CREMA, 12)
     d = ImageDraw.Draw(b)
     fb = mont(44 if T else 40, "ExtraBold")
     pastilla(d, 0, 1210 if T else 1000, boton, fb, OSCURO, CREMA, pad=44 if T else 40, centrado=True)
@@ -487,7 +488,7 @@ def lamina_vs(pilar, izq, der, titulo, n, total):
     return terminar(b)
 
 
-def lamina_cierre(pilar, titulo, lineas, boton, total, fotos=(1, 5, 3), precio="$10"):
+def lamina_cierre(pilar, titulo, lineas, boton, total, fotos=(1, 5, 3), precio=None):
     """Cierre con llamado a la acción, adaptado al color del tema."""
     T, oy = tt(), _oy()
     c, o = PALETAS[pilar]

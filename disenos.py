@@ -247,7 +247,7 @@ def lamina_ingredientes(foto, caja, titulo, items, n, total, col=(190, 40, 24)):
     return terminar(b)
 
 
-def lamina_cierre_parrilla(titulo, lineas, boton, total, fotos=(5, 1, 2), precio="$10", fondo="parrilla"):
+def lamina_cierre_parrilla(titulo, lineas, boton, total, fotos=(5, 1, 2), precio=None, fondo="parrilla"):
     """Cierre sobre parrilla con empaques y llamado a la acción."""
     T, h, o = g.tt(), H(), oy()
     b = _fondo(h, fondo, 8)

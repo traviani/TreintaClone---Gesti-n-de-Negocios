@@ -11,7 +11,7 @@ CRE, DOR = g.CREMA, g.DORADO
 def laminas():
     total = 5
     return [
-        lambda: D.portada_parrilla("DOMINGO", "DE FAMILIA", "EL MEJOR PLAN", ["DESDE", "$10", "1/2 KG"], total, fondo="mesa"),
+        lambda: D.portada_parrilla("DOMINGO", "DE FAMILIA", "EL MEJOR PLAN", ["PARA", "TODA LA", "FAMILIA"], total, fondo="mesa"),
         lambda: D.lamina_texto_parrilla([("EL DOMINGO", CRE), ("NO ES DOMINGO", CRE), ("SIN ESTO.", DOR)],
                                         "La parrilla prendida y todos en la mesa.", 2, total, empaque_n=2, fondo="mesa"),
         lambda: D.lamina_bandas("EL DOMINGO\nPERFECTO LLEVA", [("LA FAMILIA", "Todos en la mesa, sin apuro."),

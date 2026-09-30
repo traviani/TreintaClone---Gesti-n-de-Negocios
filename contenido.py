@@ -4,7 +4,7 @@ import generador as g
 
 WA = "WhatsApp +58 422 646 8537"
 ENTREGA = ["Delivery gratis desde 4 paquetes", "Despachos solo en Caracas"]
-MAYOR = ["Precio al mayor por WhatsApp", "Despachamos en Caracas"]
+MAYOR = ["Atención por WhatsApp", "Despachamos en Caracas"]
 HASH = "#salchichasiciliana #traviani #caracas #comidaitaliana #hechoamano #emprendimientovenezolano"
 HASH_TT = "#salchichasiciliana #traviani #caracas #recetasfaciles #fyp"
 F = {"FINOCCHIO": 1, "TRADIZIONALE": 2, "PEPERONCINO": 3, "PECORINO": 4, "PARRILLERA": 5}
@@ -67,7 +67,7 @@ DIAS = {
         P("mayorista", "5", "Cinco sabores", "Finocchio, Tradizionale, Peperoncino, Pecorino y Parrillera. Para pizza, pasta y antipasto.", foto=4),
         P("mayorista", "", "Etiqueta limpia", "Sin nitritos, sin conservantes químicos y sin gluten. Un argumento más para tu carta."),
         C("mayorista", "HABLEMOS", MAYOR, WA, precio=None),
-    ], texto="¿Tienes una pizzería o un restaurante en Caracas? 🍕 Salchicha siciliana artesanal en 5 sabores, sin nitritos ni conservantes químicos. Un ingrediente que tu competencia no tiene.\n\nEscríbenos para precio al mayor: +58 422 646 8537"),
+    ], texto="¿Tienes una pizzería o un restaurante en Caracas? 🍕 Salchicha siciliana artesanal en 5 sabores, sin nitritos ni conservantes químicos. Un ingrediente que tu competencia no tiene.\n\nEscríbenos por WhatsApp: +58 422 646 8537"),
 
     8: dict(pilar="viral", laminas=[
         Portada("viral", "MITO:\nTODAS LLEVAN\nNITRITOS", "Desliza y te contamos la realidad.", [3], sticker_txt=["MITO", "O", "REALIDAD"]),
@@ -123,7 +123,7 @@ DIAS = {
         P("mayorista", "", "Código de barras incluido", "Cada paquete trae su código de barras para pasar directo por tu caja."),
         P("mayorista", "5", "Cinco sabores que rotan", "Tu cliente prueba uno y vuelve por los otros cuatro.", foto=3),
         C("mayorista", "SÚMATE", MAYOR, WA, precio=None),
-    ], texto="¿Tienes un bodegón o charcutería en Caracas? 🛒 Salchicha siciliana artesanal en empaque al vacío de 500 g, con código de barras y 5 sabores.\n\nPrecio al mayor: +58 422 646 8537"),
+    ], texto="¿Tienes un bodegón o charcutería en Caracas? 🛒 Salchicha siciliana artesanal en empaque al vacío de 500 g, con código de barras y 5 sabores.\n\nEscríbenos por WhatsApp: +58 422 646 8537"),
 
     15: dict(pilar="receta", laminas=[
         Portada("receta", "PANINI CON\nPEPERONCINO", "Almuerzo picante en 20 minutos.", [3], sticker_txt=["PICA", "RICO", "OJO"]),
@@ -183,7 +183,7 @@ DIAS = {
         P("mayorista", "", "Una espiral en el plato", "Se ve distinta, sabe distinta y se vuelve la foto que tus clientes suben.", foto=5),
         P("mayorista", "", "Pensada para el carbón", "El sabor Parrillera tiene sabor criollo y se dora parejo."),
         C("mayorista", "HABLEMOS", MAYOR, WA, precio=None, fotos=(5, 3, 5)),
-    ], texto="¿Tienes una parrillera en Caracas? 🔥 Pon una espiral siciliana en tu menú. Se ve distinta, sabe distinta.\n\nPrecio al mayor: +58 422 646 8537"),
+    ], texto="¿Tienes una parrillera en Caracas? 🔥 Pon una espiral siciliana en tu menú. Se ve distinta, sabe distinta.\n\nEscríbenos por WhatsApp: +58 422 646 8537"),
 
     22: dict(pilar="uso", laminas=[
         Portada("uso", "¿CUÁL PEDIR?", "Un sabor para cada ocasión.", [1, 3, 5]),
@@ -242,10 +242,10 @@ DIAS = {
         Portada("mayorista", "¿TRAVIANI EN\nTU NEGOCIO?", "Así empezamos a trabajar juntos.", [1, 2, 3]),
         P("mayorista", "1", "Escríbenos", "Por WhatsApp. Cuéntanos qué tipo de negocio tienes."),
         P("mayorista", "2", "Prueba el producto", "Coordinamos para que conozcas los sabores."),
-        P("mayorista", "3", "Primer pedido", "Te pasamos precios al mayor y armas tu pedido."),
+        P("mayorista", "3", "Primer pedido", "Armamos tu primer pedido juntos."),
         P("mayorista", "4", "Despacho en Caracas", "Te lo llevamos a tu local.", foto=5),
         C("mayorista", "ESCRÍBENOS HOY", MAYOR, WA, precio=None),
-    ], texto="¿Quieres Traviani en tu negocio? 🤝 Restaurantes, pizzerías, bodegones y parrilleras de Caracas: escríbenos y te pasamos precios al mayor.\n\n📲 +58 422 646 8537"),
+    ], texto="¿Quieres Traviani en tu negocio? 🤝 Restaurantes, pizzerías, bodegones y parrilleras de Caracas: escríbenos y hablemos.\n\n📲 +58 422 646 8537"),
 
     29: dict(pilar="receta", laminas=[
         Portada("receta", "SALCHICHA CON\nPAPAS DORADAS", "Un plato, cero complicaciones.", [5]),

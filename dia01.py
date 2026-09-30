@@ -11,7 +11,7 @@ lamina_sabor('PEPERONCINO',3,'Picante. Para los que la prefieren con carácter.'
 lamina_sabor('PECORINO',4,'Con queso pecorino, perejil y tomate.','pasta y horno',5,T),
 lamina_sabor('PARRILLERA',5,'Sabor criollo, pensada para la parrilla del fin de semana.','la parrilla',6,T),
 lamina_lista('LIMPIA Y NATURAL',[('0 NITRITOS','CERO'),('0 QUÍMICOS','CONSERVANTES'),('SIN GLUTEN','APTA'),('PROTEÍNA','ALTA EN')],'Delgada, en espiral y lista en pocos minutos.',7,T),
-lamina_cta(['PIDE DIRECTO','CON NOSOTROS'],['Delivery gratis desde 4 paquetes','Despachos solo en Caracas'],'WhatsApp +58 422 646 8537','$10',8,T)]
+lamina_cta(['PIDE DIRECTO','CON NOSOTROS'],['Delivery gratis desde 4 paquetes','Despachos solo en Caracas'],'WhatsApp +58 422 646 8537',None,8,T)]
 for i,im in enumerate(s,1): im.save(f'{CARP}/{i:02d}.jpg',quality=92)
 from PIL import Image
 sz=(360,450) if generador.FORMATO=='ig' else (270,480)

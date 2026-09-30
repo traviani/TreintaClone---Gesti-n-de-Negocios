@@ -20,7 +20,7 @@ def laminas():
                                         None, fondo="azul"),
         lambda: D.lamina_abanico("5 SABORES PARA TU COCINA", ["PIZZA", "PASTA", "ANTIPASTO"], 4, total),
         lambda: D.lamina_checks("CALIDAD QUE\nSE NOTA", ["Sin nitritos", "Sin conservantes químicos", "Sin gluten", "Hecha a mano en Caracas"], 5, total, recorte=pizza),
-        lambda: D.lamina_cierre_parrilla("PRECIO AL\nMAYOR", ["Despachos solo en Caracas", WA], "ESCRÍBENOS POR WHATSAPP", total,
+        lambda: D.lamina_cierre_parrilla("TRABAJEMOS\nJUNTOS", ["Despachos solo en Caracas", WA], "ESCRÍBENOS POR WHATSAPP", total,
                                          fotos=(3, 5, 1), precio=None, fondo="azul"),
     ]
 

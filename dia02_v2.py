@@ -24,7 +24,7 @@ def laminas():
                                        "La parrilla encendida"], 4, total, ROJO),
         lambda: D.lamina_producto_split(5, "EL SABOR DE HOY: PARRILLERA",
                                         "Pensada para el carbón. Enrollada en espiral, delgada y hecha a mano en Caracas.", 5, total, ROJO,
-                                        ["SOLO", "$10", "1/2 KG"]),
+                                        ["HECHA", "A MANO", "EN CARACAS"]),
         lambda: D.lamina_cierre_parrilla("TE LO\nGANASTE", ENTREGA + [WA], "PIDE DIRECTO CON NOSOTROS", total),
     ]
 
