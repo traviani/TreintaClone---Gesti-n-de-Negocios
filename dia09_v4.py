@@ -7,6 +7,7 @@ from dia08_v4 import foto_titulo
 from dia02_v4 import lista_con_empaque
 from contenido import WA, ENTREGA
 
+g.FACTOR = 1.4  # textos más grandes para verse bien en el teléfono
 ROJO = (196, 44, 26)
 CRE, DOR = g.CREMA, g.DORADO
 

@@ -23,7 +23,12 @@ def anton(s):
     return ImageFont.truetype(f"{FONTS}/Anton-Regular.ttf", s)
 
 
+FACTOR = 1.0  # >1 agranda los textos de cuerpo (27-52 px); pie y otros textos chicos no cambian
+
+
 def mont(s, peso="Bold"):
+    if FACTOR != 1.0 and 27 <= s <= 52:
+        s = int(s * FACTOR)
     f = ImageFont.truetype(f"{FONTS}/Montserrat%5Bwght%5D.ttf", s)
     f.set_variation_by_name(peso)
     return f

@@ -190,7 +190,8 @@ def cierre_mesa(titulo, lineas, boton, total, fotos=(2, 3, 1)):
     pastilla(d, 0, yb, boton, mont(42 if T else 38, "ExtraBold"), DORADO, OSCURO, pad=40, centrado=True)
     yy = yb + 110
     for l in lineas:
-        centrar(d, yy, l, mont(34 if T else 30, "Bold"), CREMA); yy += 48
+        fl = mont(34 if T else 30, "Bold")
+        centrar(d, yy, l, fl, CREMA); yy += int(fl.size * 1.4)
     if not T:
         pie(d, CREMA, total, total)
     return terminar(b)
