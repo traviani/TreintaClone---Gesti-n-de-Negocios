@@ -113,11 +113,12 @@ def espiral_cutout(ancho_px, ang=-6):
 
 
 # ---------- láminas ----------
-def portada_parrilla(l1, l2, etiqueta, sello, total):
+def portada_parrilla(l1, l2, etiqueta, sello, total, fondo="parrilla"):
     """Portada: título gigante sobre parrilla con la espiral como protagonista."""
     T, h, o = g.tt(), H(), oy()
-    b = parrilla_bg(h, ang=-14 if not T else -12)
-    humo(b, h, 0, int(h * 0.3))
+    b = parrilla_bg(h, ang=-14 if not T else -12) if fondo == "parrilla" else mesa_bg(h, 4)
+    if fondo == "parrilla":
+        humo(b, h, 0, int(h * 0.3))
     d = ImageDraw.Draw(b)
     # resplandor bajo la salchicha
     cy_s = int(h * (0.615 if T else 0.71))
@@ -133,6 +134,8 @@ def portada_parrilla(l1, l2, etiqueta, sello, total):
     d = ImageDraw.Draw(b)
     pastilla(d, 0, o + (28 if T else 50), etiqueta, mont(30 if T else 27, "ExtraBold"), DORADO, OSCURO, centrado=True)
     tam = 330 if T else 225
+    while ancho(d, l1, anton(tam)) > W - 90:
+        tam -= 6
     centrar(d, o + (100 if T else 105), l1, anton(tam), CREMA)
     y2 = o + (100 if T else 105) + int(tam * 1.13)
     centrar(d, y2, l2, anton(int(tam * 0.56)), DORADO)
@@ -272,15 +275,18 @@ def lamina_cierre_parrilla(titulo, lineas, boton, total, fotos=(5, 1, 2), precio
     return terminar(b)
 
 
-def lamina_texto_parrilla(lineas, sub, n, total, empaque_n=5, seed=11):
+def lamina_texto_parrilla(lineas, sub, n, total, empaque_n=5, seed=11, fondo="parrilla"):
     """Frase grande sobre la parrilla. lineas = [(texto, color)], con un empaque asomando abajo."""
     T, h, o = g.tt(), H(), oy()
-    b = parrilla_bg(h, ang=-8, seed=seed, calor=0.6)
-    b.alpha_composite(Image.new("RGBA", (W, h), (10, 6, 5, 105)))
-    humo(b, h, 0, int(h * 0.3), seed=4)
+    b = parrilla_bg(h, ang=-8, seed=seed, calor=0.6) if fondo == "parrilla" else mesa_bg(h, seed)
+    b.alpha_composite(Image.new("RGBA", (W, h), (10, 6, 5, 105 if fondo == "parrilla" else 120)))
+    if fondo == "parrilla":
+        humo(b, h, 0, int(h * 0.3), seed=4)
     viñeta(b, h)
     d = ImageDraw.Draw(b)
     tam = 190 if T else 158
+    while max(ancho(d, t, anton(tam)) for t, _ in lineas) > W - 150:
+        tam -= 6
     y = o + (150 if T else 130)
     for txt, col in lineas:
         d.text((70, y), txt, font=anton(tam), fill=col); y += int(tam * 1.12)
@@ -290,14 +296,36 @@ def lamina_texto_parrilla(lineas, sub, n, total, empaque_n=5, seed=11):
         d.text((74, y), l, font=fs, fill=(244, 232, 216)); y += int(fs.size * 1.4)
     alto = 700 if T else 560
     p = empaque(empaque_n, alto, -14)
-    pegar_producto(b, p, (W - p.width + 80, 1290 if T else h - int(alto * 0.78)), brillo=(255, 150, 50))
+    pegar_producto(b, p, (W - p.width + 80, int(y + 50) if T else h - int(alto * 0.78)), brillo=(255, 150, 50))
     d = ImageDraw.Draw(b)
     if not T:
         pie(d, CREMA, n, total)
     return terminar(b)
 
 
+def mesa_bg(h, seed=4):
+    """Mesa de madera con tablones, veta vertical y luz cálida al centro."""
+    import numpy as np
+    rnd = np.random.RandomState(seed)
+    gran = np.array(Image.fromarray((rnd.rand(max(2, h // 30), W // 2) * 255).astype("uint8")).resize((W, h), Image.BICUBIC), dtype=float) / 255
+    fino = np.array(Image.fromarray((rnd.rand(h // 2, W // 3) * 255).astype("uint8")).resize((W, h), Image.BICUBIC), dtype=float) / 255
+    tex = 0.65 * gran + 0.35 * fino
+    oscuro, claro = np.array([62, 36, 20.]), np.array([158, 102, 58.])
+    img = oscuro + (claro - oscuro) * tex[..., None]
+    pw = W // 5 + 1
+    for i in range(5):
+        x0, x1 = i * pw, min(W, i * pw + pw)
+        img[:, x0:x1, :] += rnd.uniform(-22, 22)
+        img[:, x0:x0 + 5, :] *= 0.3
+    yy, xx = np.mgrid[0:h, 0:W]
+    d = np.sqrt(((xx - W / 2) / (W * 0.7)) ** 2 + ((yy - h * 0.5) / (h * 0.6)) ** 2)
+    img *= (1.18 - 0.62 * np.clip(d, 0, 1.2))[..., None]
+    return Image.fromarray(np.clip(img, 0, 255).astype("uint8"), "RGB").convert("RGBA")
+
+
 def _fondo(h, fondo, seed):
+    if fondo == "mesa":
+        return mesa_bg(h, seed)
     if fondo == "parrilla":
         return parrilla_bg(h, ang=10 if seed == 8 else -14, seed=seed, calor=0.55 if seed == 8 else 0.85)
     c, o = g.PALETAS["receta"]
@@ -404,6 +432,83 @@ def lamina_paso_props(titulo, cuerpo, num, n, total, props):
     y += 22
     for l in g._lineas(d, cuerpo, fc, 620):
         d.text((82, y), l, font=fc, fill=(255, 236, 212)); y += int(fc.size * 1.42)
+    if not T:
+        pie(d, CREMA, n, total)
+    return terminar(b)
+
+
+def _mesa_oscura(h, seed=4, alfa=125):
+    b = mesa_bg(h, seed)
+    b.alpha_composite(Image.new("RGBA", (W, h), (12, 7, 5, alfa)))
+    viñeta(b, h)
+    return b
+
+
+def lamina_bandas(titulo, filas, n, total, col=(196, 44, 26)):
+    """Tres bandas de color con una palabra grande y una línea de texto. filas = [(palabra, texto)]."""
+    T, h, o = g.tt(), H(), oy()
+    b = _mesa_oscura(h, 5)
+    d = ImageDraw.Draw(b)
+    ft = anton(118 if T else 100)
+    y = o + (40 if T else 70)
+    for l in titulo.split("\n"):
+        d.text((70, y), l, font=ft, fill=CREMA); y += int(ft.size * 1.1)
+    y += 26
+    alto = 310 if T else 250
+    estilos = [(col, CREMA, (255, 226, 200)), (DORADO, OSCURO, (70, 40, 14)), (CREMA, OSCURO, (90, 60, 40))]
+    for i, (pal, txt) in enumerate(filas):
+        fb, ct, cs = estilos[i % 3]
+        x0 = 50 + (40 if i % 2 else 0)
+        sh = capa(); ImageDraw.Draw(sh).rounded_rectangle((x0, y + 12, W - 50 - (0 if i % 2 else 40), y + alto + 12), 34, fill=(0, 0, 0, 120))
+        b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(14)))
+        ImageDraw.Draw(b).rounded_rectangle((x0, y, W - 50 - (0 if i % 2 else 40), y + alto), 34, fill=fb)
+        d = ImageDraw.Draw(b)
+        fp = anton(112 if T else 96)
+        while ancho(d, pal, fp) > W - x0 - 160:
+            fp = anton(fp.size - 6)
+        d.text((x0 + 44, y + (48 if T else 34)), pal, font=fp, fill=ct)
+        fc = mont(42 if T else 36, "SemiBold")
+        yy = y + (48 if T else 34) + int(fp.size * 1.25)
+        for l in envolver(d, txt, fc, W - x0 - 180):
+            d.text((x0 + 46, yy), l, font=fc, fill=cs); yy += int(fc.size * 1.35)
+        y += alto + 26
+    if not T:
+        pie(d, CREMA, n, total)
+    return terminar(b)
+
+
+def lamina_cantidades(titulo, filas, n, total, sabores=(3, 2, 1, 5)):
+    """Guía visual: tarjetas con personas a la izquierda y los paquetes dibujados a la derecha. filas = [(personas, paquetes)]."""
+    T, h, o = g.tt(), H(), oy()
+    b = _mesa_oscura(h, 6)
+    d = ImageDraw.Draw(b)
+    ft = anton(108 if T else 92)
+    y = o + (30 if T else 60)
+    for l in titulo.split("\n"):
+        d.text((70, y), l, font=ft, fill=CREMA); y += int(ft.size * 1.1)
+    y += 22
+    alto = 330 if T else 272
+    for i, (pers, paq) in enumerate(filas):
+        cl = capa()
+        ImageDraw.Draw(cl).rounded_rectangle((50, y + 12, W - 50, y + alto + 12), 36, fill=(0, 0, 0, 120))
+        b.alpha_composite(cl.filter(ImageFilter.GaussianBlur(14)))
+        ImageDraw.Draw(b).rounded_rectangle((50, y, W - 50, y + alto), 36, fill=CREMA)
+        ImageDraw.Draw(b).rounded_rectangle((50, y, 330, y + alto), 36, fill=(196, 44, 26))
+        ImageDraw.Draw(b).rectangle((290, y, 330, y + alto), fill=(196, 44, 26))
+        d = ImageDraw.Draw(b)
+        centrar(d, y + alto * 0.12, str(pers), anton(170 if T else 140), CREMA, 50, 330)
+        centrar(d, y + alto * 0.12 + (190 if T else 158), "PERSONAS", mont(28, "ExtraBold"), (255, 226, 200), 50, 330)
+        ph = int(alto * 0.80)
+        ps = [empaque(sabores[k % len(sabores)], ph, (-6, 4, -3, 6)[k % 4]) for k in range(paq)]
+        paso = int(ps[0].width * 0.74)
+        x = 360
+        for p in ps:
+            pegar_producto(b, p, (x, int(y + (alto - ph) * 0.35)))
+            x += paso
+        d = ImageDraw.Draw(b)
+        et = f"{paq} PAQUETES"
+        pastilla(d, W - 70 - ancho(d, et, mont(28, "ExtraBold")) - 52, y + alto - 62, et, mont(28, "ExtraBold"), OSCURO, CREMA, pad=26)
+        y += alto + 24
     if not T:
         pie(d, CREMA, n, total)
     return terminar(b)
