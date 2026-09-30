@@ -116,7 +116,7 @@ def espiral_cutout(ancho_px, ang=-6):
 def portada_parrilla(l1, l2, etiqueta, sello, total, fondo="parrilla"):
     """Portada: título gigante sobre parrilla con la espiral como protagonista."""
     T, h, o = g.tt(), H(), oy()
-    b = parrilla_bg(h, ang=-14 if not T else -12) if fondo == "parrilla" else mesa_bg(h, 4)
+    b = parrilla_bg(h, ang=-14 if not T else -12) if fondo == "parrilla" else (teal_bg(h) if fondo == "teal" else mesa_bg(h, 4))
     if fondo == "parrilla":
         humo(b, h, 0, int(h * 0.3))
     d = ImageDraw.Draw(b)
@@ -124,13 +124,14 @@ def portada_parrilla(l1, l2, etiqueta, sello, total, fondo="parrilla"):
     cy_s = int(h * (0.615 if T else 0.71))
     glow = capa() if not T else Image.new("RGBA", (W, h), (0, 0, 0, 0))
     glow = Image.new("RGBA", (W, h), (0, 0, 0, 0))
-    ImageDraw.Draw(glow).ellipse((60, cy_s - 480, W - 60, cy_s + 480), fill=(255, 110, 20, 140))
+    gcol = {"parrilla": (255, 110, 20, 140), "mesa": (255, 190, 90, 110)}.get(fondo, (210, 255, 240, 95))
+    ImageDraw.Draw(glow).ellipse((60, cy_s - 480, W - 60, cy_s + 480), fill=gcol)
     b.alpha_composite(glow.filter(ImageFilter.GaussianBlur(110)))
     sp = espiral_cutout(960 if T else 880)
     pegar_producto(b, sp, (W // 2 - sp.width // 2, cy_s - sp.height // 2))
     viñeta(b, h)
     # oscurece la zona del título para que se lea
-    b.alpha_composite(degradado_v(W, h, 0, int(h * 0.36), (10, 6, 5), 190, 0))
+    b.alpha_composite(degradado_v(W, h, 0, int(h * 0.36), (10, 6, 5) if fondo != "teal" else (2, 28, 28), 190, 0))
     d = ImageDraw.Draw(b)
     pastilla(d, 0, o + (28 if T else 50), etiqueta, mont(30 if T else 27, "ExtraBold"), DORADO, OSCURO, centrado=True)
     tam = 330 if T else 225
@@ -138,7 +139,10 @@ def portada_parrilla(l1, l2, etiqueta, sello, total, fondo="parrilla"):
         tam -= 6
     centrar(d, o + (100 if T else 105), l1, anton(tam), CREMA)
     y2 = o + (100 if T else 105) + int(tam * 1.13)
-    centrar(d, y2, l2, anton(int(tam * 0.56)), DORADO)
+    t2 = int(tam * 0.56)
+    while ancho(d, l2, anton(t2)) > W - 90:
+        t2 -= 4
+    centrar(d, y2, l2, anton(t2), DORADO)
     sticker(b, sello, 890 if T else 905, int(h * (0.79 if T else 0.78)), 118 if T else 106, DORADO, OSCURO, 10)
     d = ImageDraw.Draw(b)
     if not T:
@@ -323,7 +327,22 @@ def mesa_bg(h, seed=4):
     return Image.fromarray(np.clip(img, 0, 255).astype("uint8"), "RGB").convert("RGBA")
 
 
+def teal_bg(h):
+    c, o = g.PALETAS["tip"]
+    b = g._radial(c, o, 0.5, h * 0.42, 1.1, h).convert("RGBA")
+    gr = Image.new("RGBA", (W, h), (0, 0, 0, 0))
+    gd = ImageDraw.Draw(gr)
+    for x in range(0, W, 60):
+        gd.line((x, 0, x, h), fill=(255, 255, 255, 16), width=2)
+    for y in range(0, h, 60):
+        gd.line((0, y, W, y), fill=(255, 255, 255, 16), width=2)
+    b.alpha_composite(gr)
+    return b
+
+
 def _fondo(h, fondo, seed):
+    if fondo == "teal":
+        return teal_bg(h)
     if fondo == "mesa":
         return mesa_bg(h, seed)
     if fondo == "parrilla":
@@ -511,4 +530,153 @@ def lamina_cantidades(titulo, filas, n, total, sabores=(3, 2, 1, 5)):
         y += alto + 24
     if not T:
         pie(d, CREMA, n, total)
+    return terminar(b)
+
+
+# ---------- diagramas (tips) ----------
+def _cabecera(b, num, titulo, color=None):
+    T, o = g.tt(), oy()
+    d = ImageDraw.Draw(b)
+    x = 80
+    if num is not None:
+        d.ellipse((x, o + 60, x + 120, o + 180), fill=DORADO)
+        centrar(d, o + 60 + 6, str(num), anton(100), OSCURO, x, x + 120)
+        x += 150
+    ft = anton(108 if T else 96)
+    y = o + (50 if T else 54)
+    for l in g._lineas(d, titulo, ft, W - x - 60):
+        d.text((x, y), l, font=ft, fill=CREMA); y += int(ft.size * 1.12)
+    return y
+
+
+def _cuerpo_abajo(b, cuerpo, n, total, col=CREMA):
+    T, h = g.tt(), H()
+    d = ImageDraw.Draw(b)
+    fc = mont(44 if T else 40, "SemiBold")
+    lin = g._lineas(d, cuerpo, fc, W - 160)
+    fondo = 1490 if T else h - 120
+    y = fondo - len(lin) * int(fc.size * 1.4)
+    for l in lin:
+        d.text((80, y), l, font=fc, fill=col); y += int(fc.size * 1.4)
+    if not T:
+        pie(d, col, n, total)
+    return fondo - len(lin) * int(fc.size * 1.4)
+
+
+def _pincho(b, p1, p2, grosor=18):
+    """Pincho de acero con brillo y sombra."""
+    k = 3
+    w, h = b.size
+    capa_ = Image.new("RGBA", (w * k, h * k), (0, 0, 0, 0))
+    d = ImageDraw.Draw(capa_)
+    s = lambda p: (p[0] * k, p[1] * k)
+    d.line([s((p1[0] + 10, p1[1] + 16)), s((p2[0] + 10, p2[1] + 16))], fill=(0, 0, 0, 130), width=grosor * k)
+    cap = Image.new("RGBA", (w * k, h * k), (0, 0, 0, 0))
+    sh = capa_.filter(ImageFilter.GaussianBlur(10 * k))
+    d2 = ImageDraw.Draw(cap)
+    d2.line([s(p1), s(p2)], fill=(150, 156, 162, 255), width=grosor * k)
+    d2.line([s((p1[0] - 3, p1[1] - 3)), s((p2[0] - 3, p2[1] - 3))], fill=(238, 241, 244, 255), width=int(grosor * k * 0.32))
+    for p in (p1, p2):
+        r = grosor * 0.9 * k
+        d2.ellipse((p[0] * k - r, p[1] * k - r, p[0] * k + r, p[1] * k + r), fill=(120, 126, 132, 255))
+        r2 = r * 0.55
+        d2.ellipse((p[0] * k - r2, p[1] * k - r2, p[0] * k + r2, p[1] * k + r2), fill=(222, 226, 230, 255))
+    full = Image.alpha_composite(sh, cap).resize((w, h), Image.LANCZOS)
+    b.alpha_composite(full)
+
+
+def lamina_diagrama_pinchos(num, titulo, cuerpo, n, total):
+    T, h, o = g.tt(), H(), oy()
+    b = teal_bg(h)
+    yt = _cabecera(b, num, titulo)
+    sp = espiral_cutout(620 if T else 640, 0)
+    cx, cy = W // 2, int(yt + (200 if T else 170) + sp.height / 2)
+    pegar_producto(b, sp, (cx - sp.width // 2, cy - sp.height // 2))
+    R = sp.width * 0.62
+    d45 = R * 0.7071
+    for (a, c) in (((cx - d45 - 30, cy - d45 - 30), (cx + d45 + 30, cy + d45 + 30)), ((cx + d45 + 30, cy - d45 - 30), (cx - d45 - 30, cy + d45 + 30))):
+        _pincho(b, a, c)
+    d = ImageDraw.Draw(b)
+    for k, (px, py) in enumerate([(cx - d45 - 70, cy - d45 - 70), (cx + d45 + 70, cy - d45 - 70)], 1):
+        d.ellipse((px - 34, py - 34, px + 34, py + 34), fill=DORADO)
+        centrar(d, py - 30, str(k), anton(56), OSCURO, px - 40, px + 40)
+    _cuerpo_abajo(b, cuerpo, n, total)
+    return terminar(b)
+
+
+def lamina_fuego(num, titulo, cuerpo, n, total):
+    import numpy as np
+    T, h, o = g.tt(), H(), oy()
+    b = parrilla_bg(h, ang=-8, seed=12, calor=0.55)
+    b.alpha_composite(Image.new("RGBA", (W, h), (10, 6, 5, 135)))
+    viñeta(b, h)
+    yt = _cabecera(b, num, titulo)
+    y0 = int(yt + (330 if T else 140))
+    x0, x1, alto = 90, W - 90, 92 if not T else 130
+    grad = np.zeros((alto, x1 - x0, 4), dtype="uint8")
+    cols = [(70, 160, 235), (250, 195, 50), (225, 40, 28)]
+    for x in range(x1 - x0):
+        t = x / (x1 - x0 - 1) * 2
+        i = min(int(t), 1)
+        f = t - i
+        c = [int(cols[i][k] + (cols[i + 1][k] - cols[i][k]) * f) for k in range(3)]
+        grad[:, x, :3] = c
+        grad[:, x, 3] = 255
+    barra = Image.fromarray(grad, "RGBA")
+    m = Image.new("L", barra.size, 0)
+    ImageDraw.Draw(m).rounded_rectangle((0, 0, barra.width - 1, alto - 1), alto // 2, fill=255)
+    barra.putalpha(m)
+    sh = Image.new("RGBA", b.size, (0, 0, 0, 0))
+    ImageDraw.Draw(sh).rounded_rectangle((x0, y0 + 12, x1, y0 + alto + 12), alto // 2, fill=(0, 0, 0, 130))
+    b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(14)))
+    b.alpha_composite(barra, (x0, y0))
+    d = ImageDraw.Draw(b)
+    etiquetas = [("BAJO", x0 + 90), ("MEDIO", (x0 + x1) // 2), ("ALTO", x1 - 90)]
+    for et, cx_ in etiquetas:
+        centrar(d, y0 + alto + 34, et, anton(58 if T else 50), CREMA, cx_ - 150, cx_ + 150)
+    # marcador en MEDIO
+    mx = (x0 + x1) // 2
+    r = 74 if T else 64
+    d.ellipse((mx - r, y0 + alto // 2 - r, mx + r, y0 + alto // 2 + r), fill=CREMA, outline=(40, 120, 70), width=10)
+    d.line([(mx - r * 0.42, y0 + alto // 2), (mx - r * 0.1, y0 + alto // 2 + r * 0.34), (mx + r * 0.46, y0 + alto // 2 - r * 0.36)], fill=(40, 140, 80), width=14, joint="curve")
+    # X en ALTO
+    ax, ay = x1 - 90, y0 + alto // 2
+    d.ellipse((ax - 52, ay - 52, ax + 52, ay + 52), fill=CREMA)
+    d.line([(ax - 26, ay - 26), (ax + 26, ay + 26)], fill=(200, 30, 26), width=13)
+    d.line([(ax + 26, ay - 26), (ax - 26, ay + 26)], fill=(200, 30, 26), width=13)
+    pastilla(d, mx - 120, y0 - 80, "USA ESTE", mont(30, "ExtraBold"), DORADO, OSCURO, pad=28)
+    _cuerpo_abajo(b, cuerpo, n, total)
+    return terminar(b)
+
+
+def lamina_giro(num, titulo, cuerpo, n, total):
+    T, h, o = g.tt(), H(), oy()
+    b = teal_bg(h)
+    yt = _cabecera(b, num, titulo)
+    sp = espiral_cutout(520 if T else 540, 0)
+    cx, cy = W // 2, int(yt + (200 if T else 190) + sp.height / 2)
+    pegar_producto(b, sp, (cx - sp.width // 2, cy - sp.height // 2), brillo=(200, 255, 240))
+    k = 3
+    R = sp.width * 0.64
+    lay = Image.new("RGBA", (W * k, h * k), (0, 0, 0, 0))
+    ld = ImageDraw.Draw(lay)
+    box = ((cx - R) * k, (cy - R) * k, (cx + R) * k, (cy + R) * k)
+    ang0, ang1 = 130, 400
+    ld.arc(box, ang0, ang1, fill=DORADO + (255,), width=30 * k)
+    import math as _m
+    t = _m.radians(ang1)
+    px, py = cx + R * _m.cos(t), cy + R * _m.sin(t)
+    tx, ty = -_m.sin(t), _m.cos(t)     # tangente (sentido horario en pantalla)
+    nx, ny = _m.cos(t), _m.sin(t)
+    L, A = 78, 62
+    pts = [(px + tx * L, py + ty * L), (px + nx * A - tx * 14, py + ny * A - ty * 14), (px - nx * A - tx * 14, py - ny * A - ty * 14)]
+    ld.polygon([(x * k, y * k) for x, y in pts], fill=DORADO + (255,))
+    lay = lay.resize((W, h), Image.LANCZOS)
+    sh = lay.filter(ImageFilter.GaussianBlur(10))
+    sh.putalpha(sh.split()[3].point(lambda v: int(v * 0.5)))
+    b.alpha_composite(sh, (8, 12))
+    b.alpha_composite(lay)
+    d = ImageDraw.Draw(b)
+    ytop = _cuerpo_abajo(b, cuerpo, n, total)
+    pastilla(d, 0, min(int(cy + R + 50), ytop - 110), "UNA SOLA VEZ", mont(40 if T else 36, "ExtraBold"), CREMA, OSCURO, pad=40, centrado=True)
     return terminar(b)
