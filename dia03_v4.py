@@ -12,7 +12,7 @@ ROJO = (196, 44, 26)
 
 def portada():
     foto = D.cargar("pasta.png")
-    im = D.portada_foto(foto, "PASTA", "CON FINOCCHIO", "RECETA · SALCHICHA SICILIANA", ["LISTA EN", "20", "MIN"], 7).convert("RGBA")
+    im = D.portada_foto(foto, "PASTA", "CON SALCHICHA", "RECETA · FINOCCHIO TRAVIANI", ["LISTA EN", "20", "MIN"], 7).convert("RGBA")
     h = im.height
     p = empaque(1, 560 if g.tt() else 520, 10)
     pegar_producto(im, p, (20, int(h * (0.73 if g.tt() else 0.66)) - p.height // 2 + 40), brillo=(255, 200, 120))
