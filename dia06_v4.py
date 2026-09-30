@@ -20,6 +20,9 @@ def dia(*a, post=None, **k):
 
 def laminas():
     pasta = D.cargar("pasta.png")
+    arepa = D.cargar("arepa_ref.png").crop((0, 320, 432, 880))
+    panini = D.cargar("panini_ref.png").crop((0, 70, 683, 400))
+    parri = D.cargar("parrilla_ref.png")
     pizza = Image.open(f"{D.FOT}/pizza_recorte.png").convert("RGBA")
     total = 7
     T = g.tt()
@@ -29,16 +32,19 @@ def laminas():
                                (2, 170, 20, 6, 0.78), (5, 0, -10, 0, 0.92)],
                               D.mesa_bg if False else (lambda h: D._mesa_oscura(h, 4, 70)), total),
         dia("LUNES", "EN AREPA", "Asada y en rodajas, dentro de la arepa calientita. Desayuno venezolano con sabor siciliano.",
-            "grafico", (238, 192, 52), 2, total, empaque_n=2, claro=True, ghost="AREPA"),
+            "polaroid", (238, 192, 52), 2, total, foto=arepa, claro=True,
+            post=((2, 0.575 if not T else 0.49, 0.33 if not T else 0.27, 8), dict(dx=300))),
         dia("MARTES", "EN PASTA", "Dorada en trozos y mezclada con salsa de tomate. Lista en 20 minutos.",
             "circulo", ROJO, 3, total, foto=pasta, caja=(150, 360, 690, 830),
-            post=((1, 0.66 if not T else 0.60, 0.30, -8), dict(dx=290))),
+            post=((1, 0.66 if not T else 0.52, 0.30 if not T else 0.25, -8), dict(dx=290))),
         dia("MIÉRCOLES", "EN PANINI", "Con pimentones asados y pan crujiente. El almuerzo rápido que sí llena.",
-            "grafico", (30, 120, 92), 4, total, empaque_n=4, ghost="PANINI"),
+            "polaroid", (30, 120, 92), 4, total, foto=panini,
+            post=((3, 0.57 if not T else 0.49, 0.33 if not T else 0.27, -8), dict(dx=-300))),
         dia("JUEVES", "EN PIZZA", "Sobre la masa, con queso y salsa. La pizza de jueves sube de nivel.",
             "recorte", (200, 84, 22), 5, total, foto=pizza, ghost="PIZZA", empaque_n=3),
         dia("VIERNES A DOMINGO", "A LA PARRILLA", "Entera, en espiral y con los panas. La forma clásica de comerla.",
-            "grafico", (20, 105, 118), 6, total, empaque_n=5, ghost="FUEGO"),
+            "circulo", (20, 105, 118), 6, total, foto=parri,
+            post=((5, 0.62 if not T else 0.50, 0.30 if not T else 0.25, -8), dict(dx=290))),
         lambda: D.lamina_cierre_parrilla("¿CUÁL PRUEBAS\nPRIMERO?", ENTREGA + [WA], "PIDE DIRECTO CON NOSOTROS", total,
                                          fotos=(3, 4, 1), fondo="ambar"),
     ]
