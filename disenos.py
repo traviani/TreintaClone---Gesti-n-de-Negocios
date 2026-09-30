@@ -282,7 +282,7 @@ def lamina_cierre_parrilla(titulo, lineas, boton, total, fotos=(5, 1, 2), precio
 def lamina_texto_parrilla(lineas, sub, n, total, empaque_n=5, seed=11, fondo="parrilla"):
     """Frase grande sobre la parrilla. lineas = [(texto, color)], con un empaque asomando abajo."""
     T, h, o = g.tt(), H(), oy()
-    b = parrilla_bg(h, ang=-8, seed=seed, calor=0.6) if fondo == "parrilla" else mesa_bg(h, seed)
+    b = parrilla_bg(h, ang=-8, seed=seed, calor=0.6) if fondo == "parrilla" else _fondo(h, fondo, seed)
     b.alpha_composite(Image.new("RGBA", (W, h), (10, 6, 5, 105 if fondo == "parrilla" else 120)))
     if fondo == "parrilla":
         humo(b, h, 0, int(h * 0.3), seed=4)
@@ -341,6 +341,11 @@ def teal_bg(h):
 
 
 def _fondo(h, fondo, seed):
+    if fondo == "azul":
+        c, o = g.PALETAS["mayorista"]
+        b = g._radial(tuple(int(v * 1.05) for v in c), o, 0.5, h * 0.4, 1.1, h).convert("RGBA")
+        espiral(ImageDraw.Draw(b), W / 2, h * 0.45, 720, (255, 255, 255, 30), 3, 7)
+        return b
     if fondo == "ambar":
         b = g._radial((214, 120, 24), (74, 34, 4), 0.5, h * 0.42, 1.1, h).convert("RGBA")
         espiral(ImageDraw.Draw(b), W / 2, h * 0.45, 720, (255, 255, 255, 30), 3, 7)
@@ -800,4 +805,103 @@ def lamina_dia(dia_txt, forma, texto, modo, col, n, total, foto=None, caja=None,
         p = empaque(empaque_n, alto, -10)
         pegar_producto(b, p, (W // 2 - p.width // 2 + 60, int(y_fin + 30)), brillo=(255, 230, 190))
     _cuerpo_abajo(b, texto, n, total, tinta)
+    return terminar(b)
+
+
+# ---------- día 7: mayoristas ----------
+def portada_recorte(recorte, l1, l2, etiqueta, sello, total, empaque_n, fondo="azul"):
+    T, h, o = g.tt(), H(), oy()
+    b = _fondo(h, fondo, 0)
+    d = ImageDraw.Draw(b)
+    pastilla(d, 0, o + (28 if T else 50), etiqueta, mont(30 if T else 27, "ExtraBold"), DORADO, OSCURO, centrado=True)
+    tam = 300 if T else 225
+    while ancho(d, l1, anton(tam)) > W - 90:
+        tam -= 6
+    centrar(d, o + (100 if T else 105), l1, anton(tam), CREMA)
+    t2 = int(tam * 0.56)
+    while ancho(d, l2, anton(t2)) > W - 90:
+        t2 -= 4
+    centrar(d, o + (100 if T else 105) + int(tam * 1.13), l2, anton(t2), DORADO)
+    cy = int(h * (0.62 if T else 0.64))
+    pw = W - 40
+    pz = recorte.resize((pw, int(recorte.height * pw / recorte.width)), Image.LANCZOS).rotate(-3, expand=True, resample=Image.BICUBIC)
+    gl = Image.new("RGBA", (W, h), (0, 0, 0, 0))
+    ImageDraw.Draw(gl).ellipse((60, cy - 330, W - 60, cy + 330), fill=(255, 200, 120, 90))
+    b.alpha_composite(gl.filter(ImageFilter.GaussianBlur(110)))
+    pegar_producto(b, pz, ((W - pz.width) // 2, cy - pz.height // 2))
+    pk = empaque(empaque_n, 620 if T else 480, 8)
+    pegar_producto(b, pk, (W - pk.width - 20, cy + pz.height // 2 - int(pk.height * 0.45)), brillo=(255, 235, 190))
+    sticker(b, sello, 175, cy - pz.height // 2 - 10, 112 if T else 100, DORADO, OSCURO, -10)
+    d = ImageDraw.Draw(b)
+    if not T:
+        pastilla(d, 0, h - 112, "DESLIZA  →", mont(28, "ExtraBold"), CREMA, OSCURO, centrado=True)
+        pie(d, CREMA, 1, total)
+    return terminar(b)
+
+
+def lamina_abanico(titulo, chips, n, total, fondo="azul", sabores=(4, 2, 1, 3, 5)):
+    """Cinco empaques en abanico con etiquetas de uso debajo."""
+    T, h, o = g.tt(), H(), oy()
+    b = _fondo(h, fondo, 0)
+    d = ImageDraw.Draw(b)
+    ft = anton(124 if T else 110)
+    y = o + (50 if T else 80)
+    for l in g._lineas(d, titulo, ft, W - 120):
+        centrar(d, y, l, ft, CREMA); y += int(ft.size * 1.1)
+    cy = int(y + (560 if T else 400))
+    alto = 640 if T else 470
+    angs = [-18, -9, 0, 9, 18]
+    dx = [-400, -205, 0, 205, 400]
+    dy = [60, 15, 0, 15, 60]
+    orden = [0, 4, 1, 3, 2]
+    for i in orden:
+        p = empaque(sabores[i], alto if i != 2 else int(alto * 1.08), angs[i])
+        pegar_producto(b, p, (W // 2 + dx[i] - p.width // 2, cy + dy[i] - p.height // 2), brillo=(255, 235, 190) if i == 2 else None)
+    d = ImageDraw.Draw(b)
+    yy = cy + alto // 2 + (120 if T else 90)
+    f = mont(36 if T else 32, "ExtraBold")
+    ws = [ancho(d, c, f) + 70 for c in chips]
+    x = (W - sum(ws) - 20 * (len(chips) - 1)) / 2
+    for c, w_ in zip(chips, ws):
+        d.rounded_rectangle((x, yy, x + w_, yy + 72), 40, fill=CREMA)
+        d.text((x + 35, yy + 14), c, font=f, fill=OSCURO)
+        x += w_ + 20
+    if not T:
+        pie(d, CREMA, n, total)
+    return terminar(b)
+
+
+def lamina_checks(titulo, items, n, total, fondo="azul", recorte=None):
+    """Lista de garantías con checks dorados sobre tarjeta crema."""
+    T, h, o = g.tt(), H(), oy()
+    b = _fondo(h, fondo, 0)
+    d = ImageDraw.Draw(b)
+    ft = anton(120 if T else 106)
+    y = o + (50 if T else 70)
+    for l in g._lineas(d, titulo, ft, W - 140):
+        d.text((70, y), l, font=ft, fill=CREMA); y += int(ft.size * 1.1)
+    y += 30
+    fi = mont(46 if T else 40, "ExtraBold")
+    paso = 150 if T else 122
+    alto = len(items) * paso + 50
+    cl = capa(); ImageDraw.Draw(cl).rounded_rectangle((50, y + 14, W - 50, y + alto + 14), 40, fill=(0, 0, 0, 120))
+    b.alpha_composite(cl.filter(ImageFilter.GaussianBlur(16)))
+    ImageDraw.Draw(b).rounded_rectangle((50, y, W - 50, y + alto), 40, fill=CREMA)
+    d = ImageDraw.Draw(b)
+    yy = y + 40
+    for it in items:
+        cx, cy_ = 120, yy + 38
+        d.ellipse((cx - 38, cy_ - 38, cx + 38, cy_ + 38), fill=(30, 120, 92))
+        d.line([(cx - 17, cy_ + 1), (cx - 5, cy_ + 14), (cx + 19, cy_ - 13)], fill=CREMA, width=10, joint="curve")
+        d.text((190, yy + 6), it, font=fi, fill=OSCURO)
+        yy += paso
+    if recorte is not None:
+        yb = y + alto + 10
+        disp = (1490 if T else h - 120) - yb
+        if disp > 160:
+            pw = min(W - 60, int(disp * 1.05 * recorte.width / recorte.height))
+            pz = recorte.resize((pw, int(recorte.height * pw / recorte.width)), Image.LANCZOS)
+            pegar_producto(b, pz, ((W - pz.width) // 2, int(yb + (disp - pz.height) / 2)))
+    if not T:
+        pie(d, CREMA, n, total)
     return terminar(b)
