@@ -240,12 +240,13 @@ def lamina_ingredientes(foto, caja, titulo, items, n, total, col=(190, 40, 24)):
     return terminar(b)
 
 
-def lamina_cierre_parrilla(titulo, lineas, boton, total, fotos=(5, 1, 2), precio="$10"):
+def lamina_cierre_parrilla(titulo, lineas, boton, total, fotos=(5, 1, 2), precio="$10", fondo="parrilla"):
     """Cierre sobre parrilla con empaques y llamado a la acción."""
     T, h, o = g.tt(), H(), oy()
-    b = parrilla_bg(h, ang=10, seed=8, calor=0.55)
-    humo(b, h, 0, int(h * 0.3), seed=2)
-    viñeta(b, h)
+    b = _fondo(h, fondo, 8)
+    if fondo == "parrilla":
+        humo(b, h, 0, int(h * 0.3), seed=2)
+        viñeta(b, h)
     d = ImageDraw.Draw(b)
     ft = anton(150 if T else 138)
     y = o + (50 if T else 80)
@@ -296,12 +297,21 @@ def lamina_texto_parrilla(lineas, sub, n, total, empaque_n=5, seed=11):
     return terminar(b)
 
 
-def lamina_producto_split(empaque_n, titulo, cuerpo, n, total, col=(196, 44, 26), sello=None):
+def _fondo(h, fondo, seed):
+    if fondo == "parrilla":
+        return parrilla_bg(h, ang=10 if seed == 8 else -14, seed=seed, calor=0.55 if seed == 8 else 0.85)
+    c, o = g.PALETAS["receta"]
+    b = g._radial(c, o, 0.5, h * 0.4, 1.1, h).convert("RGBA")
+    espiral(ImageDraw.Draw(b), W / 2, h * 0.45, 720, (255, 255, 255, 34), 3, 7)
+    return b
+
+
+def lamina_producto_split(empaque_n, titulo, cuerpo, n, total, col=(196, 44, 26), sello=None, fondo="parrilla", prop_extra=None):
     """Arriba: parrilla con el empaque grande (corte diagonal). Abajo: panel de color con texto."""
     T, h, o = g.tt(), H(), oy()
-    alto_f = int(h * (0.52 if T else 0.54))
+    alto_f = int(h * (0.52 if T else 0.50))
     b = radial(tuple(int(v * 0.85) for v in col), tuple(int(v * 0.3) for v in col), cy=0.8, r=1.1).convert("RGBA")
-    top = parrilla_bg(alto_f + 120, ang=-14, seed=6, calor=0.85)
+    top = _fondo(alto_f + 120, fondo, 6)
     ImageDraw.Draw(top)
     gl = Image.new("RGBA", top.size, (0, 0, 0, 0))
     ImageDraw.Draw(gl).ellipse((150, 60, W - 150, alto_f + 60), fill=(255, 120, 30, 130))
@@ -309,6 +319,10 @@ def lamina_producto_split(empaque_n, titulo, cuerpo, n, total, col=(196, 44, 26)
     alto = int(alto_f * 0.95)
     p = empaque(empaque_n, alto, -8)
     pegar_producto(top, p, (W // 2 - p.width // 2, 10 + (alto_f - alto) // 2), brillo=(255, 170, 70))
+    if prop_extra:
+        for nombre, alt, (px, py), ang in prop_extra:
+            pp = prop(nombre, alt, ang)
+            pegar_producto(top, pp, (px, py))
     mask = Image.new("L", top.size, 0)
     ImageDraw.Draw(mask).polygon([(0, 0), (W, 0), (W, alto_f), (0, alto_f + 110)], fill=255)
     top.putalpha(mask)
@@ -325,6 +339,71 @@ def lamina_producto_split(empaque_n, titulo, cuerpo, n, total, col=(196, 44, 26)
     y += 18
     for l in g._lineas(d, cuerpo, fc, W - 160):
         d.text((80, y), l, font=fc, fill=(255, 236, 212)); y += int(fc.size * 1.4)
+    if not T:
+        pie(d, CREMA, n, total)
+    return terminar(b)
+
+
+# ---------- recortes de props (de la foto de la pasta) ----------
+def prop(nombre, alto, ang=0):
+    im = Image.open(f"{FOT}/prop_{nombre}.png").convert("RGBA")
+    a = im.split()[3].point(lambda v: 255 if v > 30 else 0)
+    im = im.crop(a.getbbox())
+    im = im.resize((int(im.width * alto / im.height), alto), Image.LANCZOS)
+    rgb = im.convert("RGB").filter(ImageFilter.UnsharpMask(2, 60, 3))
+    rgb.putalpha(im.split()[3])
+    return rgb.rotate(ang, expand=True, resample=Image.BICUBIC)
+
+
+def portada_foto(foto, l1, l2, etiqueta, sello, total, cx=0.5, cy=0.5):
+    """Portada con la foto a pantalla completa y el título sobre un degradado oscuro."""
+    T, h, o = g.tt(), H(), oy()
+    b = llenar(foto, W, h, cx, cy).convert("RGBA")
+    b.alpha_composite(degradado_v(W, h, 0, int(h * 0.56), (12, 6, 5), 235, 0))
+    b.alpha_composite(degradado_v(W, h, int(h * 0.80), h, (12, 6, 5), 0, 170))
+    d = ImageDraw.Draw(b)
+    pastilla(d, 0, o + (28 if T else 50), etiqueta, mont(30 if T else 27, "ExtraBold"), DORADO, OSCURO, centrado=True)
+    tam = 320 if T else 235
+    while ancho(d, l1, anton(tam)) > W - 100:
+        tam -= 6
+    f1 = anton(tam)
+    d.text(((W - ancho(d, l1, f1)) / 2, o + (100 if T else 105)), l1, font=f1, fill=CREMA, stroke_width=4, stroke_fill=(20, 10, 8))
+    t2 = int(tam * 0.56)
+    while ancho(d, l2, anton(t2)) > W - 100:
+        t2 -= 4
+    f2 = anton(t2)
+    d.text(((W - ancho(d, l2, f2)) / 2, o + (100 if T else 105) + int(tam * 1.13)), l2, font=f2, fill=DORADO, stroke_width=4, stroke_fill=(20, 10, 8))
+    sticker(b, sello, 900 if T else 905, int(h * (0.80 if T else 0.80)), 118 if T else 106, DORADO, OSCURO, 10)
+    d = ImageDraw.Draw(b)
+    if not T:
+        pastilla(d, 0, h - 112, "DESLIZA  →", mont(28, "ExtraBold"), CREMA, OSCURO, centrado=True)
+        pie(d, CREMA, 1, total)
+    return terminar(b)
+
+
+def lamina_paso_props(titulo, cuerpo, num, n, total, props):
+    """Fondo rojo tomate con número gigante de fondo y recortes de ingredientes. props = [(nombre, alto, (x, y), ang)]
+    con coordenadas para IG; en TikTok se escalan y se bajan."""
+    T, h, o = g.tt(), H(), oy()
+    c, oc = g.PALETAS["receta"]
+    b = g._radial(c, oc, 0.3, h * 0.25, 1.15, h).convert("RGBA")
+    gh = Image.new("RGBA", (W, h), (0, 0, 0, 0))
+    ImageDraw.Draw(gh).text((W - 560, o + (60 if T else 40)), num, font=anton(980 if T else 860), fill=(255, 255, 255, 26))
+    b.alpha_composite(gh)
+    k = 1.3 if T else 1.0
+    for nombre, alto, (px, py), ang in props:
+        p = prop(nombre, int(alto * k), ang)
+        pegar_producto(b, p, (px, int(py * k) + (o if T else 0)))
+    d = ImageDraw.Draw(b)
+    d.ellipse((80, o + 90, 80 + 130, o + 220), fill=DORADO)
+    centrar(d, o + 90 + 10, num, anton(108), OSCURO, 80, 210)
+    y = o + (330 if T else 290)
+    ft, fc = anton(118 if T else 106), mont(44 if T else 40, "SemiBold")
+    for l in g._lineas(d, titulo, ft, 640):
+        d.text((80, y), l, font=ft, fill=CREMA); y += int(ft.size * 1.14)
+    y += 22
+    for l in g._lineas(d, cuerpo, fc, 620):
+        d.text((82, y), l, font=fc, fill=(255, 236, 212)); y += int(fc.size * 1.42)
     if not T:
         pie(d, CREMA, n, total)
     return terminar(b)
