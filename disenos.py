@@ -159,8 +159,9 @@ def lamina_foto_completa(foto, cx, cy, num, titulo, cuerpo, n, total, col=(226, 
     y = fondo - alto_txt
     # número en círculo
     r = 62
-    d.ellipse((80, y - 2 * r - 26, 80 + 2 * r, y - 26), fill=col)
-    centrar(d, y - 2 * r - 26 + 8, str(num), anton(88), CREMA, 80, 80 + 2 * r)
+    if num is not None:
+        d.ellipse((80, y - 2 * r - 26, 80 + 2 * r, y - 26), fill=col)
+        centrar(d, y - 2 * r - 26 + 8, str(num), anton(88), CREMA, 80, 80 + 2 * r)
     for l in tl:
         d.text((80, y), l, font=ft, fill=CREMA); y += int(ft.size * 1.14)
     y += 20
@@ -223,7 +224,7 @@ def lamina_ingredientes(foto, caja, titulo, items, n, total, col=(190, 40, 24)):
     b.alpha_composite(ph, (cx - dia // 2, cy - dia // 2))
     d = ImageDraw.Draw(b)
     y = o + (80 if T else 70)
-    ft = anton(125 if T else 105)
+    ft = anton(100 if T else 105)
     for l in titulo.split("\n"):
         d.text((70, y), l, font=ft, fill=OSCURO); y += int(ft.size * 1.05)
     d.rectangle((72, y + 6, 72 + 110, y + 18), fill=col)
@@ -267,4 +268,63 @@ def lamina_cierre_parrilla(titulo, lineas, boton, total, fotos=(5, 1, 2), precio
         centrar(d, yy, l, mont(34 if T else 30, "Bold"), CREMA); yy += 48
     if not T:
         pie(d, CREMA, total, total)
+    return terminar(b)
+
+
+def lamina_texto_parrilla(lineas, sub, n, total, empaque_n=5, seed=11):
+    """Frase grande sobre la parrilla. lineas = [(texto, color)], con un empaque asomando abajo."""
+    T, h, o = g.tt(), H(), oy()
+    b = parrilla_bg(h, ang=-8, seed=seed, calor=0.6)
+    b.alpha_composite(Image.new("RGBA", (W, h), (10, 6, 5, 105)))
+    humo(b, h, 0, int(h * 0.3), seed=4)
+    viñeta(b, h)
+    d = ImageDraw.Draw(b)
+    tam = 190 if T else 158
+    y = o + (150 if T else 130)
+    for txt, col in lineas:
+        d.text((70, y), txt, font=anton(tam), fill=col); y += int(tam * 1.12)
+    y += 20
+    fs = mont(46 if T else 40, "SemiBold")
+    for l in envolver(d, sub, fs, W - 300):
+        d.text((74, y), l, font=fs, fill=(244, 232, 216)); y += int(fs.size * 1.4)
+    alto = 700 if T else 560
+    p = empaque(empaque_n, alto, -14)
+    pegar_producto(b, p, (W - p.width + 80, 1290 if T else h - int(alto * 0.78)), brillo=(255, 150, 50))
+    d = ImageDraw.Draw(b)
+    if not T:
+        pie(d, CREMA, n, total)
+    return terminar(b)
+
+
+def lamina_producto_split(empaque_n, titulo, cuerpo, n, total, col=(196, 44, 26), sello=None):
+    """Arriba: parrilla con el empaque grande (corte diagonal). Abajo: panel de color con texto."""
+    T, h, o = g.tt(), H(), oy()
+    alto_f = int(h * (0.52 if T else 0.54))
+    b = radial(tuple(int(v * 0.85) for v in col), tuple(int(v * 0.3) for v in col), cy=0.8, r=1.1).convert("RGBA")
+    top = parrilla_bg(alto_f + 120, ang=-14, seed=6, calor=0.85)
+    ImageDraw.Draw(top)
+    gl = Image.new("RGBA", top.size, (0, 0, 0, 0))
+    ImageDraw.Draw(gl).ellipse((150, 60, W - 150, alto_f + 60), fill=(255, 120, 30, 130))
+    top.alpha_composite(gl.filter(ImageFilter.GaussianBlur(90)))
+    alto = int(alto_f * 0.95)
+    p = empaque(empaque_n, alto, -8)
+    pegar_producto(top, p, (W // 2 - p.width // 2, 10 + (alto_f - alto) // 2), brillo=(255, 170, 70))
+    mask = Image.new("L", top.size, 0)
+    ImageDraw.Draw(mask).polygon([(0, 0), (W, 0), (W, alto_f), (0, alto_f + 110)], fill=255)
+    top.putalpha(mask)
+    sh = Image.new("RGBA", top.size, (0, 0, 0, 0)); sh.putalpha(mask.point(lambda v: int(v * 0.6)))
+    b.alpha_composite(sh.filter(ImageFilter.GaussianBlur(24)), (0, 18))
+    b.alpha_composite(top, (0, 0))
+    if sello:
+        sticker(b, sello, 900, int(alto_f * 0.30), 108, DORADO, OSCURO, 10)
+    d = ImageDraw.Draw(b)
+    y = alto_f + 150
+    ft, fc = anton(124 if T else 112), mont(44 if T else 39, "Medium")
+    for l in g._lineas(d, titulo, ft, W - 150):
+        d.text((80, y), l, font=ft, fill=CREMA); y += int(ft.size * 1.15)
+    y += 18
+    for l in g._lineas(d, cuerpo, fc, W - 160):
+        d.text((80, y), l, font=fc, fill=(255, 236, 212)); y += int(fc.size * 1.4)
+    if not T:
+        pie(d, CREMA, n, total)
     return terminar(b)
