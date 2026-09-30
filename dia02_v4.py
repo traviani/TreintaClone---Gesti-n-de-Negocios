@@ -9,13 +9,13 @@ from contenido import WA, ENTREGA
 ROJO = (196, 44, 26)
 
 
-def lista_con_empaque(titulo, items, n, total, emp, col=ROJO):
+def lista_con_empaque(titulo, items, n, total, emp, col=ROJO, dy_tt=0):
     T, h, o = g.tt(), D.H(), D.oy()
     b = radial((252, 246, 236), (230, 214, 192), cy=0.35, r=1.15).convert("RGBA")
     espiral(ImageDraw.Draw(b), W, 0, 700, col + (40,), 3, 7)
     alto = 820 if T else 640
     p = empaque(emp, alto, 9)
-    cy = o + (520 if T else 470)
+    cy = o + (520 + dy_tt if T else 470)
     pegar_producto(b, p, (W - p.width + 60, cy - p.height // 2), brillo=(255, 140, 70))
     d = ImageDraw.Draw(b)
     y = o + (80 if T else 70)

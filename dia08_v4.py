@@ -123,7 +123,7 @@ def portada_avatar():
     return terminar(b)
 
 
-def foto_titulo(archivo, lineas, cuerpo, n, total, cy=0.0, modo=None, tam_ig=150, tam_tt=180):
+def foto_titulo(archivo, lineas, cuerpo, n, total, cy=0.0, modo=None, tam_ig=150, tam_tt=180, cx=0.5, chip=None):
     """Foto a pantalla completa con titulo multilinea arriba y texto abajo."""
     T, h, o = g.tt(), D.H(), D.oy()
     foto = Image.open(f"{D.FOT}/{archivo}").convert("RGB")
@@ -144,7 +144,7 @@ def foto_titulo(archivo, lineas, cuerpo, n, total, cy=0.0, modo=None, tam_ig=150
         y0 = int((hs - h) * cy)
         b = ph.crop((0, y0, W, y0 + h))
     else:
-        b = D.llenar(foto, W, h, 0.5, cy).convert("RGBA")
+        b = D.llenar(foto, W, h, cx, cy).convert("RGBA")
     b.alpha_composite(D.degradado_v(W, h, 0, int(h * (0.30 if T else 0.34)), (10, 6, 5), 215, 0))
     b.alpha_composite(D.degradado_v(W, h, int(h * (0.54 if T else 0.60)), h, (10, 6, 5), 0, 245))
     d = ImageDraw.Draw(b)
@@ -152,6 +152,9 @@ def foto_titulo(archivo, lineas, cuerpo, n, total, cy=0.0, modo=None, tam_ig=150
     while max(ancho(d, t, anton(tam)) for t, _ in lineas) > W - 120:
         tam -= 6
     y = o + (90 if T else 60)
+    if chip:
+        pastilla(d, 70, y, chip, mont(30 if T else 28, "ExtraBold"), OSCURO, DORADO)
+        y += 80
     for txt, col in lineas:
         d.text((66, y), txt, font=anton(tam), fill=col, stroke_width=3, stroke_fill=(20, 10, 8)); y += int(tam * 1.1)
     fc = mont(44 if T else 40, "SemiBold")
