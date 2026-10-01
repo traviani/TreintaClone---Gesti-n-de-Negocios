@@ -46,7 +46,7 @@ def laminas():
                                (3, 170, 20, 6, 0.78), (5, 0, -10, 0, 0.92)],
                               lambda h: D._fondo(h, "azul", 3), total, brillo=(200, 225, 255), glow=(120, 180, 255, 140)),
         lambda: foto_titulo(foto("congelador"), [("CONGELADA", CRE), ("3 MESES", DOR)],
-                            "Guárdala en su empaque al vacío, sin abrir, en el congelador.", 2, total, cy=0.74, chip="DURA HASTA"),
+                            "Guárdala en su empaque al vacío, sin abrir, a -18 °C.", 2, total, cy=1.0, chip="DURA HASTA"),
         lambda: foto_titulo(foto("nevera"), [("REFRIGERADA", CRE), ("3 DÍAS", DOR)],
                             "En la nevera a 4 °C o menos. Después de eso, al congelador.", 3, total, cy=0.4, chip="MÁXIMO"),
         lambda: foto_titulo(foto("descongelar"), [("CÓMO", CRE), ("DESCONGELAR", DOR)],
