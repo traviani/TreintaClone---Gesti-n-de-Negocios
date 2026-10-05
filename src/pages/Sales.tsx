@@ -38,6 +38,8 @@ import { Receipt } from '../components/Receipt';
 
 interface Sale {
   id: string;
+  invoiceNumber?: number | string;
+  balance?: number;
   customerName: string;
   customerId: string;
   customerIdNumber?: string;
@@ -109,11 +111,13 @@ export default function Sales() {
         }
       }
 
-      // 2. Si fue a crédito, descontar del balance del cliente
+      // 2. Si fue a crédito, descontar del balance del cliente SOLO lo que aún se debía
+      // (los abonos ya redujeron ese balance cuando se registraron)
       if (sale.saleType === 'credito' && sale.customerId) {
+        const outstanding = sale.balance !== undefined ? Number(sale.balance) : Number(sale.total || 0);
         const customerRef = doc(db, 'customers', sale.customerId);
         batch.update(customerRef, {
-          balance: increment(-sale.total)
+          balance: increment(-Math.max(0, outstanding))
         });
       }
 

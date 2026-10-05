@@ -109,7 +109,7 @@ export default function AccountsReceivable() {
   const handleRegisterPayment = async () => {
     if (!selectedSale || !paymentAmount) return;
 
-    const amount = parseFloat(paymentAmount);
+    const amount = Math.round(parseFloat(paymentAmount) * 100) / 100;
     const discountInput = parseFloat(paymentDiscount || '0');
     
     if (isNaN(amount) || amount <= 0) {
@@ -124,12 +124,12 @@ export default function AccountsReceivable() {
 
     let discount = discountInput;
     if (discountType === 'percent') {
-      discount = ((selectedSale.balance || selectedSale.total) * discountInput) / 100;
+      discount = Math.round((((selectedSale.balance ?? selectedSale.total) * discountInput) / 100) * 100) / 100;
     }
 
     const totalReduction = amount + discount;
 
-    if (totalReduction > (selectedSale.balance || selectedSale.total) + 0.01) {
+    if (totalReduction > (selectedSale.balance ?? selectedSale.total) + 0.01) {
       alert('La suma del abono y descuento no puede ser mayor al saldo pendiente.');
       return;
     }

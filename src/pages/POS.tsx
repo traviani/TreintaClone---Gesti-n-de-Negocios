@@ -357,7 +357,7 @@ export default function POS() {
           });
         });
 
-        saleWithId = { ...saleData, id: saleRef.id };
+        saleWithId = { ...saleData, id: saleRef.id, createdAt: new Date() };
       });
       
       if (saleWithId) {

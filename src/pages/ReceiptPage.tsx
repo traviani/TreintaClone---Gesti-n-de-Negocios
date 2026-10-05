@@ -109,3 +109,5 @@ export const ReceiptPage: React.FC = () => {
     </div>
   );
 };
+
+export default ReceiptPage;

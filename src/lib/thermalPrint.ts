@@ -1,12 +1,13 @@
-import { formatCurrency } from './utils';
+import { formatCurrency, formatSafeDate } from './utils';
 import { TRAVIANI_LOGO_DATA_URL } from './logo';
+
+const escapeHtml = (v: unknown): string =>
+  String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
 export const generateThermalTicketHtml = (sale: any, dateStr?: string): string => {
   if (!sale) return '';
 
-  const dateFormatted = dateStr || ((typeof sale.createdAt?.toDate === 'function')
-    ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
-    : (sale.createdAt ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(new Date(sale.createdAt)) : 'RECIENTE'));
+  const dateFormatted = dateStr || formatSafeDate(sale.createdAt);
 
   const invoiceNum = sale.invoiceNumber
     ? String(sale.invoiceNumber).padStart(6, '0')
@@ -16,7 +17,7 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
     <tr>
       <td style="width: 32px; font-weight: 900; vertical-align: top; font-size: 13px;">${it.quantity}x</td>
       <td style="padding: 0 4px; vertical-align: top;">
-        <div style="font-weight: 800; text-transform: uppercase; line-height: 1.15;">${it.name || ''}</div>
+        <div style="font-weight: 800; text-transform: uppercase; line-height: 1.15;">${escapeHtml(it.name || '')}</div>
         <div style="font-size: 10px; color: #333; margin-top: 1px;">P.U: $${formatCurrency(it.price).replace('$', '')}</div>
       </td>
       <td style="width: 65px; text-align: right; font-weight: 900; font-size: 13px; vertical-align: top; white-space: nowrap;">
@@ -192,32 +193,32 @@ export const generateThermalTicketHtml = (sale: any, dateStr?: string): string =
     <div style="border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 4px; font-size: 11.5px;">
       <div class="info-row">
         <span class="bold">CLIENTE:</span>
-        <span class="bolder uppercase text-right" style="max-width: 52mm;">${sale.customerName || 'CLIENTE GENERAL'}</span>
+        <span class="bolder uppercase text-right" style="max-width: 52mm;">${escapeHtml(sale.customerName || 'CLIENTE GENERAL')}</span>
       </div>
       <div class="info-row">
         <span class="bold">RIF/CI:</span>
-        <span class="bold">${sale.customerIdNumber || 'J-501798788'}</span>
+        <span class="bold">${escapeHtml(sale.customerIdNumber || 'J-501798788')}</span>
       </div>
       <div class="info-row">
         <span class="bold">TELÉFONO:</span>
-        <span class="bold">${sale.customerPhone || 'NO REGISTRADO'}</span>
+        <span class="bold">${escapeHtml(sale.customerPhone || 'NO REGISTRADO')}</span>
       </div>
       ${sale.customerAddress ? `
       <div style="margin-top: 2px;">
         <span class="bold">DIRECCIÓN:</span>
-        <span style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; display: block;">${sale.customerAddress}</span>
+        <span style="font-size: 10.5px; font-weight: 700; text-transform: uppercase; display: block;">${escapeHtml(sale.customerAddress)}</span>
       </div>
       ` : ''}
       <div class="info-row" style="margin-top: 2px;">
         <span class="bold">CONDICIÓN:</span>
         <span class="bolder uppercase" style="border: 1px solid #000; padding: 1px 4px; border-radius: 2px;">
-          ${sale.saleType === 'credito' ? 'CRÉDITO' : `CONTADO${sale.paymentMethod ? ` (${sale.paymentMethod})` : ''}`}
+          ${sale.saleType === 'credito' ? 'CRÉDITO' : `CONTADO${sale.paymentMethod ? ` (${escapeHtml(sale.paymentMethod)})` : ''}`}
         </span>
       </div>
       ${sale.saleType === 'contado' && sale.paymentReference ? `
       <div class="info-row" style="font-size: 10.5px; margin-top: 2px;">
         <span class="bold">REF. PAGO:</span>
-        <span class="bolder uppercase">${sale.paymentReference}</span>
+        <span class="bolder uppercase">${escapeHtml(sale.paymentReference)}</span>
       </div>
       ` : ''}
     </div>
