@@ -920,7 +920,7 @@ export default function Manufacturing() {
                                  <span className="text-[10px] font-black text-slate-400 uppercase italic mb-0.5">Ingreso de Stock</span>
                                  <div className="flex items-center gap-2">
                                      <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-                                     <span className="text-xl font-black text-slate-900 tracking-tighter">+{log.amount} Años.</span>
+                                     <span className="text-xl font-black text-slate-900 tracking-tighter">+{log.amount} {log.unit || 'unid'}</span>
                                  </div>
                              </div>
                              <div className="text-right flex flex-col">
@@ -1046,7 +1046,7 @@ export default function Manufacturing() {
                                             }}
                                         >
                                             {availableUnits.map(u => (
-                                                <option key={u} value={u}>{u}</option>
+                                                <option key={u.value} value={u.value}>{u.label}</option>
                                             ))}
                                         </select>
                                     ) : (

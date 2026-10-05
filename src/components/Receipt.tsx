@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Printer, Receipt as ReceiptIcon, MessageCircle, ArrowLeft, X, ExternalLink, Copy, Check } from 'lucide-react';
-import { formatCurrency, cn } from '../lib/utils';
+import { formatCurrency, cn, formatSafeDate } from '../lib/utils';
 import { printThermalTicketDirectly, openTicketInPrintWindow } from '../lib/thermalPrint';
 import { TRAVIANI_LOGO_DATA_URL } from '../lib/logo';
 
@@ -20,9 +20,7 @@ interface SingleInvoiceHalfProps {
 
 export const formatSaleTicketPlainText = (sale: any, dateStr?: string) => {
   if (!sale) return '';
-  const dateFormatted = dateStr || ((typeof sale.createdAt?.toDate === 'function')
-    ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'short' }).format(sale.createdAt.toDate())
-    : 'HOY');
+  const dateFormatted = dateStr || formatSafeDate(sale.createdAt, 'short', 'HOY');
 
   const invoiceNum = sale.invoiceNumber
     ? String(sale.invoiceNumber).padStart(6, '0')
@@ -80,9 +78,7 @@ ${doubleLine}`;
 export const formatSaleWhatsAppMessage = (sale: any, dateStr?: string) => {
   if (!sale) return '';
 
-  const formattedDate = dateStr || ((typeof sale.createdAt?.toDate === 'function')
-    ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
-    : (sale.createdAt ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(new Date(sale.createdAt)) : 'RECIENTE'));
+  const formattedDate = dateStr || formatSafeDate(sale.createdAt);
 
   const invoiceNum = sale.invoiceNumber
     ? String(sale.invoiceNumber).padStart(6, '0')
@@ -507,9 +503,7 @@ export const Receipt: React.FC<ReceiptProps> = ({
   const [copiedText, setCopiedText] = useState(false);
   const hasAutoTriggeredRef = useRef(false);
 
-  const dateStr = (typeof sale.createdAt?.toDate === 'function')
-    ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(sale.createdAt.toDate())
-    : (sale.createdAt ? new Intl.DateTimeFormat('es-VE', { dateStyle: 'medium' }).format(new Date(sale.createdAt)) : 'RECIENTE');
+  const dateStr = formatSafeDate(sale.createdAt);
 
   const handlePrintLetter = () => {
     try {

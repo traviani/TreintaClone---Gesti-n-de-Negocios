@@ -59,8 +59,9 @@ interface Product {
   unit: string;
   imageUrl?: string;
   ownerId: string;
-  isIngredient: boolean;
-  isFinishedProduct: boolean;
+  // Algunos registros antiguos guardan estos flags como texto ('true'/'false')
+  isIngredient: boolean | string;
+  isFinishedProduct: boolean | string;
   isBajoPedido?: boolean;
   recipe?: RecipeItem[];
   lowStockThreshold?: number;
@@ -92,7 +93,7 @@ export default function Inventory() {
     recipe: [] as RecipeItem[]
   });
 
-  const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
+  const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price' | 'cost' | 'inventoryValue'>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -445,14 +446,16 @@ export default function Inventory() {
               category: '', 
               isIngredient: false, 
               isFinishedProduct: true,
-              recipeYield: '1'
+              isBajoPedido: false,
+              recipeYield: '1',
+              recipe: []
             });
             setRecipeItems([]);
             setIsModalOpen(true);
           }}
           className="bg-slate-900 hover:bg-black text-white px-6 py-3 rounded-2xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-slate-100 transition-all active:scale-95"
         >
-          <Plus size={20} alt="Add" />
+          <Plus size={20} />
           <span>Nuevo Producto</span>
         </button>
       </div>

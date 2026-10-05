@@ -30,3 +30,27 @@ export function getGoogleDriveDirectLink(url: string | undefined | null) {
   
   return url;
 }
+
+/**
+ * Convierte cualquier valor de fecha (Timestamp de Firestore, marcador pendiente de
+ * serverTimestamp, Date, número o string) en un Date válido, o null si no se puede.
+ */
+export function toSafeDate(value: any): Date | null {
+  if (!value) return null;
+  if (typeof value.toDate === 'function') {
+    const d = value.toDate();
+    return d instanceof Date && !isNaN(d.getTime()) ? d : null;
+  }
+  if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+  if (typeof value === 'string' || typeof value === 'number') {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+export function formatSafeDate(value: any, dateStyle: 'short' | 'medium' = 'medium', fallback = 'RECIENTE') {
+  const d = toSafeDate(value);
+  return d ? new Intl.DateTimeFormat('es-VE', { dateStyle }).format(d) : fallback;
+}

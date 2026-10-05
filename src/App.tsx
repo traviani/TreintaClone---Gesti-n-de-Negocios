@@ -10,6 +10,7 @@ import { Layout } from './components/Layout';
 import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
 import Login from './pages/Login';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Lazy load components
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -38,6 +39,7 @@ export default function App() {
   }, []);
 
   return (
+    <ErrorBoundary>
     <AuthProvider>
       <Router>
         <React.Suspense fallback={
@@ -76,5 +78,6 @@ export default function App() {
         </React.Suspense>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
