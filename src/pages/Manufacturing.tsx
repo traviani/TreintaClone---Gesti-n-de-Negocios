@@ -103,6 +103,10 @@ export default function Manufacturing() {
   const [recipeIngredients, setRecipeIngredients] = useState<{ ingredientId: string; quantity: number; unit?: string }[]>([]);
   const [isProducing, setIsProducing] = useState<string | null>(null);
   const [batchAmounts, setBatchAmounts] = useState<Record<string, number>>({});
+  // Texto crudo del campo de tandas, para poder escribir decimales como "0.5" sin que se reescriba
+  const [batchText, setBatchText] = useState<Record<string, string>>({});
+  // "Producir según un ingrediente" (ej. 6.5 kg de carne): ingrediente, cantidad y unidad por receta
+  const [anchors, setAnchors] = useState<Record<string, { ingredientId?: string; amount: string; unit?: string }>>({});
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>('');
   const [recipeYield, setRecipeYield] = useState<number>(1);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -324,9 +328,14 @@ export default function Manufacturing() {
       });
 
       if (missingStockItems.length > 0) {
-        alert(`No hay stock suficiente para fabricar ${batches} tanda(s) (${totalUnitsToProduce.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${productUnit}):\n\n${missingStockItems.join('\n')}`);
-        setIsProducing(null);
-        return;
+        const proceed = confirm(
+          `Algunos insumos no alcanzan en el inventario para ${batches} tanda(s) (${totalUnitsToProduce.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${productUnit}):\n\n${missingStockItems.join('\n')}\n\n` +
+          `Puedes fabricar igual: esos insumos quedarán en 0 (nunca en negativo) y el faltante se anota en el lote. ¿Continuar?`
+        );
+        if (!proceed) {
+          setIsProducing(null);
+          return;
+        }
       }
 
       const batch = writeBatch(db);
@@ -338,18 +347,26 @@ export default function Manufacturing() {
       summary.items.forEach(item => {
         const requiredInBaseUnit = item.normalizedQuantityInBaseUnit * batches;
         const lineTotalCost = item.lineCost * batches;
+        // Solo se descuenta lo que realmente hay: el inventario nunca queda en negativo
+        const deductedInBaseUnit = Math.min(requiredInBaseUnit, Math.max(0, item.currentStock));
+        const shortfall = Math.max(0, requiredInBaseUnit - deductedInBaseUnit);
 
-        const ingRef = doc(db, 'products', item.ingredientId);
-        batch.update(ingRef, {
-          stock: increment(-requiredInBaseUnit),
-          updatedAt: serverTimestamp()
-        });
+        if (deductedInBaseUnit > 0) {
+          const ingRef = doc(db, 'products', item.ingredientId);
+          batch.update(ingRef, {
+            stock: increment(-deductedInBaseUnit),
+            updatedAt: serverTimestamp()
+          });
+        }
 
+        // quantity = lo descontado de verdad (así revertir el lote devuelve exactamente eso)
         logIngredients.push({
           ingredientId: item.ingredientId,
           name: item.name,
           unit: item.baseUnit,
-          quantity: requiredInBaseUnit,
+          quantity: deductedInBaseUnit,
+          requiredQuantity: requiredInBaseUnit,
+          shortfall,
           cost: item.baseCost,
           subtotal: lineTotalCost
         });
@@ -381,7 +398,7 @@ export default function Manufacturing() {
 
       await batch.commit();
       const newStock = (Number(product?.stock || 0) + totalUnitsToProduce).toFixed(2);
-      alert(`¡PRODUCCIÓN EXITOSA!\n\nProducto: ${product?.name}\nTandas fabricadas: ${batches}\nUnidades producidas: +${totalUnitsToProduce.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${productUnit}\nCosto Unitario: ${formatCurrency(unitCost, 4)}\nCosto Total Insumos: ${formatCurrency(totalCostOfBatch, 2)}\nNuevo Stock Total: ${newStock} ${productUnit}\n\nLos insumos correspondientes fueron descontados de inventario.`);
+      alert(`¡PRODUCCIÓN EXITOSA!\n\nProducto: ${product?.name}\nTandas fabricadas: ${batches}\nUnidades producidas: +${totalUnitsToProduce.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${productUnit}\nCosto Unitario: ${formatCurrency(unitCost, 4)}\nCosto Total Insumos: ${formatCurrency(totalCostOfBatch, 2)}\nNuevo Stock Total: ${newStock} ${productUnit}\n\n${missingStockItems.length > 0 ? 'Algunos insumos no alcanzaron y quedaron en 0; el faltante se anotó en el lote.' : 'Los insumos correspondientes fueron descontados de inventario.'}`);
     } catch (error) {
       console.error('Error in batch production:', error);
       handleFirestoreError(error, OperationType.WRITE, 'manufacturing');
@@ -807,11 +824,81 @@ export default function Manufacturing() {
                                                 </div>
                                             </div>
 
+                                        {/* Producir según la cantidad de un ingrediente (ej. kilos de carne) */}
+                                        {(() => {
+                                            const anchor = anchors[recipe.id] || { amount: '' };
+                                            const defaultItem =
+                                                summary.items.find(it => /carne|pulpa|paleta|cerdo|res\b/i.test(it.name)) ||
+                                                summary.items.find(it => it.baseUnit === 'kg' || it.baseUnit === 'gr') ||
+                                                summary.items[0];
+                                            const anchorItem = summary.items.find(it => it.ingredientId === anchor.ingredientId) || defaultItem;
+                                            if (!anchorItem) return null;
+                                            const friendlyUnit = (u: string) => (u === 'gr' ? 'kg' : u === 'ml' ? 'lt' : u);
+                                            const anchorUnit = anchor.unit || friendlyUnit(anchorItem.baseUnit);
+                                            const unitOptions = getAvailableUnitsForIngredient(anchorItem.baseUnit);
+                                            const amountNum = parseFloat(anchor.amount);
+                                            const derived = anchorItem.recipeQuantity > 0 && Number.isFinite(amountNum) && amountNum > 0
+                                                ? convertQuantity(amountNum, anchorUnit, anchorItem.recipeUnit) / anchorItem.recipeQuantity
+                                                : 0;
+
+                                            const apply = (next: { ingredientId?: string; amount?: string; unit?: string }) => {
+                                                const merged = { ...anchor, ingredientId: anchorItem.ingredientId, unit: anchorUnit, ...next };
+                                                setAnchors({ ...anchors, [recipe.id]: merged as any });
+                                                const item = summary.items.find(it => it.ingredientId === merged.ingredientId) || anchorItem;
+                                                const n = parseFloat(String(merged.amount));
+                                                if (item.recipeQuantity > 0 && Number.isFinite(n) && n > 0) {
+                                                    const t = convertQuantity(n, merged.unit || friendlyUnit(item.baseUnit), item.recipeUnit) / item.recipeQuantity;
+                                                    setBatchText(prev => { const c = { ...prev }; delete c[recipe.id]; return c; });
+                                                    setBatchAmounts(prev => ({ ...prev, [recipe.id]: Math.round(t * 10000) / 10000 }));
+                                                }
+                                            };
+
+                                            return (
+                                                <div className="bg-white border border-blue-100 rounded-3xl p-4 space-y-2">
+                                                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-700 italic">Producir según un ingrediente</p>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <input
+                                                            type="number"
+                                                            step="any"
+                                                            min="0"
+                                                            placeholder="Ej. 6.5"
+                                                            value={anchor.amount}
+                                                            onChange={(e) => apply({ amount: e.target.value })}
+                                                            className="w-24 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 text-center font-black text-blue-900 outline-none"
+                                                        />
+                                                        <select
+                                                            value={anchorUnit}
+                                                            onChange={(e) => apply({ unit: e.target.value })}
+                                                            className="bg-white border border-blue-200 rounded-xl px-2 py-2 text-xs font-bold text-blue-700"
+                                                        >
+                                                            {unitOptions.map(u => <option key={u.value} value={u.value}>{u.value}</option>)}
+                                                        </select>
+                                                        <span className="text-xs font-bold text-slate-500">de</span>
+                                                        <select
+                                                            value={anchorItem.ingredientId}
+                                                            onChange={(e) => {
+                                                                const it = summary.items.find(x => x.ingredientId === e.target.value);
+                                                                apply({ ingredientId: e.target.value, unit: friendlyUnit(it?.baseUnit || 'unid') });
+                                                            }}
+                                                            className="flex-1 min-w-[8rem] bg-white border border-blue-200 rounded-xl px-2 py-2 text-xs font-bold text-slate-800"
+                                                        >
+                                                            {summary.items.map(it => <option key={it.ingredientId} value={it.ingredientId}>{it.name}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    {derived > 0 && (
+                                                        <p className="text-[11px] font-bold text-slate-500 italic">
+                                                            = {derived.toLocaleString(undefined, { maximumFractionDigits: 3 })} tandas ({(derived * summary.yieldAmount).toLocaleString(undefined, { maximumFractionDigits: 2 })} {product?.unit || 'unid'}). Los demás insumos de la fórmula se ajustan solos.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
+
                                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                                             <div className="w-full sm:w-44 shrink-0">
                                                 <div className="flex items-center bg-blue-50 rounded-2xl p-1.5 border border-blue-200 shadow-sm">
                                                     <button 
-                                                        onClick={() => setBatchAmounts({ ...batchAmounts, [recipe.id]: Math.max(1, (batchAmounts[recipe.id] || 1) - 1) })}
+                                                        onClick={() => { setBatchText(t => { const n = { ...t }; delete n[recipe.id]; return n; }); setBatchAmounts({ ...batchAmounts, [recipe.id]: Math.max(1, (batchAmounts[recipe.id] || 1) - 1) }); }}
                                                         className="w-10 h-10 flex items-center justify-center text-blue-700 hover:bg-blue-100 rounded-xl transition-all font-black text-xl cursor-pointer"
                                                     >
                                                         -
@@ -820,11 +907,19 @@ export default function Manufacturing() {
                                                         type="number" 
                                                         step="0.01"
                                                         className="flex-1 min-w-0 bg-transparent border-none text-center text-blue-900 font-black text-base outline-none"
-                                                        value={batchAmounts[recipe.id] || 1}
-                                                        onChange={(e) => setBatchAmounts({ ...batchAmounts, [recipe.id]: parseFloat(e.target.value) || 1 })}
+                                                        min="0.01"
+                                                        value={batchText[recipe.id] ?? (batchAmounts[recipe.id] || 1)}
+                                                        onChange={(e) => {
+                                                            const raw = e.target.value;
+                                                            setBatchText({ ...batchText, [recipe.id]: raw });
+                                                            const n = parseFloat(raw);
+                                                            // Mientras el campo esté vacío o en 0, los cálculos usan 1 tanda
+                                                            setBatchAmounts({ ...batchAmounts, [recipe.id]: Number.isFinite(n) && n > 0 ? n : 0 });
+                                                        }}
+                                                        onBlur={() => setBatchText(t => { const n = { ...t }; delete n[recipe.id]; return n; })}
                                                     />
                                                     <button 
-                                                        onClick={() => setBatchAmounts({ ...batchAmounts, [recipe.id]: (batchAmounts[recipe.id] || 1) + 1 })}
+                                                        onClick={() => { setBatchText(t => { const n = { ...t }; delete n[recipe.id]; return n; }); setBatchAmounts({ ...batchAmounts, [recipe.id]: (batchAmounts[recipe.id] || 1) + 1 }); }}
                                                         className="w-10 h-10 flex items-center justify-center text-blue-700 hover:bg-blue-100 rounded-xl transition-all font-black text-xl cursor-pointer"
                                                     >
                                                         +

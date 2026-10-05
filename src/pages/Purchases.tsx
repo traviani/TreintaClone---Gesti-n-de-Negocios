@@ -148,6 +148,7 @@ export default function Purchases() {
         if (existingPurchase) {
           // Revert old stocks
           existingPurchase.items.forEach((oldItem: any) => {
+            if (!products.some(p => p.id === oldItem.productId)) return;
             const productRef = doc(db, 'products', oldItem.productId);
             batch.update(productRef, { stock: increment(-oldItem.quantity) });
           });
@@ -221,6 +222,7 @@ export default function Purchases() {
       
       // Revert stock
       purchase.items.forEach((item: any) => {
+        if (!products.some(p => p.id === item.productId)) return;
         const productRef = doc(db, 'products', item.productId);
         batch.update(productRef, {
           stock: increment(-item.quantity)
