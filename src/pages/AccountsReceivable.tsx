@@ -10,6 +10,7 @@ import {
   increment,
   serverTimestamp,
   updateDoc,
+  getDoc,
   arrayUnion
 } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
@@ -157,9 +158,11 @@ export default function AccountsReceivable() {
       // 2. Update Customer overall balance if customerId exists
       if (selectedSale.customerId) {
         const customerRef = doc(db, 'customers', selectedSale.customerId);
-        batch.update(customerRef, {
-          balance: increment(-totalReduction)
-        });
+        if ((await getDoc(customerRef)).exists()) {
+          batch.update(customerRef, {
+            balance: increment(-totalReduction)
+          });
+        }
       }
 
       await batch.commit();

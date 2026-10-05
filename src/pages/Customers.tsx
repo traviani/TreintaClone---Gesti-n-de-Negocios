@@ -121,6 +121,11 @@ export default function Customers() {
   };
 
   const deleteCustomer = async (id: string) => {
+    const target = customers.find(c => c.id === id);
+    if (target && Number((target as any).balance || 0) > 0.01) {
+      alert('Este cliente tiene saldo pendiente por cobrar. Cobra o ajusta la deuda antes de eliminarlo.');
+      return;
+    }
     if (!confirm('¿Eliminar cliente?')) return;
     try {
       await deleteDoc(doc(db, 'customers', id));

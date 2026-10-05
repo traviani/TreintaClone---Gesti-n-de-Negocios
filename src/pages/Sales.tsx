@@ -104,6 +104,8 @@ export default function Sales() {
         for (const item of sale.items) {
           if (!item.productId) continue;
           const productRef = doc(db, 'products', item.productId);
+          // Si el producto ya fue eliminado, se omite (update fallaría y bloquearía todo el lote)
+          if (!(await getDoc(productRef)).exists()) continue;
           batch.update(productRef, {
             stock: increment(item.quantity),
             updatedAt: serverTimestamp()
@@ -116,9 +118,11 @@ export default function Sales() {
       if (sale.saleType === 'credito' && sale.customerId) {
         const outstanding = sale.balance !== undefined ? Number(sale.balance) : Number(sale.total || 0);
         const customerRef = doc(db, 'customers', sale.customerId);
-        batch.update(customerRef, {
-          balance: increment(-Math.max(0, outstanding))
-        });
+        if ((await getDoc(customerRef)).exists()) {
+          batch.update(customerRef, {
+            balance: increment(-Math.max(0, outstanding))
+          });
+        }
       }
 
       // 3. Eliminar la venta
@@ -146,23 +150,66 @@ export default function Sales() {
       const batch = writeBatch(db);
       const saleRef = doc(db, 'sales', sale.id);
       
-      // Actualizar tipo de venta
-      batch.update(saleRef, { saleType: newType });
-      
-      // Actualizar balance del cliente
-      if (sale.customerId) {
+      const total = Number(sale.total) || 0;
+      const round2 = (n: number) => Math.round(n * 100) / 100;
+      const payments: any[] = Array.isArray((sale as any).payments) ? (sale as any).payments : [];
+      const isAutoCashPayment = (p: any) => typeof p?.note === 'string' && p.note.startsWith('Pago de contado');
+      const previousBalance = sale.balance !== undefined ? Number(sale.balance) : (sale.saleType === 'credito' ? total : 0);
+
+      let update: Record<string, any>;
+      let customerDelta: number;
+
+      if (newType === 'credito') {
+        // El pago de contado automático deja de valer; solo cuentan los abonos reales
+        const realPayments = payments.filter(p => !isAutoCashPayment(p));
+        const covered = realPayments.reduce((a, p) => a + (Number(p.amount) || 0) + (Number(p.discount) || 0), 0);
+        const newBalance = Math.max(0, round2(total - covered));
+        update = {
+          saleType: 'credito',
+          payments: realPayments,
+          paidAmount: round2(total - newBalance),
+          balance: newBalance,
+          paymentMethod: 'Crédito'
+        };
+        customerDelta = newBalance - (sale.saleType === 'credito' ? previousBalance : 0);
+      } else {
+        // Pasa a contado: se cobra lo que faltaba y la factura queda en cero
+        const outstanding = sale.saleType === 'credito' ? Math.max(0, previousBalance) : 0;
+        update = {
+          saleType: 'contado',
+          paidAmount: total,
+          balance: 0,
+          paymentMethod: (sale as any).paymentMethod && (sale as any).paymentMethod !== 'Crédito'
+            ? (sale as any).paymentMethod
+            : 'Efectivo ($ USD)'
+        };
+        if (outstanding > 0.001) {
+          update.payments = [
+            ...payments,
+            {
+              amount: round2(outstanding),
+              date: new Date().toISOString(),
+              method: update.paymentMethod,
+              reference: '',
+              note: 'Pago de contado (cambio de forma de pago)'
+            }
+          ];
+        }
+        customerDelta = -outstanding;
+      }
+
+      batch.update(saleRef, update);
+
+      // Actualizar balance del cliente (solo si todavía existe)
+      if (sale.customerId && Math.abs(customerDelta) > 0.001) {
         const customerRef = doc(db, 'customers', sale.customerId);
-        if (newType === 'credito') {
-          // Cambió a crédito: aumenta la deuda (balance)
-          batch.update(customerRef, { balance: increment(sale.total) });
-        } else {
-          // Cambió a contado: disminuye la deuda (balance)
-          batch.update(customerRef, { balance: increment(-sale.total) });
+        if ((await getDoc(customerRef)).exists()) {
+          batch.update(customerRef, { balance: increment(round2(customerDelta)) });
         }
       }
-      
+
       await batch.commit();
-      setSelectedSale({ ...sale, saleType: newType });
+      setSelectedSale({ ...sale, ...update } as any);
       alert('Forma de pago actualizada correctamente.');
     } catch (error) {
       console.error(error);

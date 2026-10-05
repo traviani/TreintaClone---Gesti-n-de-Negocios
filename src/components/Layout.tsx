@@ -14,7 +14,8 @@ import {
   HandCoins,
   Sparkles,
   Share2,
-  Megaphone
+  Megaphone,
+  FileSpreadsheet
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { logout } from '../lib/firebase';
@@ -34,6 +35,7 @@ const navItems = [
   { id: 'catalog', label: 'Catálogo', path: '/catalog', icon: Share2 },
   { id: 'promotions', label: 'Publicidad / Banners', path: '/promotions', icon: Megaphone },
   { id: 'demand', label: 'Análisis IA', path: '/demand', icon: Sparkles },
+  { id: 'reports', label: 'Reportes', path: '/reports', icon: FileSpreadsheet },
 ];
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

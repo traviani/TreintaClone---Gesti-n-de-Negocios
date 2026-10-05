@@ -26,6 +26,7 @@ const ReceiptPage = React.lazy(() => import('./pages/ReceiptPage'));
 const AccountsReceivable = React.lazy(() => import('./pages/AccountsReceivable'));
 const DemandAnalysis = React.lazy(() => import('./pages/DemandAnalysis'));
 const Promotions = React.lazy(() => import('./pages/Promotions'));
+const Reports = React.lazy(() => import('./pages/Reports'));
 
 export default function App() {
   // Clear any residual client mode lock
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/receivable" element={<Layout><AccountsReceivable /></Layout>} />
             <Route path="/demand" element={<Layout><DemandAnalysis /></Layout>} />
             <Route path="/promotions" element={<Layout><Promotions /></Layout>} />
+            <Route path="/reports" element={<Layout><Reports /></Layout>} />
             
             {/* Registration/Login */}
             <Route path="/login" element={<Login />} />
