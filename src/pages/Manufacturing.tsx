@@ -1107,11 +1107,9 @@ export default function Manufacturing() {
                                     className="flex-1 bg-transparent border-none outline-none font-black text-slate-800 appearance-none text-base pl-2"
                                     value={item.ingredientId}
                                     onChange={(e) => {
-                                        const newIngs = [...recipeIngredients];
                                         const ingFound = ingredientChoices.find(p => p.id === e.target.value);
-                                        newIngs[idx].ingredientId = e.target.value;
-                                        newIngs[idx].unit = ingFound?.unit || 'unid';
-                                        setRecipeIngredients(newIngs);
+                                        setRecipeIngredients(recipeIngredients.map((ing, i) =>
+                                            i === idx ? { ...ing, ingredientId: e.target.value, unit: ingFound?.unit || 'unid' } : ing));
                                     }}
                                 >
                                     <option value="">Insumo...</option>
@@ -1124,9 +1122,8 @@ export default function Manufacturing() {
                                         className="w-24 p-4 bg-white border border-slate-200 rounded-2xl outline-none font-black text-center focus:ring-4 focus:ring-blue-100 transition-all text-lg"
                                         value={item.quantity}
                                         onChange={(e) => {
-                                            const newIngs = [...recipeIngredients];
-                                            newIngs[idx].quantity = parseFloat(e.target.value) || 0;
-                                            setRecipeIngredients(newIngs);
+                                            const q = Math.max(0, parseFloat(e.target.value) || 0);
+                                            setRecipeIngredients(recipeIngredients.map((ing, i) => i === idx ? { ...ing, quantity: q } : ing));
                                         }}
                                     />
                                     
@@ -1135,9 +1132,7 @@ export default function Manufacturing() {
                                             className="text-[11px] font-bold text-blue-600 bg-white border border-blue-100 px-2.5 py-3 rounded-xl outline-none cursor-pointer"
                                             value={item.unit || baseUnit}
                                             onChange={(e) => {
-                                                const newIngs = [...recipeIngredients];
-                                                newIngs[idx].unit = e.target.value;
-                                                setRecipeIngredients(newIngs);
+                                                setRecipeIngredients(recipeIngredients.map((ing, i) => i === idx ? { ...ing, unit: e.target.value } : ing));
                                             }}
                                         >
                                             {availableUnits.map(u => (
