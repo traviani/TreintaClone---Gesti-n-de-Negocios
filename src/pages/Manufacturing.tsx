@@ -407,7 +407,17 @@ export default function Manufacturing() {
     }
   };
 
+  // Lotes antiguos (junio) guardaron cantidades en gramos con costos por kilo: su costo es absurdo
+  // y revertirlos devolvería cantidades erróneas al inventario. Se detectan y se bloquea el reverso.
+  const isLegacyLog = (log: ProductionLog) =>
+    (log as any).legacyCost === true ||
+    ((Number((log as any).totalCost) || 0) / (Number((log as any).amount) || 1)) > 50;
+
   const handleDeleteLog = async (log: ProductionLog) => {
+    if (isLegacyLog(log)) {
+      alert('Este lote es de una versión anterior de la app y su costo/cantidades no son confiables.\n\nNo se puede revertir automáticamente para no dejar el inventario incorrecto. Ajusta el inventario manualmente si lo necesitas.');
+      return;
+    }
     if (!confirm(`¿Estás seguro de ELIMINAR y REVERTIR este lote de "${log.productName}"?\n\n- Se devolverán los insumos al inventario.\n- Se restará el producto generado (-${log.amount} ${log.unit || 'unid'}) del stock.`)) return;
 
     try {
@@ -1003,8 +1013,8 @@ export default function Manufacturing() {
                             </div>
                             <button 
                                 onClick={() => handleDeleteLog(log)}
-                                className="p-2.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all"
-                                title="Eliminar y revertir"
+                                className={cn("p-2.5 rounded-2xl transition-all", isLegacyLog(log) ? "text-slate-200 cursor-not-allowed" : "text-slate-300 hover:text-red-500 hover:bg-red-50")}
+                                title={isLegacyLog(log) ? "Lote antiguo: no se puede revertir" : "Eliminar y revertir"}
                             >
                                 <RotateCcw size={20} />
                             </button>
